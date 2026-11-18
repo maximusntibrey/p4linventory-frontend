@@ -1,4 +1,5 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source('.');
+/* source('.'): scan only src/ for class names (not the Markdown docs). */
 
 /*
  * Design tokens (T.19), from 2-Frontend-Requirements.md section 2 "Look and feel":
