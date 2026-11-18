@@ -180,7 +180,7 @@ Package installs need network access to the package registries (PyPI, npm, GitHu
 
 ### 2.2 Shared
 
-- [ ] T.0 Confirm package installs work in the working environment: run a test install of one Python package (`pip install`) and one npm package. If refused, the owner updates the network settings to allow package registries, opens a new chat or session (an existing one may not pick up the change), and the test is repeated. Do not continue until it passes.
+- [x] T.0 Confirm package installs work in the working environment: run a test install of one Python package (`pip install`) and one npm package. If refused, the owner updates the network settings to allow package registries, opens a new chat or session (an existing one may not pick up the change), and the test is repeated. Do not continue until it passes.
 - [ ] T.1 Git, GitHub CLI (`gh`) and authentication as maximusntibrey
 - [ ] T.2 Claude skills available to the AI: `docx`, `pdf`, `xlsx` (user guides, exports, report checks), `frontend-design` (UI work), `file-reading` and `pdf-reading` (reading the requirements PDFs), `skill-creator` (only if a project skill is needed)
 - [ ] T.3 Editor config (`.editorconfig`), pre-commit hooks to run lint and block secrets
