@@ -152,7 +152,7 @@ End of sprint:
 - [ ] G.2 Frontend repo `p4linventory-frontend`: clone, set identity (1.2), create `main` and `develop`, protect `main`
 - [x] G.3 Add `.gitignore`, `.env.example`, `README.md`, `SKILLS.md` and a copy of this `TASKS.md` to both repos
 - [x] G.4 Add a pull request template with the quality checklist from rule 0.3 to both repos
-- [ ] G.5 Add CI to both repos that runs the check command on every pull request (done again in B1.8 and F1.2; tick here when the repos are connected)
+- [x] G.5 Add CI to both repos that runs the check command on every pull request (done again in B1.8 and F1.2; tick here when the repos are connected) (frontend: `npm run check` runs in the CI `check` job since F1.0, PR #2; backend tracked in `eqp4l-backend`)
 - [ ] G.6 Branch protection on `main` and `develop` in both repos: pull request required, CI green required, no force pushes, no direct commits
 
 ### 1.7 Git procedure for fixes, patches and updates
@@ -183,7 +183,7 @@ Package installs need network access to the package registries (PyPI, npm, GitHu
 - [x] T.0 Confirm package installs work in the working environment: run a test install of one Python package (`pip install`) and one npm package. If refused, the owner updates the network settings to allow package registries, opens a new chat or session (an existing one may not pick up the change), and the test is repeated. Do not continue until it passes.
 - [x] T.1 Git, GitHub CLI (`gh`) and authentication as maximusntibrey
 - [x] T.2 Claude skills available to the AI: `docx`, `pdf`, `xlsx` (user guides, exports, report checks), `frontend-design` (UI work), `file-reading` and `pdf-reading` (reading the requirements PDFs), `skill-creator` (only if a project skill is needed)
-- [ ] T.3 Editor config (`.editorconfig`), pre-commit hooks to run lint and block secrets
+- [x] T.3 Editor config (`.editorconfig`), pre-commit hooks to run lint and block secrets
 - [x] T.4 Create `SKILLS.md` in both repos and record every install
 
 ### 2.3 Backend (Python, Django, API, database)
@@ -202,15 +202,15 @@ Package installs need network access to the package registries (PyPI, npm, GitHu
 
 ### 2.4 Frontend (React, mobile-first UI)
 
-- [ ] T.16 Node.js LTS and `npm` (or `pnpm`), pinned in `.nvmrc`
-- [ ] T.17 React with TypeScript and Vite
-- [ ] T.18 React Router, TanStack Query (data fetching), `react-hook-form` with `zod` (forms and inline validation)
-- [ ] T.19 Tailwind CSS (or the chosen CSS approach) with the design tokens from Frontend section 2; Lucide icons (`lucide-react`)
-- [ ] T.20 `openapi-typescript` and a typed API client generated from the backend contract
-- [ ] T.21 MSW (Mock Service Worker) for mock responses in CI and early development
-- [ ] T.22 Vitest, React Testing Library, Playwright (end-to-end smoke tests), `axe-core` / `vitest-axe` (accessibility checks)
-- [ ] T.23 ESLint and Prettier, `eslint-plugin-jsx-a11y`, `npm audit`
-- [ ] T.24 One check command (e.g. `npm run check`) that runs lint, type check, unit tests and build
+- [x] T.16 Node.js LTS and `npm` (or `pnpm`), pinned in `.nvmrc`
+- [x] T.17 React with TypeScript and Vite
+- [x] T.18 React Router, TanStack Query (data fetching), `react-hook-form` with `zod` (forms and inline validation)
+- [x] T.19 Tailwind CSS (or the chosen CSS approach) with the design tokens from Frontend section 2; Lucide icons (`lucide-react`)
+- [ ] T.20 `openapi-typescript` and a typed API client generated from the backend contract (tool installed and verified in F1.0, script `npm run api:types`; open until the contract is published (B1.3) and the client is generated (F1.4))
+- [x] T.21 MSW (Mock Service Worker) for mock responses in CI and early development
+- [x] T.22 Vitest, React Testing Library, Playwright (end-to-end smoke tests), `axe-core` / `vitest-axe` (accessibility checks)
+- [x] T.23 ESLint and Prettier, `eslint-plugin-jsx-a11y`, `npm audit`
+- [x] T.24 One check command (e.g. `npm run check`) that runs lint, type check, unit tests and build
 
 ## 3. DEVOPS PLAN
 
@@ -298,7 +298,7 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 
 ### Frontend, Sprint 1
 
-- [ ] F1.0 Tooling setup and verification (section 2.2 and 2.4), recorded in `SKILLS.md`
+- [x] F1.0 Tooling setup and verification (section 2.2 and 2.4), recorded in `SKILLS.md` (every tool installed, pinned and verified; generating the typed client from the contract is T.20 / F1.4)
 - [ ] F1.1 UI kit: colours (white, grey, one accent; green/amber/red for status only), spacing, one icon set, buttons, cards, form fields, status badges, top bar, navigation
 - [ ] F1.2 Repo, environments, CI and the one check command
 - [ ] F1.3 App shell
@@ -694,9 +694,9 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | OQ-1 | Development gate (rule 0.7): has the owner authorised development? | Doc sync 2026-11-18 | Yes, from Sprint 1 | Owner, 2026-11-18 |
 | OQ-2 | Hosting provider, database host, object storage and domain names (O1.1) | DevOps doc | Open | |
 | OQ-3 | Backup and log retention periods | DevOps doc | Open | |
-| OQ-4 | G.5 blocker: the CI workflow (`.github/workflows/ci.yml`, job `check`) runs the pre-commit hooks and a full-history gitleaks scan, but the single check command does not exist yet, so that step is a placeholder. G.5 stays unticked until T.24, F1.2 and O1.4 run `npm run check` in CI (lint, type check, tests, accessibility, build, `npm audit`) | devops, Phase A | Blocked on T.24, F1.2, O1.4 | |
+| OQ-4 | G.5 blocker: the CI workflow (`.github/workflows/ci.yml`, job `check`) runs the pre-commit hooks and a full-history gitleaks scan, but the single check command does not exist yet, so that step is a placeholder. G.5 stays unticked until T.24, F1.2 and O1.4 run `npm run check` in CI (lint, type check, tests, accessibility, build, `npm audit`) | devops, Phase A | Resolved for the frontend on 2026-11-18: the CI `check` job runs `npm run check` (lint, format, type check, tests with axe, build, `npm audit`) plus the Playwright smoke test; first green run on PR #2. F1.2 and O1.4 stay open (staging environment, contract-based MSW mocks) | devops, F1.0 |
 | OQ-5 | G.2 and G.6 blocker: branch protection on `main` and `develop` is not applied yet, because requiring the `check` status before CI has run once would block merging the Phase A pull requests. The exact `gh api` commands are in `docs/branch-protection.md` in `eqp4l-backend`. Apply them after the Phase A pull requests merge and CI has reported `check`. Approving reviews are not required (one GitHub account); reviewer approval is recorded as a PR comment | devops, Phase A | Pending orchestrator | |
-| OQ-6 | T.3 blocker (frontend): the pre-commit hooks block secrets and lint files (whitespace, line endings, YAML/JSON, merge markers, keys), but there is no JavaScript/TypeScript linter yet. ESLint and Prettier arrive at T.23; their hook is added then and T.3 is ticked in this repo | devops, Phase A | Blocked on T.23 | |
+| OQ-6 | T.3 blocker (frontend): the pre-commit hooks block secrets and lint files (whitespace, line endings, YAML/JSON, merge markers, keys), but there is no JavaScript/TypeScript linter yet. ESLint and Prettier arrive at T.23; their hook is added then and T.3 is ticked in this repo | devops, Phase A | Resolved on 2026-11-18: local `eslint` and `prettier` hooks added to `.pre-commit-config.yaml` (pinned binaries from `node_modules`), T.3 ticked | devops, F1.0 |
 | OQ-7 | T.2 substitution: `file-reading`/`pdf-reading` skills do not exist; covered by the `pdf` skill plus the built-in Read tool; T.2 ticked on that basis, pending owner acknowledgement. | devops, Phase A review | Pending owner acknowledgement | |
 | OQ-8 | Design tokens (T.19, F1.1): Frontend section 2 asks for "one accent colour" and "one clean font" but names neither. Placeholders are in `src/index.css`: accent `#1d4ed8` (blue, 6.7:1 contrast on white), font = the system UI font stack (no web-font download). Status colours green `#15803d`, amber `#b45309`, red `#b91c1c` (all at least 4.5:1 on white) are also proposals. Owner: confirm or give the brand accent colour and font before F1.1 is ticked | devops, F1.0 | Open | |
 | OQ-9 | Local Node version: `.nvmrc` and CI pin Node 26.13.1 (LTS "Lithium", security release of 2026-11-10). This machine has 26.13.0, so `npm install` warns `EBADENGINE`. Owner: update local Node to 26.13.1 with the official nodejs.org installer, or approve installing a Node version manager (not installed, per TASKS 0.4) | devops, F1.0 | Open | |
