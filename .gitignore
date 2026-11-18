@@ -17,6 +17,11 @@ test-results/
 blob-report/
 playwright/.cache/
 
+# Python tooling (pre-commit, helper scripts)
+.venv/
+venv/
+__pycache__/
+
 # Logs
 *.log
 npm-debug.log*
