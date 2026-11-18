@@ -151,7 +151,7 @@ End of sprint:
 - [ ] G.1 Backend repo `eqp4l-backend`: clone, set identity (1.2), create `main` and `develop`, protect `main`
 - [ ] G.2 Frontend repo `p4linventory-frontend`: clone, set identity (1.2), create `main` and `develop`, protect `main`
 - [x] G.3 Add `.gitignore`, `.env.example`, `README.md`, `SKILLS.md` and a copy of this `TASKS.md` to both repos
-- [ ] G.4 Add a pull request template with the quality checklist from rule 0.3 to both repos
+- [x] G.4 Add a pull request template with the quality checklist from rule 0.3 to both repos
 - [ ] G.5 Add CI to both repos that runs the check command on every pull request (done again in B1.8 and F1.2; tick here when the repos are connected)
 - [ ] G.6 Branch protection on `main` and `develop` in both repos: pull request required, CI green required, no force pushes, no direct commits
 
