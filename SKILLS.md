@@ -279,11 +279,38 @@ These are mandatory.
 
 ## Appendix A: Install register
 
-One register per repository. Record every tool, package and skill installed. Nothing is installed without vetting (TASKS.md 2.1). Package installs were not possible in the audit workspace, so nothing is recorded yet.
+One register per repository. Record every tool, package and skill installed. Nothing is installed without vetting (TASKS.md 2.1: check, vet, pin, verify, record, commit). This is the register for **p4linventory-frontend**. Vetting checks used: official publisher and source, licence, maintenance (last push), and published GitHub security advisories for the repository (none found for any item below on 2026-11-18).
+
+### A.1 Register
 
 | Date | Repo | Name | Version | Purpose | Vetted by | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-11-18 | p4linventory-frontend | Install test: `six` (PyPI) | 1.17.0 | T.0: prove `pip install` works | Orchestrator, devops | Throwaway scratch venv only, not a project dependency. Re-run by devops: `pip install six==1.17.0` then `import six` printed `six 1.17.0` |
+| 2026-11-18 | p4linventory-frontend | Install test: `is-number` (npm) | 7.0.0 | T.0: prove `npm install` works | Orchestrator, devops | Throwaway scratch folder only. Re-run by devops: `added 1 package ... found 0 vulnerabilities`, `require('is-number')(5)` printed `true` |
+| 2026-11-18 | p4linventory-frontend | Git for Windows | 2.56.0.windows.4 | T.1: version control | devops | Already installed. Identity set locally per repo (TASKS 1.2). The system git config sets `core.autocrlf=true`, so `.gitattributes` forces LF |
+| 2026-11-18 | p4linventory-frontend | GitHub CLI `gh` | 2.105.0 | T.1: pull requests, branch protection, repo settings | Orchestrator | Publisher GitHub Inc., MIT, installed with winget (hash verified). Path `C:\Program Files\GitHub CLI\gh.exe`. `gh auth status`: logged in as `maximusntibrey`, scopes `gist`, `read:org`, `repo`, `workflow`; `gh auth setup-git` done |
+| 2026-11-18 | p4linventory-frontend | Claude skills `docx`, `pdf`, `xlsx`, `frontend-design`, `skill-creator` | Bundled with Claude Code (no version number) | T.2: user guides, PDF reading and export, spreadsheet checks, UI work, project skills | devops | Present in `~/.claude/skills/`. No separate `file-reading` or `pdf-reading` skill exists: reading PDFs is covered by the `pdf` skill ("reading or extracting text/tables from PDFs") and plain file reading by Claude Code's built-in Read tool. The requirements are already converted to Markdown |
+| 2026-11-18 | p4linventory-frontend | `pre-commit` (PyPI) | 4.7.0 | T.3: runs the git hooks | devops | Publisher pre-commit/pre-commit, MIT, last push 2026-11-09, no advisories. Installed in a dedicated venv `%USERPROFILE%\.venvs\pre-commit-4.7.0` (Python 3.13.17) so the hook survives worktree removal. Pinned dependencies resolved by pip: cfgv 3.5.0, distlib 0.4.4, filelock 4.2.12, identify 2.6.20, nodeenv 1.12.0, packaging 26.3, platformdirs 4.14.7, python-discovery 1.9.6, pyyaml 6.0.3, virtualenv 21.15.8. CI installs `pre-commit==4.7.0`. Hook installed with `pre-commit install --allow-missing-config` |
+| 2026-11-18 | p4linventory-frontend | `pre-commit-hooks` | v6.0.0 (commit 3e8a870) | T.3: file lint, private-key and AWS-key detection, no direct commits to `main`, `develop`, `sprint/*` | devops | Publisher pre-commit, MIT, last push 2026-11-04, no advisories. Pinned by commit SHA in `.pre-commit-config.yaml` |
+| 2026-11-18 | p4linventory-frontend | `gitleaks` | v8.30.1 (commit 83d9cd6) | T.3: block secrets before commit; CI scans full history | devops | Publisher gitleaks, MIT, about 31k stars, last push 2026-10-28, no advisories. Local hook is built from source by pre-commit, which bootstrapped Go 1.27.4 into its own cache (no system Go installed). CI downloads the official `gitleaks_8.30.1_linux_x64.tar.gz` and verifies its SHA-256 against the release checksums file. Smoke test: a staged fake GitHub token gave `RuleID: github-pat ... leaks found: 1` and the commit was refused |
+| 2026-11-18 | p4linventory-frontend | GitHub Action `actions/checkout` | v7.0.1 (commit 3d3c42e) | G.5: CI checkout | devops | Publisher GitHub, MIT, pinned by commit SHA |
+| 2026-11-18 | p4linventory-frontend | GitHub Action `actions/setup-python` | v7.1.0 (commit 6d4fd22) | G.5: Python 3.13 for pre-commit in CI | devops | Publisher GitHub, MIT, pinned by commit SHA |
+
+### A.2 Environment found on this machine (not installed by these steps)
+
+| Tool | Version | Notes |
+|---|---|---|
+| Python | 3.13.17 (`py -V:3.13`) | Owner chose Python 3.13 with Django 5.2 LTS. Python 3.15.2 is also installed and must not be used |
+| Node.js / npm | v26.13.0 / 11.20.0 | Pinned in `.nvmrc` at T.16 |
+| Docker | 29.9.3 | Daemon running. Used from O1.2 |
+| make, psql, pg_dump | Not installed | The check command is a script, not `make` (see A.3). Planned: run `pg_dump` inside the PostgreSQL container (T.14) |
+
+### A.3 Tooling decisions
+
+- **Line endings:** `.gitattributes` with `* text=auto eol=lf`, plus `.editorconfig` (T.3).
+- **Pre-commit hooks:** the `pre-commit` framework in both repos, so one tool covers lint and secret blocking on Windows and in CI. Install once per clone with `pre-commit install --allow-missing-config` (the flag keeps commits working on branches that do not have the config yet).
+- **Check command:** `make` is not installed on the Windows machine. The frontend check command is `npm run check`, added at T.24. Language lint hooks (ESLint, Prettier) are added to pre-commit at T.23.
+- **CI:** GitHub Actions, workflow `.github/workflows/ci.yml`, job `check`. Every action is pinned to a commit SHA. Until the check command exists, the job runs the pre-commit hooks, a full-history gitleaks scan and a placeholder step (G.5 stays open until B1.8 / F1.2).
 
 ## Appendix B: Glossary
 

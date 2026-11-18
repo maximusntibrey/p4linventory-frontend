@@ -184,7 +184,7 @@ Package installs need network access to the package registries (PyPI, npm, GitHu
 - [ ] T.1 Git, GitHub CLI (`gh`) and authentication as maximusntibrey
 - [ ] T.2 Claude skills available to the AI: `docx`, `pdf`, `xlsx` (user guides, exports, report checks), `frontend-design` (UI work), `file-reading` and `pdf-reading` (reading the requirements PDFs), `skill-creator` (only if a project skill is needed)
 - [ ] T.3 Editor config (`.editorconfig`), pre-commit hooks to run lint and block secrets
-- [ ] T.4 Create `SKILLS.md` in both repos and record every install
+- [x] T.4 Create `SKILLS.md` in both repos and record every install
 
 ### 2.3 Backend (Python, Django, API, database)
 
