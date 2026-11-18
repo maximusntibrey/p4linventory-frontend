@@ -694,6 +694,7 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | OQ-1 | Development gate (rule 0.7): has the owner authorised development? | Doc sync 2026-11-18 | Yes, from Sprint 1 | Owner, 2026-11-18 |
 | OQ-2 | Hosting provider, database host, object storage and domain names (O1.1) | DevOps doc | Open | |
 | OQ-3 | Backup and log retention periods | DevOps doc | Open | |
+| OQ-6 | T.3 blocker (frontend): the pre-commit hooks block secrets and lint files (whitespace, line endings, YAML/JSON, merge markers, keys), but there is no JavaScript/TypeScript linter yet. ESLint and Prettier arrive at T.23; their hook is added then and T.3 is ticked in this repo | devops, Phase A | Blocked on T.23 | |
 
 ## FIX LOG
 
