@@ -22,7 +22,7 @@ export function Field({ label, hint, error, required, id, className, ...rest }: 
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={inputId} className="text-base font-medium text-grey-900">
+      <label htmlFor={inputId} className="text-base font-semibold text-grey-900">
         {label}
         {required && <span className="ml-1 text-grey-600">(required)</span>}
       </label>
@@ -46,7 +46,7 @@ export function Field({ label, hint, error, required, id, className, ...rest }: 
         )}
       />
       {error && (
-        <p id={errorId} className="flex items-start gap-1 text-sm font-medium text-status-error">
+        <p id={errorId} className="flex items-start gap-1 text-sm font-semibold text-status-error">
           <AlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
           <span>{error}</span>
         </p>
