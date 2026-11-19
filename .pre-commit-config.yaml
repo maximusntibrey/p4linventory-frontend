@@ -1,4 +1,4 @@
-# Pre-commit hooks (step T.3): file lint and secret blocking.
+# Pre-commit hooks (step T.3): file lint, ESLint, Prettier and secret blocking.
 # Every rev is pinned to a commit SHA; the tag is in the frozen comment.
 # Vetting and versions are recorded in SKILLS.md Appendix A.
 # Install once per clone:  pre-commit install --allow-missing-config
@@ -7,7 +7,7 @@ default_install_hook_types: [pre-commit]
 fail_fast: false
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     hooks:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
@@ -27,9 +27,25 @@ repos:
         args: [--allow-missing-credentials]
       - id: no-commit-to-branch
         name: block direct commits to main, develop and sprint branches
-        args: [--branch, main, --branch, develop, --pattern, "sprint/.*"]
+        args: [--branch, main, --branch, develop, --pattern, 'sprint/.*']
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # frozen: v8.30.1
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e # frozen: v8.30.1
     hooks:
       - id: gitleaks
+
+  # ESLint and Prettier (T.23, closes the T.3 gap noted in OQ-6). Local hooks
+  # that run the versions pinned in package-lock.json, so the hook and
+  # `npm run check` can never disagree. Run `npm ci` once before committing.
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint (pinned in package-lock.json)
+        entry: node node_modules/eslint/bin/eslint.js --max-warnings=0 --no-warn-ignored
+        language: system
+        files: \.(js|jsx|ts|tsx|mjs|cjs)$
+      - id: prettier
+        name: prettier (pinned in package-lock.json)
+        entry: node node_modules/prettier/bin/prettier.cjs --check --ignore-unknown
+        language: system
+        types_or: [javascript, jsx, ts, tsx, json, yaml, css, html]
