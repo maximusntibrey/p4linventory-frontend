@@ -306,14 +306,16 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 - [ ] F2.1 Login screen (user ID, password, clear errors, too-many-attempts message)
 - [ ] F2.2 Layout, route guards and menu per role (built from what the API allows, max 5 items per role; Super Admin: Home, Items, Warehouse, Branches, Users, with Activity, Sell, Find and Receive opened from Home)
 - [ ] F2.3 Tests: login and route guards
+- [ ] F2.4 Forced password change at first login (OQ-23 C5): after login, a user with `must_change_password` sees only the change-password screen; any 403 `password_change_required` sends them there; tests
+- [ ] F2.5 Change own password screen, opened from the user menu (OQ-23 C5): current and new password, clear errors; tests
 - [ ] F3.1 Working-branch selection and switching (top bar shows branch, ID, switch icon with label, logout)
 - [ ] F3.2 Branch management screens
-- [ ] F3.3 User management screens (show the generated ID after creation; deactivate and reset password with confirm step; per-person permissions such as Receive stock)
+- [ ] F3.3 User management screens (show the generated ID after creation; deactivate and reset password with confirm step; per-person permissions such as Receive stock) **OQ-23 C5: after create or reset, show the one-time password once (copy button, clear "shown once" warning, never stored in the app).**
 - [ ] F3.4 Dashboard shell
 - [ ] F4.1 Item list (search, filters, pagination, status badges, cards on phones; cost shown only if the API returns it)
 - [ ] F4.2 Item add and edit (category-driven form from field definitions, inline validation, save as Draft, activate, duplicate warning)
 - [ ] F4.3 One image upload with clear type and size messages
-- [ ] F4.4 Stock screen (by location, low-stock flag, search)
+- [ ] F4.4 Stock screen (by location, low-stock flag, search) **OQ-23 C13: reorder level field per item per location, editable by Super Admin and Warehouse Admin (own location) only; low-stock flag uses it.**
 - [ ] F4.5 Tests: item form and validation
 - [ ] F5.1 Receive stock into the warehouse screen (supplier, item lines, review, confirm, receipt reference shown)
 - [ ] F5.2 Dispatch screen (branch, lines with available quantity, status list)
@@ -379,7 +381,7 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [ ] F6.1 Sell screen (search, quantities, running list and total, payment method, confirm in about 3 steps, clear message when quantity exceeds stock)
 - [ ] F6.2 Sales list and cancel action (reason asked, confirm step, cancelled badge)
 - [ ] F6.3 Find screen (stock at my branch plus other branches by name and quantity only)
-- [ ] F6.4 CSV import screen (upload, preview, error report with row numbers, confirm)
+- [ ] F6.4 CSV import screen (upload, preview, error report with row numbers, confirm) **OQ-23 C12b/C13: unit cost column required and reorder level optional; cost shown in the preview and error report only to Super Admin and Warehouse Admin.**
 - [ ] F6.5 Tests: sell flow
 - [ ] F7.1 Dashboards (a few big numbers and a short recent-activity list, no charts)
 - [ ] F7.2 Activity log screen (filter by user, branch, action, date), opened from Home for Super Admin
@@ -706,12 +708,13 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | OQ-19 | Selling price source in Sprints 1–2 (B1.4 digest conflict 2) | B1.4 digest | Decided: a **central price list, one row per SKU** (GAP-M08), not a field on the item. Prices are set by Super Admin or a holder of "Manage prices"; a price cannot be negative; the sale reads its price from the list. This replaces "price from the item" in B6.1. Not yet: branch overrides (Sprint 6), price-history screens and the below-cost warning (Sprint 5). The table must be designed so those extend it without a rewrite. | Owner, 2026-11-19 |
 | OQ-20 | Hosting (O1.1) | Orchestrator | **On hold.** Keep everything host-agnostic. O1.5, O1.6, O1.7 and the staging part of S1.G5 are BLOCKED and stay unticked. The integration check runs locally instead (frontend against the real backend on Docker Compose), recorded as an interim local check. | Owner, 2026-11-19 |
 | OQ-21 | Design tokens and fonts (frontend OQ-13) | Frontend F1.0 | Decided. **Accent: an orange tint**: a fill accent that passes WCAG AA with white text (around `#C2410C`), a light background tint (around `#FFF7ED`) and a mid tone for borders and focus. Verify the contrast and record the hex values. Amber status colours must stay clearly different from the accent; badges always carry text. **Fonts:** Bebas Neue for headings, the brand, page titles and big dashboard numbers; Inter for body text, forms, tables, IDs and prices. Both self-hosted via `@fontsource` (OFL), vetted and recorded in SKILLS.md. | Owner, 2026-11-19. **Applied in F1.1:** accent fill `#C2410C` (5.18:1 with white text), hover `#9A3412`, tint `#FFF7ED`, mid tone `#EA580C` for borders and focus (3.56:1 on white); amber status changed to `#854D0E` on `#FEF9C3` so it stays distinct from the orange; `@fontsource/bebas-neue` and `@fontsource/inter` 5.3.0, exact. Ratios and vetting: SKILLS.md A.3 and register. `/ui-kit` is dev only |
+| OQ-23 | Contract decisions C5, C13, C12b (backend B1.3, contract v0.2.0) | Backend B1.3, frontend F2/F3/F4/F6 | Decided. **C5:** when a Super Admin creates or resets a user, the server generates a one-time password that is shown once; the user must change it at first login (until then the API answers 403 `password_change_required`); every user can change their own password (`auth.change_password`). **C13:** optional reorder level per item per location, set by Super Admin or Warehouse Admin (own location), also via the CSV import; drives the low-stock flag (`stock.set_reorder_level`). **C12b:** CSV opening stock requires a unit cost, which feeds average cost; cost (including in the import preview and error report) is shown only to Super Admin and Warehouse Admin. Also: optional bin label on stock rows; audit action is an open list. New frontend tasks: F2.4, F2.5, and additions to F3.3, F4.4, F6.4. | Owner, 2026-11-19 |
 
 ## FIX LOG
 
 | Ref | What was wrong or changed | Repo | Branch | Test added | Merged | Released in |
 |---|---|---|---|---|---|---|
-| FIX-1 | Owner could not run the frontend locally. Clean clones (also with autocrlf=true) install, build and pass the check on Node 26.13.0; the real gaps were: no way to reach the backend (cross-origin, absolute API URL, CSRF Origin), misleading `.env.example` (`VITE_USE_MOCKS`), no Windows run instructions or launcher, EBADENGINE warning unexplained. Added Vite dev proxy to `VITE_BACKEND_URL`, `VITE_API_MODE`, `scripts/dev.ps1`/`dev.sh`, README "Run it locally (Windows)" | frontend | fix/FIX-1-local-run | `src/config/devProxy.test.ts` | | |
+| FIX-1 | Owner could not run the frontend locally. Clean clones (also with autocrlf=true) install, build and pass the check on Node 26.13.0; the real gaps were: no way to reach the backend (cross-origin, absolute API URL, CSRF Origin), misleading `.env.example` (`VITE_USE_MOCKS`), no Windows run instructions or launcher, EBADENGINE warning unexplained. Added Vite dev proxy to `VITE_BACKEND_URL`, `VITE_API_MODE`, `scripts/dev.ps1`/`dev.sh`, README "Run it locally (Windows)" | frontend | fix/FIX-1-local-run | `src/config/devProxy.test.ts` | PR #7, 2026-11-19 | |
 
 ## DEPLOYMENT LOG
 
