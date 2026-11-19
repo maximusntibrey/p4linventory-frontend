@@ -206,7 +206,7 @@ Package installs need network access to the package registries (PyPI, npm, GitHu
 - [x] T.17 React with TypeScript and Vite
 - [x] T.18 React Router, TanStack Query (data fetching), `react-hook-form` with `zod` (forms and inline validation)
 - [x] T.19 Tailwind CSS (or the chosen CSS approach) with the design tokens from Frontend section 2; Lucide icons (`lucide-react`)
-- [ ] T.20 `openapi-typescript` and a typed API client generated from the backend contract (tool installed and verified in F1.0, script `npm run api:types`; open until the contract is published (B1.3) and the client is generated (F1.4))
+- [x] T.20 `openapi-typescript` and a typed API client generated from the backend contract (tool installed and verified in F1.0, script `npm run api:types`; contract v0.2.0 vendored in `openapi/openapi.yaml`, client in `src/api` generated from it; stale types fail `npm run check`)
 - [x] T.21 MSW (Mock Service Worker) for mock responses in CI and early development
 - [x] T.22 Vitest, React Testing Library, Playwright (end-to-end smoke tests), `axe-core` / `vitest-axe` (accessibility checks)
 - [x] T.23 ESLint and Prettier, `eslint-plugin-jsx-a11y`, `npm audit`
@@ -298,11 +298,11 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 
 ### Frontend, Sprint 1
 
-- [ ] F1.0 Tooling setup and verification (section 2.2 and 2.4), recorded in `SKILLS.md` (every tool installed, pinned and verified except T.20: generating the typed client needs the B1.3 contract (F1.4); tick F1.0 with T.20)
+- [x] F1.0 Tooling setup and verification (section 2.2 and 2.4), recorded in `SKILLS.md` (every tool installed, pinned and verified except T.20: generating the typed client needs the B1.3 contract (F1.4); tick F1.0 with T.20)
 - [x] F1.1 UI kit: colours (white, grey, one accent; green/amber/red for status only), spacing, one icon set, buttons, cards, form fields, status badges, top bar, navigation
 - [ ] F1.2 Repo, environments, CI and the one check command
 - [ ] F1.3 App shell
-- [ ] F1.4 API client generated from the contract, with mock responses
+- [x] F1.4 API client generated from the contract, with mock responses
 - [ ] F2.1 Login screen (user ID, password, clear errors, too-many-attempts message)
 - [ ] F2.2 Layout, route guards and menu per role (built from what the API allows, max 5 items per role; Super Admin: Home, Items, Warehouse, Branches, Users, with Activity, Sell, Find and Receive opened from Home)
 - [ ] F2.3 Tests: login and route guards
@@ -709,6 +709,9 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | OQ-20 | Hosting (O1.1) | Orchestrator | **On hold.** Keep everything host-agnostic. O1.5, O1.6, O1.7 and the staging part of S1.G5 are BLOCKED and stay unticked. The integration check runs locally instead (frontend against the real backend on Docker Compose), recorded as an interim local check. | Owner, 2026-11-19 |
 | OQ-21 | Design tokens and fonts (frontend OQ-13) | Frontend F1.0 | Decided. **Accent: an orange tint**: a fill accent that passes WCAG AA with white text (around `#C2410C`), a light background tint (around `#FFF7ED`) and a mid tone for borders and focus. Verify the contrast and record the hex values. Amber status colours must stay clearly different from the accent; badges always carry text. **Fonts:** Bebas Neue for headings, the brand, page titles and big dashboard numbers; Inter for body text, forms, tables, IDs and prices. Both self-hosted via `@fontsource` (OFL), vetted and recorded in SKILLS.md. | Owner, 2026-11-19. **Applied in F1.1:** accent fill `#C2410C` (5.18:1 with white text), hover `#9A3412`, tint `#FFF7ED`, mid tone `#EA580C` for borders and focus (3.56:1 on white); amber status changed to `#854D0E` on `#FEF9C3` so it stays distinct from the orange; `@fontsource/bebas-neue` and `@fontsource/inter` 5.3.0, exact. Ratios and vetting: SKILLS.md A.3 and register. `/ui-kit` is dev only |
 | OQ-23 | Contract decisions C5, C13, C12b (backend B1.3, contract v0.2.0) | Backend B1.3, frontend F2/F3/F4/F6 | Decided. **C5:** when a Super Admin creates or resets a user, the server generates a one-time password that is shown once; the user must change it at first login (until then the API answers 403 `password_change_required`); every user can change their own password (`auth.change_password`). **C13:** optional reorder level per item per location, set by Super Admin or Warehouse Admin (own location), also via the CSV import; drives the low-stock flag (`stock.set_reorder_level`). **C12b:** CSV opening stock requires a unit cost, which feeds average cost; cost (including in the import preview and error report) is shown only to Super Admin and Warehouse Admin. Also: optional bin label on stock rows; audit action is an open list. New frontend tasks: F2.4, F2.5, and additions to F3.3, F4.4, F6.4. | Owner, 2026-11-19 |
+| OQ-24 | `js-yaml` 4.3.2 added as an exact-pinned devDependency although it is not in section 2. Needed to parse the OpenAPI YAML for the contract version check (`scripts/sync-contract.mjs`) and the contract-conformance tests. It was already in the tree through ESLint 9, so no new code is installed. | frontend-dev, F1.4 | Waiting on owner (asked 2026-11-19) | |
+| OQ-25 | T.20 and F1.4 landed in one commit (8e45d99) after a pre-commit hook failure; pushed history is not rewritten. Both steps are named in the merge title. | frontend-dev, F1.4 | Recorded | |
+| OQ-26 | Cross-origin API base is unsupported until hosting is decided (OQ-20): cookies are same-origin and the CSRF token is read from `document.cookie`. The client throws at start-up if `VITE_API_BASE_URL` is an absolute URL on another origin. | frontend-dev, F1.4 | Open | |
 
 ## FIX LOG
 
