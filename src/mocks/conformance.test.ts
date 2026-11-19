@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { contract, declaresStatus, responseSchema, validate } from '../test/contract.ts';
 import { MOCK_PASSWORD } from './fixtures.ts';
-import { handlers, resetMockSession } from './handlers.ts';
+import { handlers, MOCK_X_ROLES, resetMockSession } from './handlers.ts';
 import { server } from './server.ts';
 
 const ORIGIN = 'http://mock.test';
@@ -129,6 +129,27 @@ describe('mock responses conform to the contract', () => {
     const result = await call('GET', '/api/v1/branches/');
     expectConforms('GET', '/api/v1/branches/', result, 403);
     expect((result.json as { code: string }).code).toBe('password_change_required');
+  });
+});
+
+describe('mock permissions follow x-roles', () => {
+  it('the mock role table equals the contract x-roles', () => {
+    const paths = contract.paths as Record<string, Record<string, { 'x-roles'?: string[] }>>;
+    for (const [path, roles] of Object.entries(MOCK_X_ROLES)) {
+      expect(roles, path).toEqual(paths[path]?.get?.['x-roles']);
+    }
+  });
+
+  it('Front Staff gets 403 permission_denied on /users/', async () => {
+    await signIn('USR-0002');
+    const result = await call('GET', '/api/v1/users/');
+    expectConforms('GET', '/api/v1/users/', result, 403);
+    expect((result.json as { code: string }).code).toBe('permission_denied');
+  });
+
+  it('Super Admin may list users', async () => {
+    await signIn('SA-0001');
+    expect((await call('GET', '/api/v1/users/')).status).toBe(200);
   });
 });
 

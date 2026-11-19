@@ -56,11 +56,23 @@ const passwordChangeRequired = () =>
     { status: 403 },
   );
 
+export const MOCK_X_ROLES: Partial<Record<Path, string[]>> = {
+  '/api/v1/branches/': ['super_admin', 'warehouse_admin', 'branch_admin', 'front_staff'],
+  '/api/v1/users/': ['super_admin'],
+  '/api/v1/dashboard/shell/': ['super_admin', 'warehouse_admin', 'branch_admin', 'front_staff'],
+};
+
 // For endpoints that need a session and are closed while a one-time password is unchanged.
-function guarded(body: () => object): Response {
+// `roles` is the operation's x-roles in the contract (a test keeps MOCK_X_ROLES equal to it).
+function guarded(path: Path, body: () => object): Response {
   const me = currentMe();
   if (!me) return unauthenticated();
   if (me.must_change_password) return passwordChangeRequired();
+  if (!MOCK_X_ROLES[path]?.includes(me.role)) {
+    return HttpResponse.json(errorBody('permission_denied', 'You are not allowed to do that.'), {
+      status: 403,
+    });
+  }
   return HttpResponse.json(body());
 }
 
@@ -162,11 +174,13 @@ export const handlers = [
     return HttpResponse.json(currentMe() as never);
   }),
 
-  http.get(at('/api/v1/branches/'), () => guarded(() => page(branches))),
+  http.get(at('/api/v1/branches/'), () => guarded('/api/v1/branches/', () => page(branches))),
 
   http.get(at('/api/v1/users/'), () =>
-    guarded(() => page(Object.values(accounts).map((a) => a.user))),
+    guarded('/api/v1/users/', () => page(Object.values(accounts).map((a) => a.user))),
   ),
 
-  http.get(at('/api/v1/dashboard/shell/'), () => guarded(() => dashboardShell)),
+  http.get(at('/api/v1/dashboard/shell/'), () =>
+    guarded('/api/v1/dashboard/shell/', () => dashboardShell),
+  ),
 ];
