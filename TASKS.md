@@ -711,7 +711,7 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 
 | Ref | What was wrong or changed | Repo | Branch | Test added | Merged | Released in |
 |---|---|---|---|---|---|---|
-| FIX-1 | (first entry goes here) | | | | | |
+| FIX-1 | Owner could not run the frontend locally. Clean clones (also with autocrlf=true) install, build and pass the check on Node 26.13.0; the real gaps were: no way to reach the backend (cross-origin, absolute API URL, CSRF Origin), misleading `.env.example` (`VITE_USE_MOCKS`), no Windows run instructions or launcher, EBADENGINE warning unexplained. Added Vite dev proxy to `VITE_BACKEND_URL`, `VITE_API_MODE`, `scripts/dev.ps1`/`dev.sh`, README "Run it locally (Windows)" | frontend | fix/FIX-1-local-run | `src/config/devProxy.test.ts` | | |
 
 ## DEPLOYMENT LOG
 

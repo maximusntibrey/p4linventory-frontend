@@ -33,7 +33,40 @@ Sprint 1. Tooling is in place (step F1.0, TASKS section 2.4): React with TypeScr
    pre-commit run --all-files
    ```
 
-4. Copy `.env.example` to `.env.local` and fill in local values. Real `.env` files are git-ignored. Never put a secret in a `VITE_*` variable: it ends up in the browser bundle.
+4. Optionally copy `.env.example` to `.env.local` to change a value (the defaults work). Real `.env` files are git-ignored. Never put a secret in a `VITE_*` variable: it ends up in the browser bundle.
+
+## Run it locally (Windows)
+
+Start the **backend first** (see the `eqp4l-backend` README; it serves on http://127.0.0.1:8000), then the frontend.
+
+Prerequisites: Git for Windows, Node.js 26.13.1 (`.nvmrc`; 26.13.x is accepted with a warning) and npm 11. Install or update Node with `nvm install 26.13.1; nvm use 26.13.1`, or `winget install OpenJS.NodeJS --version 26.13.1`, or `fnm install 26.13.1`.
+
+```powershell
+git clone https://github.com/maximusntibrey/p4linventory-frontend.git
+cd p4linventory-frontend
+git checkout sprint/1-foundations
+npm ci
+npm run dev
+```
+
+Or one command that checks Node and npm, runs `npm ci` if needed, warns if the backend is down and starts the server: `.\scripts\dev.ps1` (Git Bash or Linux: `bash scripts/dev.sh`).
+
+- App: http://localhost:5173 . UI kit (development only): http://localhost:5173/ui-kit . There is no login or app shell yet (F1.3).
+- **How it talks to the backend:** the dev server proxies `/api`, `/health`, `/admin` and `/static` to `VITE_BACKEND_URL` (default `http://127.0.0.1:8000`), so the browser sees one origin and the session and CSRF cookies work without CORS set-up. Check it: http://localhost:5173/health/ . Copy `.env.example` to `.env.local` only if you need to change a value.
+- `VITE_API_MODE=real|mock` (default `real`). `mock` (MSW) is wired up in F1.4.
+- Dev logins arrive with backend step B2.5 and are kept in the backend `.env.example` (LOCAL ONLY passwords).
+- Browser tests: `npx playwright install chromium`, then `npm run test:e2e`. Not needed for `npm run dev` or `npm run check`.
+
+Common errors:
+
+| Symptom | Fix |
+|---|---|
+| `Port 5173 is already in use` | Find it: `netstat -ano \| findstr :5173`, then `taskkill /PID <pid> /F` (or close the other dev server). The port is fixed on purpose |
+| `npm warn EBADENGINE` | Node is older than 26.13.1. Only a warning; update with the commands above |
+| Prettier or ESLint complain about line endings (`Delete CR`) | Files must be LF. `.gitattributes` forces LF; if an old clone has CRLF run `git add --renormalize .` then `git checkout -- .` (commit nothing you did not change) |
+| `dev.ps1 cannot be loaded, running scripts is disabled` | `powershell -ExecutionPolicy Bypass -File .\scripts\dev.ps1`, or `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
+| `/health/` or API calls return 502/500 in the browser | The backend is not running on `VITE_BACKEND_URL`. Start it first |
+| http://127.0.0.1:5173 does not load | Vite listens on `localhost` (IPv6 `::1`); use http://localhost:5173 |
 
 ## Commands
 
