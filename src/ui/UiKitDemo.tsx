@@ -24,7 +24,7 @@ export function UiKitDemo() {
         onLogout={() => undefined}
       />
       <main className="mx-auto flex max-w-screen-sm flex-col gap-4 p-4">
-        <h1 className="text-2xl font-semibold text-grey-900">UI kit</h1>
+        <h1 className="font-display text-4xl font-normal tracking-wide text-grey-900">UI kit</h1>
         <Card title="Buttons">
           <div className="flex flex-wrap gap-2">
             <Button>Save</Button>

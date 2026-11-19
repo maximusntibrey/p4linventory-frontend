@@ -29,3 +29,11 @@ test('built app loads at 360 px with no sideways scroll and no axe violations', 
   });
   expect(violations).toEqual([]);
 });
+
+test('/ui-kit is absent from the production build', async ({ page }) => {
+  await page.goto('/ui-kit');
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Payless4Laptops Inventory' }),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /UI kit/i })).toHaveCount(0);
+});

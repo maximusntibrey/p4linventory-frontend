@@ -45,7 +45,7 @@ export function Navigation({ items, label = 'Main menu' }: NavigationProps) {
               className={cx(
                 'flex min-h-tap flex-col items-center justify-center gap-1 border-t-4 px-1 py-2 text-center text-xs leading-tight md:border-t-0 md:border-l-4',
                 current
-                  ? 'border-accent font-semibold text-accent'
+                  ? 'border-accent bg-accent-tint font-semibold text-accent'
                   : 'border-transparent text-grey-700 hover:bg-grey-100',
                 focusRing,
               )}

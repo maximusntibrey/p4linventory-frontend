@@ -7,7 +7,10 @@ export type Status = 'ok' | 'low' | 'out' | 'error';
 
 const styles: Record<Status, { icon: LucideIcon; classes: string }> = {
   ok: { icon: CheckCircle2, classes: 'bg-status-ok-bg text-status-ok border-status-ok' },
-  low: { icon: TriangleAlert, classes: 'bg-status-low-bg text-status-low border-status-low' },
+  low: {
+    icon: TriangleAlert,
+    classes: 'bg-status-low-bg text-status-low border-status-low-border',
+  },
   out: { icon: MinusCircle, classes: 'bg-status-out-bg text-status-out border-status-out' },
   error: { icon: AlertCircle, classes: 'bg-status-error-bg text-status-error border-status-error' },
 };
