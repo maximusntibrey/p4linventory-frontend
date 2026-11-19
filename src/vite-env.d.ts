@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** `real` (default) uses the backend through the dev proxy; `mock` is wired up with MSW in F1.4. */
+  /** `real` (default) uses the backend through the dev proxy; `mock` uses MSW (development only). */
   readonly VITE_API_MODE?: 'mock' | 'real';
   /** Base URL of the API. Relative by default so the dev proxy keeps one origin. */
   readonly VITE_API_BASE_URL?: string;

@@ -10,3 +10,4 @@ src/api/schema.gen.ts
 # Project documents are copies of the owner's documents: never reformat them
 *.md
 docs/
+openapi/

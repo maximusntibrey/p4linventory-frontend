@@ -5,6 +5,6 @@ export function resolveApiMode(value: string | undefined): ApiMode {
   return value === 'mock' ? 'mock' : 'real';
 }
 
-// TODO(F1.4): when MSW handlers exist, start the browser worker in src/main.tsx if
-// `apiMode === 'mock'`. Nothing is mocked until then; `mock` currently behaves like `real`.
+// `mock` starts the MSW browser worker (src/main.tsx, development only; production builds never
+// include it). Handlers: src/mocks/handlers.ts.
 export const apiMode: ApiMode = resolveApiMode(import.meta.env.VITE_API_MODE);

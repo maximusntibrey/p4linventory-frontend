@@ -206,7 +206,7 @@ Package installs need network access to the package registries (PyPI, npm, GitHu
 - [x] T.17 React with TypeScript and Vite
 - [x] T.18 React Router, TanStack Query (data fetching), `react-hook-form` with `zod` (forms and inline validation)
 - [x] T.19 Tailwind CSS (or the chosen CSS approach) with the design tokens from Frontend section 2; Lucide icons (`lucide-react`)
-- [ ] T.20 `openapi-typescript` and a typed API client generated from the backend contract (tool installed and verified in F1.0, script `npm run api:types`; open until the contract is published (B1.3) and the client is generated (F1.4))
+- [x] T.20 `openapi-typescript` and a typed API client generated from the backend contract (tool installed and verified in F1.0, script `npm run api:types`; contract v0.2.0 vendored in `openapi/openapi.yaml`, client in `src/api` generated from it; stale types fail `npm run check`)
 - [x] T.21 MSW (Mock Service Worker) for mock responses in CI and early development
 - [x] T.22 Vitest, React Testing Library, Playwright (end-to-end smoke tests), `axe-core` / `vitest-axe` (accessibility checks)
 - [x] T.23 ESLint and Prettier, `eslint-plugin-jsx-a11y`, `npm audit`
@@ -298,11 +298,11 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 
 ### Frontend, Sprint 1
 
-- [ ] F1.0 Tooling setup and verification (section 2.2 and 2.4), recorded in `SKILLS.md` (every tool installed, pinned and verified except T.20: generating the typed client needs the B1.3 contract (F1.4); tick F1.0 with T.20)
+- [x] F1.0 Tooling setup and verification (section 2.2 and 2.4), recorded in `SKILLS.md` (every tool installed, pinned and verified except T.20: generating the typed client needs the B1.3 contract (F1.4); tick F1.0 with T.20)
 - [x] F1.1 UI kit: colours (white, grey, one accent; green/amber/red for status only), spacing, one icon set, buttons, cards, form fields, status badges, top bar, navigation
 - [ ] F1.2 Repo, environments, CI and the one check command
 - [ ] F1.3 App shell
-- [ ] F1.4 API client generated from the contract, with mock responses
+- [x] F1.4 API client generated from the contract, with mock responses
 - [ ] F2.1 Login screen (user ID, password, clear errors, too-many-attempts message)
 - [ ] F2.2 Layout, route guards and menu per role (built from what the API allows, max 5 items per role; Super Admin: Home, Items, Warehouse, Branches, Users, with Activity, Sell, Find and Receive opened from Home)
 - [ ] F2.3 Tests: login and route guards
