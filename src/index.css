@@ -1,3 +1,7 @@
+/* Self-hosted fonts (OQ-21): only the Latin subset and the weights in use. */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/bebas-neue/latin-400.css';
 @import 'tailwindcss' source('.');
 /* source('.'): scan only src/ for class names (not the Markdown docs). */
 
@@ -11,9 +15,8 @@
  * tokens exist as utilities (for example `bg-accent`, `text-grey-700`,
  * `text-status-low`, `min-h-tap`). Theme config only: components are F1.1.
  *
- * OPEN QUESTION OQ-13 (TASKS.md): the requirements do not name the accent colour
- * or the font. The values below are placeholders chosen for contrast on white
- * (WCAG AA for normal text) until the owner decides.
+ * Brand (OQ-13, decided as OQ-21): orange accent, Bebas Neue for display text and
+ * Inter for everything else. Contrast ratios are recorded in SKILLS.md A.3.
  */
 @theme {
   --color-*: initial;
@@ -33,24 +36,30 @@
   --color-grey-800: #1f2937;
   --color-grey-900: #111827;
 
-  /* One accent colour: buttons and links (placeholder, OQ-13) */
-  --color-accent: #1d4ed8;
-  --color-accent-hover: #1e40af;
+  /* One accent colour (OQ-21). Fill with white text 5.18:1; hover 7.31:1. */
+  --color-accent: #c2410c;
+  --color-accent-hover: #9a3412;
   --color-accent-contrast: #ffffff;
+  /* Light tint for backgrounds (accent text on it 4.88:1) */
+  --color-accent-tint: #fff7ed;
+  /* Mid tone for borders and focus rings: 3.56:1 on white, 3.35:1 on the tint (WCAG 1.4.11) */
+  --color-accent-mid: #ea580c;
 
   /* Status only. Never the only signal: always paired with a text label. */
   --color-status-ok: #15803d;
   --color-status-ok-bg: #dcfce7;
-  --color-status-low: #b45309;
-  --color-status-low-bg: #fef3c7;
+  --color-status-low: #854d0e;
+  --color-status-low-border: #a16207;
+  --color-status-low-bg: #fef9c3;
   --color-status-out: #b91c1c;
   --color-status-out-bg: #fee2e2;
   --color-status-error: #b91c1c;
   --color-status-error-bg: #fee2e2;
 
-  /* One font: the system UI font (no web-font download; placeholder, OQ-13) */
-  --font-sans:
-    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  /* Two self-hosted fonts (OQ-21) */
+  --font-display: 'Bebas Neue', Impact, 'Arial Narrow', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-sans: var(--font-body);
 
   /* Minimum tap target: 44 px */
   --spacing-tap: 2.75rem;
