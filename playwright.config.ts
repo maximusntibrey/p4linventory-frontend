@@ -6,6 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
 // The full end-to-end flow against staging is a later step (FE s8).
 const isCI = Boolean(process.env.CI);
 const baseURL = 'http://localhost:4173';
+const devURL = 'http://localhost:5173';
 
 export default defineConfig({
   testDir: './e2e',
@@ -18,15 +19,31 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
+    // Production build via `vite preview`.
     {
       name: 'chromium-360',
+      testMatch: /smoke.spec.ts/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 } },
     },
+    // /ui-kit is development only (F1.1), so its checks run against the dev server.
+    {
+      name: 'chromium-360-dev',
+      testMatch: /ui-kit.spec.ts/,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 }, baseURL: devURL },
+    },
   ],
-  webServer: {
-    command: 'npm run build && npm run preview',
-    url: baseURL,
-    reuseExistingServer: !isCI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: 'npm run build && npm run preview',
+      url: baseURL,
+      reuseExistingServer: !isCI,
+      timeout: 120_000,
+    },
+    {
+      command: 'npm run dev',
+      url: devURL,
+      reuseExistingServer: !isCI,
+      timeout: 120_000,
+    },
+  ],
 });

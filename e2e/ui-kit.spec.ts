@@ -51,3 +51,68 @@ test('desktop width shows the icon rail', async ({ page }) => {
   expect(box?.x).toBe(0);
   expect(box?.width).toBeLessThanOrEqual(80);
 });
+
+test('accent fill with white text passes axe colour contrast at 360 px', async ({ page }) => {
+  await page.goto('/ui-kit');
+  const save = page.getByRole('button', { name: 'Save', exact: true });
+  const colours = await save.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { bg: s.backgroundColor, fg: s.color };
+  });
+  expect(colours).toEqual({ bg: 'rgb(194, 65, 12)', fg: 'rgb(255, 255, 255)' });
+
+  await page.addScriptTag({ path: axeScriptPath });
+  const result = await page.evaluate(async () => {
+    const axe = (
+      window as unknown as {
+        axe: {
+          run: (
+            ctx: string,
+            opts: { runOnly: string[] },
+          ) => Promise<{ violations: unknown[]; passes: { nodes: unknown[] }[] }>;
+        };
+      }
+    ).axe;
+    const r = await axe.run('button:not([disabled])', { runOnly: ['color-contrast'] });
+    return { violations: r.violations.length, passes: r.passes.length };
+  });
+  expect(result.violations).toBe(0);
+  expect(result.passes).toBeGreaterThan(0);
+});
+
+test('keyboard focus ring is visible (computed outline)', async ({ page }) => {
+  await page.goto('/ui-kit');
+  const save = page.getByRole('button', { name: 'Save', exact: true });
+  await save.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(save).toBeFocused();
+  const outline = await save.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { style: s.outlineStyle, width: s.outlineWidth, colour: s.outlineColor };
+  });
+  expect(outline).toEqual({ style: 'solid', width: '2px', colour: 'rgb(234, 88, 12)' });
+});
+
+test('self-hosted fonts load (Bebas Neue headings, Inter body)', async ({ page }) => {
+  await page.goto('/ui-kit');
+  await page.evaluate(async () => {
+    await document.fonts.load("1em 'Bebas Neue'");
+    await document.fonts.load("1em 'Inter'");
+    await document.fonts.load("600 1em 'Inter'");
+  });
+  const loaded = await page.evaluate(() => {
+    const out: string[] = [];
+    document.fonts.forEach((f) => {
+      if (f.status === 'loaded') out.push(`${f.family}:${f.weight}`);
+    });
+    return out;
+  });
+  expect(loaded).toEqual(expect.arrayContaining(['Bebas Neue:400', 'Inter:400', 'Inter:600']));
+  const h1 = await page
+    .getByRole('heading', { level: 1 })
+    .evaluate((el) => getComputedStyle(el).fontFamily);
+  expect(h1).toContain('Bebas Neue');
+  const body = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
+  expect(body).toContain('Inter');
+});
