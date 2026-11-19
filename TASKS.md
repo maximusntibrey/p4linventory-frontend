@@ -330,7 +330,7 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 - [ ] O1.4 Frontend CI pipeline (3.3)
 - [ ] O1.5 Staging environment created for backend and frontend, secrets stored in the host's secret store **BLOCKED: hosting on hold (OQ-20).**
 - [ ] O1.6 Automatic deploy of `develop` to staging, followed by the smoke tests (3.4) **BLOCKED: hosting on hold (OQ-20).**
-- [ ] O1.7 `/health/` endpoint and Sentry connected on staging **BLOCKED: hosting on hold (OQ-20); code done locally (OQ-16).**
+- [ ] O1.7 `/health/` endpoint and Sentry connected on staging **BLOCKED: hosting on hold (OQ-20); code done locally (backend OQ-16).**
 - [ ] O1.8 Branch protection and secret scanning confirmed in both repos (G.6)
 
 ## SPRINT 2 (Days 6 to 10): MVP part 2. Goal: sales, find, CSV import, dashboard and activity log, testing, hardening, deployment. Release: MVP (day 10).
