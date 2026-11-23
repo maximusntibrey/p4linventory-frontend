@@ -303,9 +303,9 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 - [x] F1.2 Repo, environments, CI and the one check command (CI green on first push (run 45241768590, 2026-11-23); re-tick after the first green CI run)
 - [x] F1.3 App shell
 - [x] F1.4 API client generated from the contract, with mock responses
-- [ ] F2.1 Login screen (user ID, password, clear errors, too-many-attempts message)
-- [ ] F2.2 Layout, route guards and menu per role (built from what the API allows, max 5 items per role; Super Admin: Home, Items, Warehouse, Branches, Users, with Activity, Sell, Find and Receive opened from Home)
-- [ ] F2.3 Tests: login and route guards
+- [x] F2.1 Login screen (user ID, password, clear errors, too-many-attempts message)
+- [x] F2.2 Layout, route guards and menu per role (built from what the API allows, max 5 items per role; Super Admin: Home, Items, Warehouse, Branches, Users, with Activity, Sell, Find and Receive opened from Home)
+- [x] F2.3 Tests: login and route guards
 - [ ] F3.1 Working-branch selection and switching (top bar shows branch, ID, switch icon with label, logout)
 - [ ] F3.2 Branch management screens
 - [ ] F3.3 User management screens (show the generated ID after creation; deactivate and reset password with confirm step; per-person permissions such as Receive stock)
@@ -714,6 +714,7 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | OQ-4 to OQ-19 | Proposed answers (question wording kept in the backend docs, not copied here) | Decision log | Answered: approved as written. | Owner, 2026-11-23 |
 | OQ-20 | Brands, image limits, Discontinued, dashboard shell | Decision log | Answered: Super Admin and Warehouse Admin can add, rename and deactivate brands (seeded list; endpoints in v0.1.1); image limit 5 MB, JPEG/PNG/WebP; Discontinued is final (no re-activation); dashboard shell fields as in the contract. | Owner, 2026-11-23 |
 | OQ-21 | Activating an item without a selling price | Decision log | Answered: an item can be activated without a selling price, but cannot be sold until a price exists; only Super Admin or a 'Manage prices' holder may send selling_price. | Owner, 2026-11-23 |
+| OQ-23 | Sell and Activity have no code in the contract's `ActionPermission` list, and the Home links for Activity, Sell, Find and Receive (Super Admin) are not in `menu`. F2.2 guards `/sell` by the server menu and leaves Activity unrouted. Which permission codes will the API use, and where do the Home links come from (dashboard step)? | F2.2 | Open | |
 
 ## FIX LOG
 
@@ -733,6 +734,11 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FIX-12 | README and dev.ps1 use `npm ci`; documented `powershell -ExecutionPolicy Bypass -File .\scripts\dev.ps1`; dev.ps1 exits when npm ci fails. | frontend | n/a (no git during the day) | n/a (docs, script) | no | not yet |
 | FIX-13 | Switch branch and Log out disabled until F2 wires them. | frontend | n/a (no git during the day) | src/components/components.test.tsx (TopBar) | no | not yet |
 | FIX-14 | Answered OQ-4..OQ-21 rows copied into Open questions (marked answered). | frontend | n/a (no git during the day) | n/a (docs) | no | not yet |
+| FIX-15 | FE §5: a later 401 (not login/logout) sets me to null and the guard sends the user to /login with state {from, reason:'expired'}; Login shows "Your session has ended. Sign in again." One QueryClient factory with QueryCache/MutationCache onError (src/api/queryClient.ts), used by main.tsx and the test renderer. | frontend | n/a (no git during the day) | src/auth/auth.test.tsx (session ended later) | no | not yet |
+| FIX-16 | RequireAuth shows the error state only when `isError && !me`; a failed /me refetch keeps the screen and typed input. | frontend | n/a (no git during the day) | src/auth/auth.test.tsx (failed /me refresh) | no | not yet |
+| FIX-17 | Login and change-password mutations use gcTime 0 so passwords do not linger in the MutationCache. | frontend | n/a (no git during the day) | src/auth/auth.test.tsx (no password in mutation cache) | no | not yet |
+| FIX-18 | e2e/stub.ts payloads typed with `satisfies` against components['schemas'] (User, Me, menu, Error). | frontend | n/a (no git during the day) | tsc over e2e; `npm run e2e` | no | not yet |
+| FIX-19 | .github/workflows/ci.yml showed " M" with no diff: working file is LF, its hash equals the index and HEAD blob (a764031...), core.filemode false, no mode change. Only the stat cache is stale (file touched, content identical). Nothing to change; the next git index refresh clears it. | frontend | n/a (no git during the day) | n/a (investigation) | no | not yet |
 
 ## DEPLOYMENT LOG
 
