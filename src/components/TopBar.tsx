@@ -1,4 +1,5 @@
 import { ArrowLeftRight, LogOut } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Button } from './Button';
 
 type Props = {
@@ -6,9 +7,11 @@ type Props = {
   userId: string;
   onSwitchBranch?: () => void;
   onLogout?: () => void;
+  /** Extra actions (for example the change-password link) shown before the buttons. */
+  children?: ReactNode;
 };
 
-export function TopBar({ branchName, userId, onSwitchBranch, onLogout }: Props) {
+export function TopBar({ branchName, userId, onSwitchBranch, onLogout, children }: Props) {
   return (
     <header className="border-b border-line bg-white">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
@@ -20,8 +23,9 @@ export function TopBar({ branchName, userId, onSwitchBranch, onLogout }: Props) 
             <span>{userId}</span>
           </p>
         </div>
-        <div className="flex gap-2">
-          {/* Disabled until F2 wires the real actions. */}
+        <div className="flex flex-wrap items-center gap-2">
+          {children}
+          {/* Disabled until F3.1 wires branch switching. */}
           <Button
             variant="secondary"
             icon={ArrowLeftRight}
