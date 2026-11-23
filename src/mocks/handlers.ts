@@ -5,11 +5,36 @@ import * as d from './data';
 type S = components['schemas'];
 
 /** Mock login state. Starts logged out so the login screen can be built against it. Tests set or reset it. */
-export const mockSession: { loggedIn: boolean; role: d.MockRole } = {
+export const mockSession: {
+  loggedIn: boolean;
+  role: d.MockRole;
+  /** Login ID of the signed-in mock user; unset means the role's default user. */
+  loginId?: string;
+  /** One-time password not changed yet (USR-0004): every endpoint but me, password, logout and csrf gives 403. */
+  mustChange: boolean;
+} = {
   loggedIn: false,
   role: 'super_admin',
+  mustChange: false,
 };
-const me = () => d.meByRole[mockSession.role];
+const me = (): S['Me'] => {
+  const base = d.meByRole[mockSession.role];
+  const user = d.users.find((u) => u.login_id === mockSession.loginId) ?? base.user;
+  const must = mockSession.mustChange;
+  return {
+    ...base,
+    must_change_password: must,
+    user: {
+      ...user,
+      must_change_password: must,
+      status: must
+        ? 'pending_activation'
+        : user.status === 'pending_activation'
+          ? 'active'
+          : user.status,
+    },
+  };
+};
 const text = (v: unknown, fallback: string) => (typeof v === 'string' ? v : fallback);
 const flag = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
 
@@ -60,11 +85,18 @@ const csrf =
 const post = (path: string, fn: Resolver) => http.post(path, csrf(fn));
 const put = (path: string, fn: Resolver) => http.put(path, csrf(fn));
 const patch = (path: string, fn: Resolver) => http.patch(path, csrf(fn));
-/** Logged-in endpoints answer 401 until the mock login has happened. */
-const authed =
+/** Me, password change and logout only need a session (they work before the forced password change). */
+const loggedIn =
   (fn: Resolver): Resolver =>
   (info) =>
     mockSession.loggedIn ? fn(info) : unauthorized();
+/** Every other logged-in endpoint also answers 403 password_change_required until the one-time password is changed. */
+const authed = (fn: Resolver): Resolver =>
+  loggedIn((info) =>
+    mockSession.mustChange
+      ? err(403, 'password_change_required', 'Change your password to continue.')
+      : fn(info),
+  );
 /** The contract requires an Idempotency-Key on these POSTs. */
 const keyed =
   (fn: Resolver): Resolver =>
@@ -105,28 +137,47 @@ export const handlers: RequestHandler[] = [
     if (b.password === 'wrong') {
       return err(401, 'invalid_credentials', 'Login ID or password is not right.');
     }
+    if (b.password === 'locked') {
+      return err(429, 'rate_limited', 'Too many failed attempts.', [], { 'Retry-After': '900' });
+    }
     mockSession.loggedIn = true;
     mockSession.role = d.roleOfLogin(b.login_id);
+    mockSession.loginId = typeof b.login_id === 'string' ? b.login_id : undefined;
+    mockSession.mustChange = d.users.some(
+      (u) => u.login_id === b.login_id && u.must_change_password,
+    );
     return HttpResponse.json(me());
   }),
   post(
     '/api/v1/auth/logout/',
-    authed(() => {
+    loggedIn(() => {
       mockSession.loggedIn = false;
+      mockSession.mustChange = false;
       return new HttpResponse(null, { status: 204 });
     }),
   ),
   http.get(
     '/api/v1/auth/me/',
-    authed(() => HttpResponse.json(me())),
+    loggedIn(() => HttpResponse.json(me())),
   ),
   post(
     '/api/v1/auth/password/',
-    authed(async ({ request }) => {
+    loggedIn(async ({ request }) => {
       const b = await readJson(request);
+      if (b.current_password === 'wrong') {
+        return invalid([
+          { field: 'current_password', message: 'Your current password is not right.' },
+        ]);
+      }
       if (typeof b.new_password !== 'string' || b.new_password.length < 10) {
         return invalid([{ field: 'new_password', message: 'Use at least 10 characters.' }]);
       }
+      if (b.new_password === b.current_password) {
+        return invalid([
+          { field: 'new_password', message: 'Choose a password you have not used.' },
+        ]);
+      }
+      mockSession.mustChange = false;
       return new HttpResponse(null, { status: 204 });
     }),
   ),

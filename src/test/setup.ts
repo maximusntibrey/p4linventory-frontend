@@ -12,6 +12,8 @@ afterEach(() => {
   server.resetHandlers();
   mockSession.loggedIn = false;
   mockSession.role = 'super_admin';
+  mockSession.loginId = undefined;
+  mockSession.mustChange = false;
   resetCsrfCache();
   document.cookie = 'csrftoken=; Max-Age=0; path=/';
 });

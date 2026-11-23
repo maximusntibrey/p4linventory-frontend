@@ -71,7 +71,63 @@ export const users: S['User'][] = [
     last_login_at: null,
     created_at: t,
   },
+  {
+    id: 4,
+    login_id: 'USR-0003',
+    full_name: 'Yaw Asante',
+    status: 'active',
+    roles: ['warehouse_admin'],
+    permanent_location_id: warehouse.id,
+    must_change_password: false,
+    permissions: [],
+    last_login_at: null,
+    created_at: t,
+  },
+  // Mock login for the forced password change: any password except "wrong" or "locked" works.
+  {
+    id: 5,
+    login_id: 'USR-0004',
+    full_name: 'Efua Quaye',
+    status: 'pending_activation',
+    roles: ['front_staff'],
+    permanent_location_id: null,
+    must_change_password: true,
+    permissions: [],
+    last_login_at: null,
+    created_at: t,
+  },
 ];
+
+const entry = (key: string, label: string, path: string) => ({ key, label, path });
+const menus = {
+  super_admin: [
+    entry('home', 'Home', '/'),
+    entry('items', 'Items', '/items'),
+    entry('warehouse', 'Warehouse', '/warehouse'),
+    entry('branches', 'Branches', '/branches'),
+    entry('users', 'Users', '/users'),
+  ],
+  warehouse_admin: [
+    entry('home', 'Home', '/'),
+    entry('items', 'Items', '/items'),
+    entry('receive_stock', 'Receive stock', '/goods-receipts'),
+    entry('dispatch', 'Dispatch', '/dispatches'),
+    entry('find', 'Find', '/find'),
+  ],
+  branch_admin: [
+    entry('home', 'Home', '/'),
+    entry('sell', 'Sell', '/sell'),
+    entry('find', 'Find', '/find'),
+    entry('stock', 'Stock', '/stock'),
+    entry('receive', 'Receive', '/receive'),
+  ],
+  front_staff: [
+    entry('sell', 'Sell', '/sell'),
+    entry('find', 'Find', '/find'),
+    entry('stock', 'Stock', '/stock'),
+    entry('receive', 'Receive', '/receive'),
+  ],
+} satisfies Record<string, S['Me']['menu']>;
 
 export const me: S['Me'] = {
   user: users[0],
@@ -96,19 +152,35 @@ export const me: S['Me'] = {
     'dispatches.waiting',
     'dispatches.receive',
   ],
-  menu: [
-    { key: 'home', label: 'Home', path: '/' },
-    { key: 'stock', label: 'Stock', path: '/stock' },
-  ],
+  menu: menus.super_admin,
 };
 
-/** Mock sessions by role. Branch Admin and Front Staff get no cost permission, no menu entry beyond Home and Stock. */
-export type MockRole = 'super_admin' | 'branch_admin' | 'front_staff';
-const meBase = { must_change_password: false, menu: me.menu } as const;
+/** Mock sessions by role. Menus follow the FE requirements table; Branch Admin and Front Staff get no cost permission. */
+export type MockRole = 'super_admin' | 'warehouse_admin' | 'branch_admin' | 'front_staff';
 export const meByRole: Record<MockRole, S['Me']> = {
   super_admin: me,
+  warehouse_admin: {
+    must_change_password: false,
+    menu: menus.warehouse_admin,
+    user: users[3],
+    active_role: 'warehouse_admin',
+    working_branch: warehouse,
+    permissions: [
+      'branches.view',
+      'items.view',
+      'items.manage',
+      'items.view_cost',
+      'prices.manage',
+      'stock.view',
+      'stock.lookup_other_branches',
+      'goods_receipts.manage',
+      'dispatches.create',
+      'dispatches.view',
+    ],
+  },
   branch_admin: {
-    ...meBase,
+    must_change_password: false,
+    menu: menus.branch_admin,
     user: users[1],
     active_role: 'branch_admin',
     working_branch: branchA,
@@ -122,16 +194,23 @@ export const meByRole: Record<MockRole, S['Me']> = {
     ],
   },
   front_staff: {
-    ...meBase,
+    must_change_password: false,
+    menu: menus.front_staff,
     user: users[2],
     active_role: 'front_staff',
     working_branch: branchA,
-    permissions: ['working_branch.select', 'items.view', 'stock.view'],
+    permissions: [
+      'working_branch.select',
+      'items.view',
+      'stock.view',
+      'dispatches.waiting',
+      'dispatches.receive',
+    ],
   },
 };
 export const roleOfLogin = (loginId: unknown): MockRole => {
   const role = users.find((u) => u.login_id === loginId)?.roles[0];
-  return role === 'branch_admin' || role === 'front_staff' ? role : 'super_admin';
+  return role ?? 'super_admin';
 };
 
 export const dashboard: S['Dashboard'] = {
