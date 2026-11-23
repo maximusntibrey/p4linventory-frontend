@@ -148,12 +148,12 @@ End of sprint:
 
 ### 1.6 Initial git setup _(Applied in the end-of-day cycle (owner, 2026-11-23))_
 
-- [ ] G.1 Backend repo `eqp4l-backend`: clone, set identity (1.2), create `main` and `develop`, protect `main`
-- [ ] G.2 Frontend repo `p4linventory-frontend`: clone, set identity (1.2), create `main` and `develop`, protect `main`
-- [ ] G.3 Add `.gitignore`, `.env.example`, `README.md`, `SKILLS.md` and a copy of this `TASKS.md` to both repos
-- [ ] G.4 Add a pull request template with the quality checklist from rule 0.3 to both repos
-- [ ] G.5 Add CI to both repos that runs the check command on every pull request (done again in B1.8 and F1.2; tick here when the repos are connected)
-- [ ] G.6 Branch protection on `main` and `develop` in both repos: pull request required, CI green required, no force pushes, no direct commits
+- [x] G.1 Backend repo `eqp4l-backend`: clone, set identity (1.2), create `main` and `develop`, protect `main`
+- [x] G.2 Frontend repo `p4linventory-frontend`: clone, set identity (1.2), create `main` and `develop`, protect `main`
+- [x] G.3 Add `.gitignore`, `.env.example`, `README.md`, `SKILLS.md` and a copy of this `TASKS.md` to both repos
+- [x] G.4 Add a pull request template with the quality checklist from rule 0.3 to both repos
+- [x] G.5 Add CI to both repos that runs the check command on every pull request (done again in B1.8 and F1.2; tick here when the repos are connected)
+- [x] G.6 Branch protection on `main` and `develop` in both repos: pull request required, CI green required, no force pushes, no direct commits
 
 ### 1.7 Git procedure for fixes, patches and updates
 
@@ -254,8 +254,8 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 
 ### Git steps for Sprint 1 _(Applied in the end-of-day cycle (owner, 2026-11-23))_
 
-- [ ] S1.G1 Backend: create `sprint/1-foundations` from `develop`, push
-- [ ] S1.G2 Frontend: create `sprint/1-foundations` from `develop`, push
+- [x] S1.G1 Backend: create `sprint/1-foundations` from `develop`, push
+- [x] S1.G2 Frontend: create `sprint/1-foundations` from `develop`, push
 - [ ] S1.G3 Backend: all Sprint 1 steps merged by pull request into the sprint branch, one commit per step
 - [ ] S1.G4 Frontend: all Sprint 1 steps merged by pull request into the sprint branch, one commit per step
 - [ ] S1.G5 Both repos: sprint branch merged into `develop`, staging integration check passed
@@ -300,7 +300,7 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 
 - [x] F1.0 Tooling setup and verification (section 2.2 and 2.4), recorded in `SKILLS.md`
 - [x] F1.1 UI kit: colours (white, grey, one accent; green/amber/red for status only), spacing, one icon set, buttons, cards, form fields, status badges, top bar, navigation
-- [ ] F1.2 Repo, environments, CI and the one check command (CI pending first push; re-tick after the first green CI run)
+- [x] F1.2 Repo, environments, CI and the one check command (CI green on first push (run 45241768590, 2026-11-23); re-tick after the first green CI run)
 - [x] F1.3 App shell
 - [x] F1.4 API client generated from the contract, with mock responses
 - [ ] F2.1 Login screen (user ID, password, clear errors, too-many-attempts message)
@@ -721,7 +721,7 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 |---|---|---|---|---|---|---|
 | FIX-1 | High: production build fell back to mock mode and shipped the MSW worker. Mock only when VITE_API_MODE=mock and not PROD; worker script and MSW code kept out of dist (main.tsx dead-code guard, vite plugin, verify:dist in check). | frontend | n/a (no git during the day) | src/config/config.test.ts (PROD true or mode unset gives real); scripts/verify-dist.mjs in `npm run check` | no | not yet |
 | FIX-2 | Appendix A (SKILLS.md) was empty: every package.json entry now registered with version, purpose, vetting note, owner approvals. | frontend | n/a (no git during the day) | n/a (docs) | no | not yet |
-| FIX-3 | F1.2 unticked: CI pending first push; re-tick after the first green CI run. | frontend | n/a (no git during the day) | n/a (docs) | no | not yet |
+| FIX-3 | F1.2 unticked: CI green on first push (run 45241768590, 2026-11-23); re-tick after the first green CI run. | frontend | n/a (no git during the day) | n/a (docs) | no | not yet |
 | FIX-4 | Contract drift detection added to check: regenerate types to a temp file and compare with src/api/schema.d.ts. | frontend | n/a (no git during the day) | src/api/contract-drift.test.ts; `npm run contract:drift` in check | no | not yet |
 | FIX-5 | .gitattributes set to `* text=auto eol=lf`. | frontend | n/a (no git during the day) | n/a (config) | no | not yet |
 | FIX-6 | Nav active item gets an indicator bar (not colour alone). | frontend | n/a (no git during the day) | src/components/components.test.tsx (Nav) | no | not yet |
