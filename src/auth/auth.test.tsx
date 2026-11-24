@@ -176,6 +176,17 @@ describe('change own password', () => {
     expect((screen.getByLabelText('New password') as HTMLInputElement).value).toBe('');
   });
 
+  it('shows the 429 message with the Retry-After wait', async () => {
+    renderApp('/account/password', { as: 'super_admin' });
+    await screen.findByRole('heading', { name: 'Change password' });
+    type('Current password', 'locked');
+    type('New password', 'a-long-new-password');
+    type('Confirm new password', 'a-long-new-password');
+    click('Save new password');
+    await summaryFocused();
+    expect(screen.getAllByText(/Too many attempts. Wait 15 minutes/).length).toBeGreaterThan(0);
+  });
+
   it('checks that the two new passwords match before sending', async () => {
     renderApp('/account/password', { as: 'super_admin' });
     await screen.findByRole('heading', { name: 'Change password' });
@@ -275,11 +286,9 @@ describe('logout', () => {
     expect(where()).toBe('/');
   });
 
-  it('branch switching stays disabled until F3.1', async () => {
-    renderApp('/', { as: 'front_staff' });
+  it('Switch branch is drawn only for a user whose /me allows it (F3.1)', async () => {
+    renderApp('/', { as: 'branch_admin' });
     await screen.findByRole('navigation', { name: 'Main' });
-    expect(screen.getByRole('button', { name: 'Switch branch' }).hasAttribute('disabled')).toBe(
-      true,
-    );
+    expect(screen.queryByRole('button', { name: 'Switch branch' })).toBeNull();
   });
 });

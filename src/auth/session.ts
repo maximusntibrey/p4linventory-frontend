@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../api';
 import type { components } from '../api';
 
 export type Me = components['schemas']['Me'];
 export const meKey = ['me'] as const;
+
+/** The branch scope changed (switch or Super Admin filter): drop every cached query except /me and the branch directory, so old-branch rows can never show. */
+export const dropBranchScoped = (qc: QueryClient) =>
+  qc.removeQueries({
+    predicate: (q) =>
+      q.queryKey[0] !== meKey[0] && !(q.queryKey[0] === 'branches' && q.queryKey[1] === 'filter'),
+  });
 
 /** The signed-in user as the server describes them; null when there is no session (401). Menu and permissions come from here and nowhere else. */
 export function useMe() {

@@ -65,8 +65,3 @@ export function RequirePermission({
 }) {
   return useCurrentMe().permissions.includes(permission) ? children : <Forbidden />;
 }
-
-/** For a screen the contract has no permission code for yet: allowed when the server's menu lists its path. */
-export function RequireMenu({ path, children }: { path: string; children: ReactNode }) {
-  return useCurrentMe().menu.some((m) => m.path === path) ? children : <Forbidden />;
-}

@@ -25,15 +25,12 @@ export function TopBar({ branchName, userId, onSwitchBranch, onLogout, children 
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {children}
-          {/* Disabled until F3.1 wires branch switching. */}
-          <Button
-            variant="secondary"
-            icon={ArrowLeftRight}
-            onClick={onSwitchBranch}
-            disabled={!onSwitchBranch}
-          >
-            Switch branch
-          </Button>
+          {/* Only drawn when the API allows switching (caller passes the handler). */}
+          {onSwitchBranch && (
+            <Button variant="secondary" icon={ArrowLeftRight} onClick={onSwitchBranch}>
+              Switch branch
+            </Button>
+          )}
           <Button variant="secondary" icon={LogOut} onClick={onLogout} disabled={!onLogout}>
             Log out
           </Button>
