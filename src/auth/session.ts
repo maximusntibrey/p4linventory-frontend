@@ -14,18 +14,20 @@ export const dropBranchScoped = (qc: QueryClient) =>
       q.queryKey[0] !== meKey[0] && !(q.queryKey[0] === 'branches' && q.queryKey[1] === 'filter'),
   });
 
+export async function fetchMe(): Promise<Me | null> {
+  try {
+    return await api('get', '/api/v1/auth/me/');
+  } catch (e) {
+    if (e instanceof ApiError && e.kind === 'unauthenticated') return null;
+    throw e;
+  }
+}
+
 /** The signed-in user as the server describes them; null when there is no session (401). Menu and permissions come from here and nowhere else. */
 export function useMe() {
   return useQuery({
     queryKey: meKey,
-    queryFn: async (): Promise<Me | null> => {
-      try {
-        return await api('get', '/api/v1/auth/me/');
-      } catch (e) {
-        if (e instanceof ApiError && e.kind === 'unauthenticated') return null;
-        throw e;
-      }
-    },
+    queryFn: fetchMe,
     retry: false,
     staleTime: 30_000,
   });

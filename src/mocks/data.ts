@@ -149,6 +149,7 @@ export const me: S['Me'] = {
   // The Super Admin works across all branches and is never asked to pick one.
   working_branch: null,
   must_pick_branch: false,
+  all_branches: true,
   can_assign_multiple_roles: true,
   must_change_password: false,
   permissions: [
@@ -186,6 +187,7 @@ export const meByRole: Record<MockRole, S['Me']> = {
     menu: menus.warehouse_admin,
     home_links: homeLinks.warehouse_admin,
     must_pick_branch: false,
+    all_branches: false,
     can_assign_multiple_roles: false,
     user: users[3],
     active_role: 'warehouse_admin',
@@ -211,6 +213,7 @@ export const meByRole: Record<MockRole, S['Me']> = {
     menu: menus.branch_admin,
     home_links: homeLinks.branch_admin,
     must_pick_branch: false,
+    all_branches: false,
     can_assign_multiple_roles: false,
     user: users[1],
     active_role: 'branch_admin',
@@ -233,6 +236,7 @@ export const meByRole: Record<MockRole, S['Me']> = {
     menu: menus.front_staff,
     home_links: homeLinks.front_staff,
     must_pick_branch: false,
+    all_branches: false,
     can_assign_multiple_roles: false,
     user: users[2],
     active_role: 'front_staff',
@@ -275,7 +279,28 @@ export const brands: S['Brand'][] = [
   { id: 2, name: 'Dell', is_active: true },
   { id: 3, name: 'Acer', is_active: false },
 ];
+const common: S['ItemFieldDefinition'][] = [
+  { key: 'name', label: 'Name', type: 'text', required: true, group: null, in_key_specs: false },
+  {
+    key: 'grade',
+    label: 'Grade',
+    type: 'choice',
+    required: false,
+    choices: ['A', 'B', 'C'],
+    group: null,
+    in_key_specs: false,
+  },
+  {
+    key: 'description',
+    label: 'Description',
+    type: 'text',
+    required: false,
+    group: null,
+    in_key_specs: false,
+  },
+];
 export const fieldDefinitions: S['ItemFieldDefinition'][] = [
+  ...common,
   {
     key: 'ram_gb',
     label: 'RAM (GB)',
@@ -284,8 +309,47 @@ export const fieldDefinitions: S['ItemFieldDefinition'][] = [
     group: 'Memory',
     in_key_specs: true,
   },
-  { key: 'name', label: 'Name', type: 'text', required: true, group: null, in_key_specs: false },
+  {
+    key: 'storage_type',
+    label: 'Storage type',
+    type: 'choice',
+    required: false,
+    choices: ['SSD', 'HDD'],
+    group: 'Storage',
+    in_key_specs: true,
+  },
+  {
+    key: 'screen_in',
+    label: 'Screen size (inches)',
+    type: 'decimal',
+    required: false,
+    group: 'Display',
+    in_key_specs: true,
+  },
+  {
+    key: 'touchscreen',
+    label: 'Touchscreen',
+    type: 'boolean',
+    required: false,
+    group: 'Display',
+    in_key_specs: true,
+  },
 ];
+/** Category-driven: the Accessory category has its own, shorter list. */
+export const fieldDefinitionsFor = (categoryId: number): S['ItemFieldDefinition'][] =>
+  categoryId === 3
+    ? [
+        ...common,
+        {
+          key: 'wattage',
+          label: 'Wattage (W)',
+          type: 'integer',
+          required: true,
+          group: null,
+          in_key_specs: true,
+        },
+      ]
+    : fieldDefinitions;
 
 export const items: S['Item'][] = [
   {
@@ -343,6 +407,54 @@ export const stock: S['StockBalance'][] = [
     reserved: 2,
     available: 10,
     quarantined: 0,
+    reorder_level: 5,
+    low_stock: false,
+  },
+  {
+    location_id: branchA.id,
+    location_name: branchA.name,
+    item_id: 1,
+    sku: 'SKU-000001',
+    item_name: 'HP 250 G9',
+    on_hand: 3,
+    reserved: 0,
+    available: 3,
+    quarantined: 1,
+    reorder_level: 5,
+    low_stock: true,
+  },
+  {
+    location_id: branchB.id,
+    location_name: branchB.name,
+    item_id: 1,
+    sku: 'SKU-000001',
+    item_name: 'HP 250 G9',
+    on_hand: 2,
+    reserved: 2,
+    available: 0,
+    quarantined: 0,
+    reorder_level: null,
+    low_stock: false,
+  },
+];
+
+export const stockMovements: S['StockMovement'][] = [
+  {
+    id: 1,
+    created_at: t,
+    location_id: warehouse.id,
+    location_name: warehouse.name,
+    item_id: 1,
+    sku: 'SKU-000001',
+    item_name: 'HP 250 G9',
+    bucket: 'on_hand',
+    quantity_delta: 12,
+    balance_after: 12,
+    movement_type: 'supplier_receipt',
+    source_type: 'goods_receipt',
+    source_ref: 'GRN-000001',
+    actor_login_id: 'USR-0001',
+    note: '',
   },
 ];
 

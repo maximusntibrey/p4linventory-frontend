@@ -67,19 +67,79 @@ const page = <T>(results: T[]) =>
     previous: null,
     results,
   });
+/** A page of `rows` honouring `page` and `page_size` (default 25), with the contract's envelope. */
+const paged = <T>(request: Request, rows: T[]) => {
+  const p = new URL(request.url).searchParams;
+  const size = Math.min(Math.max(Number(p.get('page_size')) || 25, 1), 100);
+  const n = Math.max(Number(p.get('page')) || 1, 1);
+  return HttpResponse.json({
+    count: rows.length,
+    page: n,
+    page_size: size,
+    next: n * size < rows.length ? `?page=${n + 1}` : null,
+    previous: n > 1 ? `?page=${n - 1}` : null,
+    results: rows.slice((n - 1) * size, n * size),
+  });
+};
 const byId = <T extends { id: number }>(rows: T[], id: unknown) =>
   rows.find((r) => r.id === Number(id));
+
+/** Items made or changed during this mock session. Tests reset it after each test. */
+export const mockStore = { items: structuredClone(d.costedItems) };
+export const resetMockStore = () => {
+  mockStore.items = structuredClone(d.costedItems);
+};
+const withoutCost = (row: S['ItemWithCost']) =>
+  Object.fromEntries(Object.entries(row).filter(([k]) => k !== 'average_cost')) as S['Item'];
+const matchItems = (rows: S['ItemWithCost'][], request: Request) => {
+  const p = new URL(request.url).searchParams;
+  const q = (p.get('q') ?? '').toLowerCase();
+  return rows.filter(
+    (r) =>
+      (!q ||
+        [r.name, r.sku, r.brand_name, r.model_name, r.mpn].some((v) =>
+          (v ?? '').toLowerCase().includes(q),
+        )) &&
+      (!p.get('status') || r.status === p.get('status')) &&
+      (!p.get('condition') || r.condition === p.get('condition')) &&
+      (!p.get('category_id') || r.category_id === Number(p.get('category_id'))) &&
+      (!p.get('brand_id') || r.brand_id === Number(p.get('brand_id'))),
+  );
+};
+const conditions = ['new', 'refurbished', 'used'] as const;
+const grades = ['A', 'B', 'C'] as const;
+const num = (v: unknown, fallback: number) => (typeof v === 'number' ? v : fallback);
 /** The only item fields a create or update may change; anything else in the body is dropped. */
-const itemFields = (b: Record<string, unknown>, row: S['Item']) =>
-  ({
+const applyItem = (b: Record<string, unknown>, row: S['ItemWithCost']): S['ItemWithCost'] => {
+  const brand_id = num(b.brand_id, row.brand_id);
+  return {
+    ...row,
     name: text(b.name, row.name),
+    category_id: num(b.category_id, row.category_id),
+    subtype_id: num(b.subtype_id, row.subtype_id),
+    brand_id,
+    brand_name: d.brands.find((x) => x.id === brand_id)?.name ?? row.brand_name,
     model_name: text(b.model_name, row.model_name),
     mpn: text(b.mpn, row.mpn),
     description: text(b.description, row.description ?? ''),
     search_keywords: text(b.search_keywords, row.search_keywords ?? ''),
     show_on_website: flag(b.show_on_website, row.show_on_website),
+    condition: conditions.find((c) => c === b.condition) ?? row.condition,
+    grade: b.grade === null ? null : (grades.find((g) => g === b.grade) ?? row.grade),
+    key_specs:
+      typeof b.key_specs === 'object' && b.key_specs !== null && !Array.isArray(b.key_specs)
+        ? (b.key_specs as Record<string, unknown>)
+        : row.key_specs,
     selling_price: typeof b.selling_price === 'string' ? b.selling_price : row.selling_price,
-  }) satisfies Partial<S['Item']>;
+    updated_at: d.t,
+  };
+};
+const saveItem = (row: S['ItemWithCost']) => {
+  const i = mockStore.items.findIndex((x) => x.id === row.id);
+  if (i >= 0) mockStore.items[i] = row;
+  else mockStore.items.push(row);
+  return row;
+};
 const readJson = async (request: Request) => (await request.json()) as Record<string, unknown>;
 
 type Resolver = Parameters<typeof http.get>[1];
@@ -114,6 +174,11 @@ const keyed =
       : invalid([{ field: null, message: 'Idempotency-Key header is required.' }]);
 /** State-changing operations: logged in, then the Idempotency-Key check. */
 const writeAuthed = (fn: Resolver): Resolver => authed(keyed(fn));
+/** Only Super Admin or a Manage prices holder may send selling_price (403 permission_denied). */
+const priceDenied = (b: Record<string, unknown>) =>
+  b.selling_price !== undefined && !me().permissions.includes('prices.manage')
+    ? err(403, 'permission_denied', 'You may not set prices.')
+    : undefined;
 /** Cost endpoints are for SA/WA; the mock's Branch Admin and Front Staff sessions get 403. */
 const costed =
   (fn: Resolver): Resolver =>
@@ -448,45 +513,99 @@ export const handlers: RequestHandler[] = [
     '/api/v1/item-field-definitions/',
     authed(({ request }) =>
       new URL(request.url).searchParams.get('category_id')
-        ? HttpResponse.json(d.fieldDefinitions)
+        ? HttpResponse.json(
+            d.fieldDefinitionsFor(Number(new URL(request.url).searchParams.get('category_id'))),
+          )
         : invalid([{ field: 'category_id', message: 'This field is required.' }]),
     ),
   ),
   http.get(
     '/api/v1/items/',
-    authed(() => page(d.items)),
+    authed(({ request }) => paged(request, matchItems(mockStore.items, request).map(withoutCost))),
   ),
-  http.get('/api/v1/costed-items/', authed(costed(() => page(d.costedItems)))),
-  http.get('/api/v1/costed-items/:id/', authed(costed(one(d.costedItems)))),
+  http.get(
+    '/api/v1/costed-items/',
+    authed(costed(({ request }) => paged(request, matchItems(mockStore.items, request)))),
+  ),
+  http.get(
+    '/api/v1/costed-items/:id/',
+    authed(
+      costed(({ params }) => {
+        const row = byId(mockStore.items, params.id);
+        return row ? HttpResponse.json(row) : notFound();
+      }),
+    ),
+  ),
   post(
     '/api/v1/items/',
     writeAuthed(async ({ request }) => {
       const b = await readJson(request);
+      const denied = priceDenied(b);
+      if (denied) return denied;
       if (inactiveBrand(b.brand_id)) return brandInactive();
+      const missing = ['name', 'model_name', 'mpn'].filter((k) => !text(b[k], '').trim());
+      const errors = [
+        ...missing.map((field) => ({ field, message: 'This field is required.' })),
+        ...['category_id', 'subtype_id', 'brand_id']
+          .filter((k) => typeof b[k] !== 'number')
+          .map((field) => ({ field, message: 'This field is required.' })),
+        ...(conditions.some((c) => c === b.condition)
+          ? []
+          : [{ field: 'condition', message: 'Pick new, refurbished or used.' }]),
+      ];
+      if (errors.length) return invalid(errors);
+      const id = Math.max(0, ...mockStore.items.map((i) => i.id)) + 1;
+      const row = applyItem(b, {
+        ...d.costedItems[1],
+        id,
+        sku: `SKU-${String(id).padStart(6, '0')}`,
+        status: 'draft',
+        image_url: null,
+        selling_price: null,
+        average_cost: null,
+        created_at: d.t,
+      });
+      const twin = mockStore.items.find(
+        (i) =>
+          i.name.toLowerCase() === row.name.toLowerCase() &&
+          i.model_name.toLowerCase() === row.model_name.toLowerCase(),
+      );
+      saveItem(row);
       return HttpResponse.json(
         {
-          ...d.costedItems[1],
-          ...itemFields(b, d.costedItems[1]),
-          id: 3,
-          sku: 'SKU-000003',
-          status: 'draft',
-          warnings: [],
+          ...row,
+          warnings: twin
+            ? [
+                {
+                  code: 'duplicate_name_model',
+                  message: `Looks the same as ${twin.sku} (${twin.name}).`,
+                  item_id: twin.id,
+                },
+              ]
+            : [],
         } satisfies S['ItemWithCostAndWarnings'],
         { status: 201 },
       );
     }),
   ),
-  http.get('/api/v1/items/:id/', one(d.items)),
+  http.get(
+    '/api/v1/items/:id/',
+    authed(({ params }) => {
+      const row = byId(mockStore.items, params.id);
+      return row ? HttpResponse.json(withoutCost(row)) : notFound();
+    }),
+  ),
   patch(
     '/api/v1/items/:id/',
     writeAuthed(async ({ params, request }) => {
-      const row = byId(d.costedItems, params.id);
+      const row = byId(mockStore.items, params.id);
       if (!row) return notFound();
       const b = await readJson(request);
+      const denied = priceDenied(b);
+      if (denied) return denied;
       if (inactiveBrand(b.brand_id)) return brandInactive();
       return HttpResponse.json({
-        ...row,
-        ...itemFields(b, row),
+        ...saveItem(applyItem(b, row)),
         warnings: [],
       } satisfies S['ItemWithCostAndWarnings']);
     }),
@@ -494,37 +613,83 @@ export const handlers: RequestHandler[] = [
   post(
     '/api/v1/items/:id/status/',
     writeAuthed(async ({ params, request }) => {
-      const row = byId(d.costedItems, params.id);
+      const row = byId(mockStore.items, params.id);
       if (!row) return notFound();
-      const b = await readJson(request);
-      return HttpResponse.json({
-        ...row,
-        status: b.status as S['ItemStatus'],
-      } satisfies S['ItemWithCost']);
+      const to = (await readJson(request)).status;
+      if (to !== 'active' && to !== 'discontinued') {
+        return invalid([{ field: 'status', message: 'Pick active or discontinued.' }]);
+      }
+      const allowed =
+        (row.status === 'draft' && to === 'active') ||
+        (row.status === 'active' && to === 'discontinued');
+      if (!allowed) {
+        return err(409, 'invalid_status_transition', 'This item cannot move to that status.');
+      }
+      return HttpResponse.json(saveItem({ ...row, status: to }) satisfies S['ItemWithCost']);
     }),
   ),
   put(
     '/api/v1/items/:id/image/',
     writeAuthed(({ params }) => {
-      const row = byId(d.costedItems, params.id);
-      return row
-        ? HttpResponse.json({
-            ...row,
-            image_url: '/media/items/mock.png',
-          } satisfies S['ItemWithCost'])
-        : notFound();
+      const row = byId(mockStore.items, params.id);
+      if (!row) return notFound();
+      // The mock does not read the file (a multipart body cannot be read in the jsdom test setup). The
+      // real server's 400 and 413 answers are covered with per-test overrides.
+      return HttpResponse.json(
+        saveItem({ ...row, image_url: '/media/items/mock.png' }) satisfies S['ItemWithCost'],
+      );
     }),
   ),
   http.get(
     '/api/v1/items/:id/branch-availability/',
     authed(({ params }) =>
-      byId(d.items, params.id) ? HttpResponse.json(d.availability) : notFound(),
+      byId(mockStore.items, params.id) ? HttpResponse.json(d.availability) : notFound(),
     ),
   ),
 
   http.get(
     '/api/v1/stock/',
-    authed(() => page(d.stock)),
+    authed(({ request }) => {
+      const p = new URL(request.url).searchParams;
+      const q = (p.get('q') ?? '').toLowerCase();
+      const location = p.get('location_id');
+      // Branch Admin and Front Staff see only their own branch; asking for another one is 403.
+      const own =
+        mockSession.role === 'branch_admin' || mockSession.role === 'front_staff'
+          ? (me().working_branch?.id ?? 0)
+          : undefined;
+      if (own !== undefined && location && Number(location) !== own) return forbidden();
+      return paged(
+        request,
+        d.stock.filter(
+          (r) =>
+            (own === undefined || r.location_id === own) &&
+            (!location || r.location_id === Number(location)) &&
+            (!q || r.item_name.toLowerCase().includes(q) || r.sku.toLowerCase().includes(q)),
+        ),
+      );
+    }),
+  ),
+  http.get(
+    '/api/v1/stock/movements/',
+    authed(({ request }) => {
+      const p = new URL(request.url).searchParams;
+      const location = p.get('location_id');
+      const own =
+        mockSession.role === 'branch_admin' || mockSession.role === 'front_staff'
+          ? (me().working_branch?.id ?? 0)
+          : undefined;
+      if (own !== undefined && location && Number(location) !== own) return forbidden();
+      return paged(
+        request,
+        d.stockMovements.filter(
+          (r) =>
+            (own === undefined || r.location_id === own) &&
+            (!location || r.location_id === Number(location)) &&
+            (!p.get('movement_type') || r.movement_type === p.get('movement_type')),
+        ),
+      );
+    }),
   ),
   http.get('/api/v1/costed-stock/', authed(costed(() => page(d.costedStock)))),
 

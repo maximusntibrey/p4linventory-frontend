@@ -3,6 +3,10 @@ import { RequireAuth, RequirePermission } from './auth/guards';
 import type { Me } from './auth/session';
 import { AppShell } from './components/AppShell';
 import { BranchesPage } from './features/branches/BranchesPage';
+import { ItemDetail } from './features/items/ItemDetail';
+import { ItemNew } from './features/items/ItemNew';
+import { ItemsPage } from './features/items/ItemsPage';
+import { StockPage } from './features/stock/StockPage';
 import { UserDetail } from './features/users/UserDetail';
 import { UserNew } from './features/users/UserNew';
 import { UsersPage } from './features/users/UsersPage';
@@ -14,9 +18,7 @@ import { NotFound } from './pages/NotFound';
 
 /** Screens a later step builds. Each is opened by one permission from the me endpoint; the server still checks every request. */
 const guardedScreens: { path: string; title: string; permission: Me['permissions'][number] }[] = [
-  { path: 'items', title: 'Items', permission: 'items.view' },
   { path: 'warehouse', title: 'Warehouse', permission: 'stock.view' },
-  { path: 'stock', title: 'Stock', permission: 'stock.view' },
   { path: 'find', title: 'Find', permission: 'find.use' },
   { path: 'activity', title: 'Activity', permission: 'activity.view' },
   { path: 'sell', title: 'Sell', permission: 'sales.record' },
@@ -47,6 +49,38 @@ export function AppRoutes() {
               }
             />
           ))}
+          <Route
+            path="items"
+            element={
+              <RequirePermission permission="items.view">
+                <ItemsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="items/new"
+            element={
+              <RequirePermission permission="items.manage">
+                <ItemNew />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="items/:id"
+            element={
+              <RequirePermission permission="items.view">
+                <ItemDetail />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="stock"
+            element={
+              <RequirePermission permission="stock.view">
+                <StockPage />
+              </RequirePermission>
+            }
+          />
           <Route
             path="branches"
             element={

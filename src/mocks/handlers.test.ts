@@ -47,6 +47,15 @@ describe('mock server behaviour', () => {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   const K = { 'X-CSRFToken': 't', 'Idempotency-Key': 'k-1' };
+  const validItem = {
+    name: 'N',
+    model_name: 'M',
+    mpn: 'P',
+    category_id: 1,
+    subtype_id: 1,
+    brand_id: 1,
+    condition: 'new',
+  };
 
   it.each([
     ['POST', '/api/v1/auth/logout/'],
@@ -140,9 +149,9 @@ describe('mock server behaviour', () => {
     ['PUT', '/api/v1/users/2/permissions/', { permissions: [] }],
     ['POST', '/api/v1/brands/', { name: 'Z' }],
     ['PATCH', '/api/v1/brands/1/', {}],
-    ['POST', '/api/v1/items/', { name: 'N' }],
+    ['POST', '/api/v1/items/', validItem],
     ['PATCH', '/api/v1/items/1/', {}],
-    ['POST', '/api/v1/items/1/status/', { status: 'active' }],
+    ['POST', '/api/v1/items/2/status/', { status: 'active' }],
     ['PUT', '/api/v1/items/1/image/'],
     ['POST', '/api/v1/goods-receipts/', { supplier_name: 'S', lines: [] }],
     ['POST', '/api/v1/dispatches/', { lines: [] }],
@@ -269,6 +278,98 @@ describe('mock server behaviour', () => {
     expect(received.status).toBe('partially_received');
   });
 
+  describe('items and stock (F4)', () => {
+    it('create answers 400 per missing field, 201 Draft with a new SKU, and warns on a near-duplicate', async () => {
+      mockSession.loggedIn = true;
+      const bad = await send('POST', '/api/v1/items/', K, { name: 'X' });
+      expect(bad.status).toBe(400);
+      expect((await bad.json()).errors.map((e: { field: string }) => e.field)).toEqual([
+        'model_name',
+        'mpn',
+        'category_id',
+        'subtype_id',
+        'brand_id',
+        'condition',
+      ]);
+      const made = await send('POST', '/api/v1/items/', K, validItem);
+      const row = await made.json();
+      expect(made.status).toBe(201);
+      expect(row).toMatchObject({ id: 3, sku: 'SKU-000003', status: 'draft', warnings: [] });
+      const twin = await (
+        await send('POST', '/api/v1/items/', K, {
+          ...validItem,
+          name: 'hp 250 g9',
+          model_name: '250 G9',
+        })
+      ).json();
+      expect(twin.warnings[0]).toMatchObject({ code: 'duplicate_name_model', item_id: 1 });
+      const list = await (await send('GET', '/api/v1/items/')).json();
+      expect(list.count).toBe(4);
+    });
+
+    it('status moves: draft to active, active to discontinued, anything else 409', async () => {
+      mockSession.loggedIn = true;
+      expect((await send('POST', '/api/v1/items/1/status/', K, { status: 'active' })).status).toBe(
+        409,
+      );
+      expect(
+        (await send('POST', '/api/v1/items/2/status/', K, { status: 'discontinued' })).status,
+      ).toBe(409);
+      expect((await send('POST', '/api/v1/items/2/status/', K, { status: 'draft' })).status).toBe(
+        400,
+      );
+      const on = await (
+        await send('POST', '/api/v1/items/2/status/', K, { status: 'active' })
+      ).json();
+      expect(on.status).toBe('active');
+      const off = await (
+        await send('POST', '/api/v1/items/2/status/', K, { status: 'discontinued' })
+      ).json();
+      expect(off.status).toBe('discontinued');
+    });
+
+    it('list filters on q, status, category and brand and pages with the envelope', async () => {
+      mockSession.loggedIn = true;
+      const ids = async (qs: string) =>
+        (await (await send('GET', `/api/v1/items/${qs}`)).json()).results.map(
+          (r: { id: number }) => r.id,
+        );
+      expect(await ids('?q=65w')).toEqual([2]);
+      expect(await ids('?status=active')).toEqual([1]);
+      expect(await ids('?category_id=3')).toEqual([2]);
+      expect(await ids('?brand_id=1')).toEqual([1]);
+      const p2 = await (await send('GET', '/api/v1/items/?page_size=1&page=2')).json();
+      expect(p2).toMatchObject({ count: 2, page: 2, next: null, previous: '?page=1' });
+      expect(p2.results.map((r: { id: number }) => r.id)).toEqual([2]);
+    });
+
+    it('field definitions follow the category', async () => {
+      mockSession.loggedIn = true;
+      const keys = async (c: number) =>
+        (await (await send('GET', `/api/v1/item-field-definitions/?category_id=${c}`)).json()).map(
+          (f: { key: string }) => f.key,
+        );
+      expect(await keys(1)).toContain('ram_gb');
+      expect(await keys(3)).toContain('wattage');
+      expect(await keys(3)).not.toContain('ram_gb');
+    });
+
+    it('stock: Branch Admin and Front Staff see only their branch; another location is 403', async () => {
+      mockSession.loggedIn = true;
+      mockSession.role = 'branch_admin';
+      const own = await (await send('GET', '/api/v1/stock/')).json();
+      expect(new Set(own.results.map((r: { location_id: number }) => r.location_id))).toEqual(
+        new Set([2]),
+      );
+      expect((await send('GET', '/api/v1/stock/?location_id=3')).status).toBe(403);
+      expect((await send('GET', '/api/v1/stock/?location_id=2')).status).toBe(200);
+      mockSession.role = 'super_admin';
+      const all = await (await send('GET', '/api/v1/stock/')).json();
+      expect(all.count).toBe(3);
+      expect((await (await send('GET', '/api/v1/stock/?q=nothing')).json()).count).toBe(0);
+    });
+  });
+
   describe('brands', () => {
     it('lists active and deactivated brands', async () => {
       mockSession.loggedIn = true;
@@ -318,10 +419,10 @@ describe('mock server behaviour', () => {
         ['POST', '/api/v1/items/'],
         ['PATCH', '/api/v1/items/1/'],
       ]) {
-        const bad = await send(m, path, K, { brand_id: 3 });
+        const bad = await send(m, path, K, { ...validItem, brand_id: 3 });
         expect(bad.status).toBe(400);
         expect((await bad.json()).errors[0].field).toBe('brand_id');
-        expect((await send(m, path, K, { brand_id: 2 })).status).toBeLessThan(400);
+        expect((await send(m, path, K, { ...validItem, brand_id: 2 })).status).toBeLessThan(400);
       }
     });
   });
@@ -362,5 +463,40 @@ describe('mock server behaviour', () => {
     );
     expect((await res.json()).active_role).toBe('front_staff');
     expect((await send('GET', '/api/v1/costed-items/')).status).toBe(403);
+  });
+});
+
+describe('FIX-30 selling_price needs prices.manage (403 permission_denied)', () => {
+  const body = {
+    name: 'N',
+    model_name: 'M',
+    mpn: 'P',
+    category_id: 1,
+    subtype_id: 1,
+    brand_id: 1,
+    condition: 'new',
+    selling_price: '10.00',
+  };
+  const call = (m: string, path: string, b: object) =>
+    fetch(new URL(path, globalThis.location.origin), {
+      method: m,
+      headers: { 'X-CSRFToken': 't', 'Idempotency-Key': 'k-1', 'Content-Type': 'application/json' },
+      body: JSON.stringify(b),
+    });
+  it('POST and PATCH with a price are 403 without the permission, fine with it or without a price', async () => {
+    mockSession.loggedIn = true;
+    mockSession.role = 'branch_admin';
+    const noPrice = { ...body, selling_price: undefined };
+    for (const [m, p] of [
+      ['POST', '/api/v1/items/'],
+      ['PATCH', '/api/v1/items/1/'],
+    ]) {
+      const res = await call(m, p, body);
+      expect(res.status).toBe(403);
+      expect((await res.json()).code).toBe('permission_denied');
+      expect((await call(m, p, noPrice)).status).toBeLessThan(400);
+    }
+    mockSession.role = 'super_admin';
+    expect((await call('POST', '/api/v1/items/', body)).status).toBe(201);
   });
 });

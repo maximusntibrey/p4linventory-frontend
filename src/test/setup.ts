@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, expect } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from 'vitest-axe/matchers';
 import { server } from '../mocks/server';
-import { mockSession } from '../mocks/handlers';
+import { mockSession, resetMockStore } from '../mocks/handlers';
 import { resetCsrfCache } from '../api/client';
 
 expect.extend(matchers);
@@ -15,6 +15,7 @@ afterEach(() => {
   mockSession.loginId = undefined;
   mockSession.mustChange = false;
   mockSession.workingBranch = undefined;
+  resetMockStore();
   resetCsrfCache();
   document.cookie = 'csrftoken=; Max-Age=0; path=/';
 });

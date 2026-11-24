@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { LogIn } from 'lucide-react';
 import { api, ApiError } from '../api';
-import { meKey, useMe } from '../auth/session';
+import { fetchMe, meKey, useMe } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
 import { Button } from '../components/Button';
 import { describeError, ErrorSummary } from '../components/ErrorSummary';
@@ -33,9 +33,21 @@ export function Login() {
       }),
     meta: { keepSession: true },
     gcTime: 0, // the password must not linger in the mutation cache
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       qc.clear(); // a new sign-in must never see data cached for the previous user
-      qc.setQueryData(meKey, data);
+      // /me is the one source for who must pick a branch and what the menu is: ask it again rather
+      // than trust the sign-in answer. If that call fails, the sign-in answer is still used.
+      const fresh = await fetchMe().catch(() => undefined);
+      // 401 right after signing in: the session did not hold. Stay here; do not use the sign-in answer.
+      if (fresh === null) {
+        throw new ApiError(
+          401,
+          'unauthenticated',
+          'session_not_held',
+          'Your sign-in did not hold, try again.',
+        );
+      }
+      qc.setQueryData(meKey, fresh ?? data);
     },
     onError: (error) => setFailure((f) => ({ error, n: (f?.n ?? 0) + 1 })),
   });

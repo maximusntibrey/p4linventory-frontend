@@ -21,9 +21,9 @@ export function AppShell() {
   const out = useLogout(() => navigate('/login', { replace: true }));
   const [switching, setSwitching] = useState(false);
   const [filter, setFilter] = useState<number>();
-  // The server says who must pick (me.must_pick_branch). No branch and no need to pick = works across all
-  // branches (Super Admin): an "All branches" view with an optional filter, never PUT working-branch.
-  const allBranches = !me.working_branch && !me.must_pick_branch;
+  // The server says who must pick (me.must_pick_branch) and who works across all branches
+  // (me.all_branches, Super Admin): an "All branches" view with an optional filter, never PUT working-branch.
+  const allBranches = me.all_branches;
   const canSwitch = me.permissions.includes('working_branch.select') && !allBranches;
   const mustPick = me.must_pick_branch;
   const filterList = useFilterBranches(allBranches);
