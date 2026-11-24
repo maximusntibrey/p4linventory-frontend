@@ -315,12 +315,12 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 - [x] F4.3 One image upload with clear type and size messages
 - [x] F4.4 Stock screen (by location, low-stock flag, search)
 - [x] F4.5 Tests: item form and validation
-- [ ] F5.1 Receive stock into the warehouse screen (supplier, item lines, review, confirm, receipt reference shown)
-- [ ] F5.2 Dispatch screen (branch, lines with available quantity, status list)
-- [ ] F5.3 Branch receiving screen (waiting list, quantity pre-filled, "Received all" shortcut, shortfall note and highlight)
-- [ ] F5.4 Screens for what is waiting at each branch
-- [ ] F5.5 Tests: receiving flow
-- [ ] F5.6 Sprint 1 review, 360 px check and fixes
+- [x] F5.1 Receive stock into the warehouse screen (supplier, item lines, review, confirm, receipt reference shown)
+- [x] F5.2 Dispatch screen (branch, lines with available quantity, status list)
+- [x] F5.3 Branch receiving screen (waiting list, quantity pre-filled, "Received all" shortcut, shortfall note and highlight)
+- [x] F5.4 Screens for what is waiting at each branch
+- [x] F5.5 Tests: receiving flow
+- [x] F5.6 Sprint 1 review, 360 px check and fixes
 
 ### DevOps, Sprint 1
 
@@ -727,6 +727,9 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FQ-1 | F4.4: the low-stock flag needs the reorder level (C13), but `StockBalance` has no `reorder_level` or low-stock field. The screen shows In stock / Out of stock from the quantities only. Recommend `reorder_level` (integer, nullable) and `low_stock` (boolean, set by the server) on StockBalance and StockBalanceWithCost. | F4.4 | Answered: owner approved; contract 0.3.0 adds `reorder_level` and `low_stock` on StockBalance. The stock screen uses `low_stock`. | |
 | FQ-2 | F4.1: the Items list should filter by condition (FE section 4.3) but `/items/` and `/costed-items/` have no `condition` query parameter. The list filters by category, brand, status and search only. Recommend adding `condition` (new, refurbished, used). | F4.1 | Answered: owner approved; contract 0.3.0 adds the `condition` query. The list has a Condition filter. | |
 | FQ-3 | F4.2 notes for the owner: (a) the item form has no selling price field (price list and Manage prices come later; ItemWrite already accepts it); (b) PATCH `key_specs` is sent as the full object: confirm the server replaces rather than merges, so a cleared spec is removed; (c) common-field definitions (`in_key_specs` false) are sent as top-level fields by their key, e.g. grade, description. | F4.2 | Answered: owner approved. (a) Selling price field added, shown only when /me lists `prices.manage` (otherwise never sent; no negatives). (b), (c) as built. | |
+| FQ-4 | F5.3: the receiving screen sends qty_accepted equal to qty_received on every line, because FE section 4.8 shows one quantity per line (pre-filled with the quantity sent), Received all and a shortfall note. The contract also allows a line to accept less than it received (damage at the door). Also, the screen offers Reject delivery (decision reject with a reason) because the contract and workflow spec 5.2 define it, although FE 4.8 does not list it. Recommend: keep both as built for the MVP; per-line door rejection belongs to the Sprint 2 resolve screen. | F5.3 | Open: owner to confirm. | |
+| FQ-5 | F5.4: the Warehouse Admin gets 403 on GET dispatches/waiting, so what is waiting at each branch is shown to the Warehouse Admin as the Dispatch list filtered by In transit and a branch (GET dispatches with status and destination_id). Branch Admin and Front Staff use the Receive list for their branch; the Super Admin has no working branch in /me, so the Receive screen asks for one and sends branch_id. Recommend: accept; no contract change. | F5.4 | Open: owner to confirm. | |
+| FQ-6 | F5.1: unit_cost is required on every goods receipt line for every role that may receive stock, so the cost fields are always shown on that screen (the route needs goods_receipts.manage, held by Super Admin and Warehouse Admin, who may see cost). The screen shows no totals or average cost; those come only from costed endpoints. Recommend: accept; if a role without cost access ever gets Receive stock, the contract needs a rule for it. | F5.1 | Open: owner to confirm. | |
 
 ## FIX LOG
 
@@ -764,6 +767,14 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FIX-30 | Mock POST/PATCH items accepted selling_price without prices.manage. Now 403 permission_denied, as the contract says. | frontend | n/a (no git during the day) | src/mocks/handlers.test.ts (failed first) | no | not yet |
 | FIX-31 | If /me answered 401 right after sign-in the app used the sign-in answer. Now it stays on Sign in with "Your sign-in did not hold, try again."; the sign-in answer is used only on a network or server error. | frontend | n/a (no git during the day) | src/day4-fixes.test.tsx (failed first) | no | not yet |
 | FIX-32 | Stock grouped by location name, merging two locations with the same name. Now grouped by location_id. | frontend | n/a (no git during the day) | src/day4-fixes.test.tsx (failed first) | no | not yet |
+| FIX-33 | Mock GET goods-receipts (list and one) carried cost for every role. Now costed(): Branch Admin and Front Staff get 403. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
+| FIX-34 | A 409 on the receive decision left the Confirm button up. The delivery is now reloaded so its outcome shows. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
+| FIX-35 | A received count above the quantity sent reached the confirm step. Now a line error on Review, nothing sent. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
+| FIX-36 | Reject with a blank reason sent a request. Now a field message and no request. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
+| FIX-37 | Dispatch line gave no warning when the quantity was above what is available. Now a warning on the line; the server still decides. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
+| FIX-38 | The mock accepted one Idempotency-Key twice. Now the same key and body replays the first answer; the same key with another body is 409 idempotency_conflict. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
+| FIX-39 | After a confirmed receipt or dispatch focus stayed on the old button. The success card now takes focus. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
+| FIX-40 | The dispatch list was guarded by dispatches.create. Now dispatches.view; New dispatch still needs dispatches.create. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
 
 ## DEPLOYMENT LOG
 
