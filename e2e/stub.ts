@@ -83,6 +83,7 @@ export async function stubAuth(page: Page, opts: Opts = {}) {
             'dashboard.view',
             'items.view',
             'items.manage',
+            'items.import',
             'items.view_cost',
             'prices.manage',
             'stock.view',

@@ -1,5 +1,6 @@
 import { http, HttpResponse, type RequestHandler } from 'msw';
 import type { components } from '../api/schema';
+import { checkCsv, parseCsv } from './csvReport';
 import * as d from './data';
 
 type S = components['schemas'];
@@ -90,6 +91,8 @@ export const mockStore = {
   stock: structuredClone(d.stock),
   dispatches: structuredClone(d.dispatches),
   receipts: [structuredClone(d.goodsReceipt)],
+  sales: structuredClone(d.sales),
+  imports: 0,
 };
 export const resetMockStore = () => {
   replays.clear();
@@ -97,6 +100,8 @@ export const resetMockStore = () => {
   mockStore.stock = structuredClone(d.stock);
   mockStore.dispatches = structuredClone(d.dispatches);
   mockStore.receipts = [structuredClone(d.goodsReceipt)];
+  mockStore.sales = structuredClone(d.sales);
+  mockStore.imports = 0;
 };
 const withoutCost = (row: S['ItemWithCost']) =>
   Object.fromEntries(Object.entries(row).filter(([k]) => k !== 'average_cost')) as S['Item'];
@@ -251,6 +256,49 @@ const one = <T extends { id: number }>(rows: T[], view: (row: T) => object = (r)
     const row = byId(rows, params.id);
     return row ? HttpResponse.json(view(row)) : notFound();
   });
+
+/** Super Admin only (403 for everyone else, like the real costed endpoints). */
+const costedSa =
+  (fn: Resolver): Resolver =>
+  (info) =>
+    mockSession.role === 'super_admin' ? fn(info) : forbidden();
+/** A sale with each line's cost snapshot: the item's average cost, 2 dp. */
+const withSaleCost = (sale: S['Sale']): S['CostedSale'] => ({
+  ...sale,
+  lines: sale.lines.map((l) => ({
+    ...l,
+    unit_cost: mockStore.items.find((i) => i.id === l.item_id)?.average_cost ?? '0.00',
+  })),
+});
+
+/**
+ * What a committed import does, like the real server: an existing SKU gets its opening quantity added
+ * (a re-import adds again); a new SKU becomes a Draft item with no price, then gets its quantity.
+ * Exported so the tests can run it without a multipart upload.
+ */
+export const commitCsv = (text: string, locationId: number) => {
+  for (const row of parseCsv(text)) {
+    let item = mockStore.items.find((i) => row.sku && i.sku === row.sku);
+    if (!item) {
+      const id = Math.max(0, ...mockStore.items.map((i) => i.id)) + 1;
+      item = saveItem({
+        ...mockStore.items[0],
+        id,
+        sku: row.sku || `SKU-${String(id).padStart(6, '0')}`,
+        name: row.name,
+        condition: conditions.find((c) => c === row.condition) ?? 'used',
+        status: 'draft',
+        selling_price: null,
+        average_cost: row.unit_cost,
+        image_url: null,
+      });
+    }
+    const stock = stockRow(locationId, item);
+    const qty = Number(row.opening_quantity);
+    stock.on_hand += qty;
+    stock.available += qty;
+  }
+};
 
 export const handlers: RequestHandler[] = [
   http.get('/health/', () => HttpResponse.json({ status: 'ok', database: 'ok' })),
@@ -697,7 +745,10 @@ export const handlers: RequestHandler[] = [
   http.get(
     '/api/v1/items/:id/branch-availability/',
     authed(({ params }) =>
-      byId(mockStore.items, params.id) ? HttpResponse.json(d.availability) : notFound(),
+      byId(mockStore.items, params.id)
+        ? // "Every other active branch": the caller's own working branch is left out.
+          HttpResponse.json(d.availability.filter((b) => b.branch_id !== me().working_branch?.id))
+        : notFound(),
     ),
   ),
 
@@ -1028,6 +1079,227 @@ export const handlers: RequestHandler[] = [
       row.received_by = me().user.login_id;
       row.has_open_discrepancy = row.lines.some((l) => l.shortfall > 0);
       return HttpResponse.json(row);
+    }),
+  ),
+
+  // ---- Sales (contract 0.4.0). Server rules live here, as on the real API: the client sends no price. ----
+  http.get(
+    '/api/v1/sales/',
+    authed(({ request }) => {
+      if (mockSession.role === 'warehouse_admin') return forbidden();
+      const p = new URL(request.url).searchParams;
+      const own = ownBranchId();
+      if (own !== undefined && p.get('branch') && Number(p.get('branch')) !== own)
+        return err(403, 'wrong_branch', 'That is not your branch.');
+      return paged(
+        request,
+        [...mockStore.sales]
+          .reverse()
+          .filter(
+            (s) =>
+              (own === undefined || s.location.id === own) &&
+              (!p.get('branch') || s.location.id === Number(p.get('branch'))) &&
+              (!p.get('status') || s.status === p.get('status')) &&
+              (!p.get('payment_method') || s.payment_method === p.get('payment_method')),
+          ),
+      );
+    }),
+  ),
+  post(
+    '/api/v1/sales/',
+    writeAuthed(async ({ request }) => {
+      if (!me().permissions.includes('sales.record')) return forbidden();
+      const where = me().working_branch;
+      if (!where) return err(403, 'wrong_branch', 'Choose your branch first.');
+      const b = await readJson(request);
+      const errors: S['Error']['errors'] = [];
+      if (!['cash', 'mobile_money', 'card'].includes(String(b.payment_method)))
+        errors.push({ field: 'payment_method', message: 'Pick a payment method.' });
+      const lines = (Array.isArray(b.lines) ? b.lines : []) as Record<string, unknown>[];
+      if (lines.length === 0) errors.push({ field: 'lines', message: 'Add at least one item.' });
+      lines.forEach((l, i) => {
+        const item = byId(mockStore.items, l.item_id);
+        if (!Number.isInteger(l.quantity) || (l.quantity as number) < 1)
+          errors.push({
+            field: `lines.${i}.quantity`,
+            message: 'Enter a whole number, 1 or more.',
+          });
+        if (lines.findIndex((x) => x.item_id === l.item_id) !== i)
+          errors.push({ field: `lines.${i}.item_id`, message: 'This item is on the sale twice.' });
+        if (!item || item.status !== 'active')
+          errors.push({ field: `lines.${i}.item_id`, message: 'Only active items can be sold.' });
+        else if (!item.selling_price)
+          errors.push({ field: `lines.${i}.item_id`, message: 'This item has no price yet.' });
+      });
+      if (errors.length) return invalid(errors);
+      // Overselling: nothing is written when any line is short (409 insufficient_stock).
+      const short = lines.flatMap((l, i) => {
+        const row = mockStore.stock.find(
+          (r) => r.location_id === where.id && r.item_id === l.item_id,
+        );
+        const have = row?.available ?? 0;
+        return (l.quantity as number) > have
+          ? [
+              {
+                field: `lines.${i}.quantity`,
+                message: `Only ${have} of ${byId(mockStore.items, l.item_id)?.name} available.`,
+              },
+            ]
+          : [];
+      });
+      if (short.length)
+        return err(409, 'insufficient_stock', 'Not enough stock for this sale.', short);
+      let cents = 0;
+      const money = (c: number) => (c / 100).toFixed(2);
+      const saleLines = lines.map((l, i) => {
+        const item = byId(mockStore.items, l.item_id)!;
+        const unit = Math.round(Number(item.selling_price) * 100);
+        const row = stockRow(where.id, item);
+        row.on_hand -= l.quantity as number;
+        row.available -= l.quantity as number;
+        cents += unit * (l.quantity as number);
+        return {
+          id: (mockStore.sales.length + 1) * 100 + i,
+          item_id: item.id,
+          sku: item.sku,
+          item_name: item.name,
+          quantity: l.quantity as number,
+          unit_price: money(unit),
+          line_total: money(unit * (l.quantity as number)),
+        };
+      });
+      const id = mockStore.sales.length + 1;
+      const sale: S['Sale'] = {
+        id,
+        reference: `SAL-${String(id).padStart(6, '0')}`,
+        location: where,
+        staff: me().user.login_id,
+        status: 'completed',
+        payment_method: String(b.payment_method),
+        total: money(cents),
+        sold_at: d.t,
+        lines: saleLines,
+        cancellation: null,
+      };
+      mockStore.sales.push(sale);
+      return HttpResponse.json(sale, { status: 201 });
+    }),
+  ),
+  http.get(
+    '/api/v1/sales/:id/',
+    authed(({ params }) => {
+      if (mockSession.role === 'warehouse_admin') return forbidden();
+      const row = byId(mockStore.sales, params.id);
+      const own = ownBranchId();
+      // Another branch's sale is 404, the same as a missing id (OQ-30).
+      return row && (own === undefined || row.location.id === own)
+        ? HttpResponse.json(row)
+        : notFound();
+    }),
+  ),
+  post(
+    '/api/v1/sales/:id/cancel/',
+    writeAuthed(async ({ request, params }) => {
+      if (mockSession.role !== 'super_admin' && mockSession.role !== 'branch_admin')
+        return forbidden();
+      const row = byId(mockStore.sales, params.id);
+      const own = ownBranchId();
+      if (!row || (own !== undefined && row.location.id !== own)) return notFound();
+      const reason = text((await readJson(request)).reason, '').trim();
+      if (!reason) return invalid([{ field: 'reason', message: 'Give a reason.' }]);
+      if (row.status !== 'completed')
+        return err(409, 'conflict', 'Only a completed sale can be cancelled.');
+      for (const l of row.lines) {
+        const r = mockStore.stock.find(
+          (x) => x.location_id === row.location.id && x.item_id === l.item_id,
+        );
+        if (r) {
+          r.on_hand += l.quantity;
+          r.available += l.quantity;
+        }
+      }
+      row.status = 'cancelled';
+      row.cancellation = {
+        reason,
+        cancelled_by: me().user.login_id,
+        cancelled_role: mockSession.role,
+        cancelled_at: d.t,
+      };
+      return HttpResponse.json(row);
+    }),
+  ),
+
+  // ---- Costed sales (contract 0.4.1): Super Admin only; the cost is the item's average cost at the time. ----
+  http.get(
+    '/api/v1/costed-sales/',
+    authed(
+      costedSa(({ request }) => {
+        const p = new URL(request.url).searchParams;
+        return paged(
+          request,
+          [...mockStore.sales]
+            .reverse()
+            .filter(
+              (s) =>
+                (!p.get('branch') || s.location.id === Number(p.get('branch'))) &&
+                (!p.get('status') || s.status === p.get('status')) &&
+                (!p.get('payment_method') || s.payment_method === p.get('payment_method')),
+            )
+            .map(withSaleCost),
+        );
+      }),
+    ),
+  ),
+  http.get(
+    '/api/v1/costed-sales/:id/',
+    authed(
+      costedSa(({ params }) => {
+        const row = byId(mockStore.sales, params.id);
+        return row ? HttpResponse.json(withSaleCost(row)) : notFound();
+      }),
+    ),
+  ),
+
+  // ---- CSV import (contract 0.4.0). ----
+  post(
+    '/api/v1/item-imports/',
+    writeAuthed(async ({ request }) => {
+      if (mockSession.role !== 'super_admin' && mockSession.role !== 'warehouse_admin')
+        return forbidden();
+      let form: FormData;
+      try {
+        form = await request.formData();
+      } catch {
+        return invalid([{ field: 'file', message: 'Send the CSV as a file.' }]);
+      }
+      const mode = form.get('dry_run');
+      if (mode !== 'true' && mode !== 'false')
+        return invalid([{ field: 'dry_run', message: 'dry_run must be true or false.' }]);
+      const file = form.get('file');
+      if (!(file instanceof Blob))
+        return invalid([{ field: 'file', message: 'Choose a CSV file.' }]);
+      if (file.size > 2 * 1024 * 1024)
+        return err(413, 'payload_too_large', 'The file is over 2 MB.');
+      const loc = form.get('location_id');
+      if (mockSession.role === 'super_admin' && !loc)
+        return invalid([{ field: 'location_id', message: 'Choose a location.' }]);
+      const locationId = mockSession.role === 'warehouse_admin' ? d.warehouse.id : Number(loc);
+      const r = checkCsv(
+        await file.text(),
+        mockStore.items.map((i) => i.sku),
+      );
+      const commit = mode === 'false' && r.errors.length === 0;
+      if (commit) {
+        mockStore.imports += 1;
+        commitCsv(await file.text(), locationId);
+      }
+      return HttpResponse.json({
+        ...r,
+        dry_run: mode === 'true',
+        committed: commit,
+        batch_reference: commit ? `IMP-${String(mockStore.imports).padStart(6, '0')}` : null,
+        location_id: locationId,
+      } satisfies S['ItemImportReport']);
     }),
   ),
 ];

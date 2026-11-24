@@ -53,6 +53,7 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
       ['Sell', '/sell'],
       ['Find', '/find'],
       ['Receive', '/receive'],
+      ['Sales', '/sell/sales'],
     ]) {
       expect(tiles().getByRole('link', { name }).getAttribute('href')).toBe(href);
     }
@@ -60,14 +61,19 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Activity' })).toBeTruthy();
   });
 
-  it('Warehouse and Branch Admin get only the Activity tile', async () => {
-    renderApp('/', { as: 'branch_admin' });
+  it('Branch Admin gets Activity and Sales tiles; Warehouse Admin gets none', async () => {
+    const ba = renderApp('/', { as: 'branch_admin' });
     await screen.findByText('Active items');
     expect(
       tiles()
         .getAllByRole('link')
         .map((l) => l.textContent),
-    ).toEqual(['Activity']);
+    ).toEqual(['Activity', 'Sales']);
+    expect(tiles().getByRole('link', { name: 'Sales' }).getAttribute('href')).toBe('/sell/sales');
+    ba.unmount();
+    renderApp('/', { as: 'warehouse_admin' });
+    await screen.findByText('Active items');
+    expect(tiles().queryAllByRole('link')).toHaveLength(0);
   });
 
   it('renders only what me.home_links holds, and none when it is empty', async () => {

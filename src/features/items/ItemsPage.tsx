@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 import { api, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
@@ -36,6 +36,7 @@ const none: Filters = { q: '', status: '', category: '', brand: '', condition: '
 export function ItemsPage() {
   const me = useCurrentMe();
   const canManage = me.permissions.includes('items.manage');
+  const canImport = me.permissions.includes('items.import');
   // The cost list is asked for only when /me says this user may see cost; the base list never has it.
   const withCost = me.permissions.includes('items.view_cost');
   const [filters, setFilters] = useState(none);
@@ -71,6 +72,15 @@ export function ItemsPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-4xl text-ink">Items</h1>
+        {canImport && (
+          <Link
+            to="/items/import"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-control bg-white px-4 font-semibold text-ink no-underline hover:bg-surface"
+          >
+            <Upload aria-hidden="true" size={20} />
+            <span>Import from CSV</span>
+          </Link>
+        )}
         {canManage && (
           <Link
             to="/items/new"

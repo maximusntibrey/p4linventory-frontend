@@ -127,6 +127,7 @@ const menus = {
     entry('find', 'Find', '/find'),
     entry('stock', 'Stock', '/stock'),
     entry('receive', 'Receive', '/receive'),
+    entry('sales', 'Sales', '/sell/sales'),
   ],
 } satisfies Record<string, S['Me']['menu']>;
 
@@ -137,9 +138,13 @@ const homeLinks = {
     entry('sell', 'Sell', '/sell'),
     entry('find', 'Find', '/find'),
     entry('receive', 'Receive', '/receive'),
+    entry('sales', 'Sales', '/sell/sales'),
   ],
-  warehouse_admin: [entry('activity', 'Activity', '/activity')],
-  branch_admin: [entry('activity', 'Activity', '/activity')],
+  warehouse_admin: [],
+  branch_admin: [
+    entry('activity', 'Activity', '/activity'),
+    entry('sales', 'Sales', '/sell/sales'),
+  ],
   front_staff: [],
 } satisfies Record<string, S['Me']['home_links']>;
 
@@ -170,6 +175,8 @@ export const me: S['Me'] = {
     'dispatches.waiting',
     'dispatches.receive',
     'sales.record',
+    'sales.cancel',
+    'items.import',
     'activity.view',
     'find.use',
     'dashboard.view',
@@ -201,6 +208,7 @@ export const meByRole: Record<MockRole, S['Me']> = {
       'stock.view',
       'stock.lookup_other_branches',
       'goods_receipts.manage',
+      'items.import',
       'dispatches.create',
       'dispatches.view',
       'activity.view',
@@ -226,6 +234,7 @@ export const meByRole: Record<MockRole, S['Me']> = {
       'dispatches.waiting',
       'dispatches.receive',
       'sales.record',
+      'sales.cancel',
       'activity.view',
       'find.use',
       'dashboard.view',
@@ -566,3 +575,56 @@ const dispatchShort: S['Dispatch'] = {
 };
 
 export const dispatches: S['Dispatch'][] = [dispatch, dispatchKumasi, dispatchShort];
+
+/** Sales at Accra: one completed, one cancelled. No cost anywhere (the contract's Sale never carries it). */
+export const sales: S['Sale'][] = [
+  {
+    id: 1,
+    reference: 'SAL-000001',
+    location: branchA,
+    staff: 'USR-0003',
+    status: 'completed',
+    payment_method: 'cash',
+    total: '1250.00',
+    sold_at: t,
+    lines: [
+      {
+        id: 101,
+        item_id: 1,
+        sku: 'SKU-000001',
+        item_name: 'HP 250 G9',
+        quantity: 1,
+        unit_price: '1250.00',
+        line_total: '1250.00',
+      },
+    ],
+    cancellation: null,
+  },
+  {
+    id: 2,
+    reference: 'SAL-000002',
+    location: branchA,
+    staff: 'USR-0003',
+    status: 'cancelled',
+    payment_method: 'card',
+    total: '2500.00',
+    sold_at: t,
+    lines: [
+      {
+        id: 201,
+        item_id: 1,
+        sku: 'SKU-000001',
+        item_name: 'HP 250 G9',
+        quantity: 2,
+        unit_price: '1250.00',
+        line_total: '2500.00',
+      },
+    ],
+    cancellation: {
+      reason: 'Customer changed their mind',
+      cancelled_by: 'USR-0002',
+      cancelled_role: 'branch_admin',
+      cancelled_at: t,
+    },
+  },
+];
