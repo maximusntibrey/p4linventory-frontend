@@ -310,11 +310,11 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 - [x] F3.2 Branch management screens
 - [x] F3.3 User management screens (show the generated ID after creation; deactivate and reset password with confirm step; per-person permissions such as Receive stock)
 - [x] F3.4 Dashboard shell
-- [ ] F4.1 Item list (search, filters, pagination, status badges, cards on phones; cost shown only if the API returns it)
-- [ ] F4.2 Item add and edit (category-driven form from field definitions, inline validation, save as Draft, activate, duplicate warning)
-- [ ] F4.3 One image upload with clear type and size messages
-- [ ] F4.4 Stock screen (by location, low-stock flag, search)
-- [ ] F4.5 Tests: item form and validation
+- [x] F4.1 Item list (search, filters, pagination, status badges, cards on phones; cost shown only if the API returns it)
+- [x] F4.2 Item add and edit (category-driven form from field definitions, inline validation, save as Draft, activate, duplicate warning)
+- [x] F4.3 One image upload with clear type and size messages
+- [x] F4.4 Stock screen (by location, low-stock flag, search)
+- [x] F4.5 Tests: item form and validation
 - [ ] F5.1 Receive stock into the warehouse screen (supplier, item lines, review, confirm, receipt reference shown)
 - [ ] F5.2 Dispatch screen (branch, lines with available quantity, status list)
 - [ ] F5.3 Branch receiving screen (waiting list, quantity pre-filled, "Received all" shortcut, shortfall note and highlight)
@@ -703,6 +703,8 @@ Branches: `sprint/9-phase2-complete` in both repos. Tag at end: `v2.4.0` on `mai
 | 2026-11-24 | Contract v0.1.2 also approved: /me `home_links` (Sell, Activity, Find, Receive Home tiles, separate from the max-5 menu) and /me `can_assign_multiple_roles` (true only for Super Admin). | Owner |
 | 2026-11-24 | OQ-26 decided: (1) Deactivated is final (suspend for temporary cases). (2) Last-Super-Admin guard: the system must always keep at least one active Super Admin; removing the SA role from, suspending or deactivating the last active SA is refused. (3) A Branch Admin's user list includes users whose permanent branch is theirs AND Front Staff currently working at their branch. (4) Password reset is refused for a deactivated user. | Owner |
 | 2026-11-24 | OQ-25 (backend) decided: Warehouse Admin and Branch Admin open the Activity log from a Home tile (home_links), showing only their own location's activity (OQ-5). | Owner |
+| 2026-11-24 | FIX-34 kept: Sentry uses sentry-sdk 3.0.0 `data_collection` (user_info false, stack_frame_variables false, cookies off, http_bodies []) because include_local_variables/send_default_pii do not exist in 3.0.0. | Owner |
+| 2026-11-24 | Approved for the next contract version: /me `all_branches` (true when the user works across all branches, e.g. Super Admin), so the frontend stops inferring it. | Owner |
 
 ## DEFERRALS
 
@@ -722,6 +724,9 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | OQ-21 | Activating an item without a selling price | Decision log | Answered: an item can be activated without a selling price, but cannot be sold until a price exists; only Super Admin or a 'Manage prices' holder may send selling_price. | Owner, 2026-11-23 |
 | OQ-25 | Needs the owner on the v0.1.2 re-sync. (a) /me has no explicit "must pick a branch" flag: F3.1 treats working_branch null plus the working_branch.select permission as must pick, which also forces a Super Admin (whose context branch is optional) to pick one. Add a flag, or confirm. (b) Where will Home links for Activity, Sell, Find and Receive come from? F3.4 draws any /me menu entries beyond the 5 nav items as Home tiles. (c) Several roles per user: no API signal yet, so the user form offers one role; a user who already has several keeps them. (d) The dashboard has no cost field, so none is shown. | F3.1, F3.3, F3.4 | Answered by the 2026-11-24 decisions and contract v0.1.2: (a) /me `must_pick_branch` (never true for Super Admin, who works across all branches and may filter with `?branch=`); (b) /me `home_links`; (c) /me `can_assign_multiple_roles`; (d) no cost on the dashboard, unchanged. Built Day 3. | |
 | OQ-23 | Sell and Activity have no code in the contract's `ActionPermission` list, and the Home links for Activity, Sell, Find and Receive (Super Admin) are not in `menu`. F2.2 guards `/sell` by the server menu and leaves Activity unrouted. Which permission codes will the API use, and where do the Home links come from (dashboard step)? | F2.2 | Approved (owner, 2026-11-24) | |
+| FQ-1 | F4.4: the low-stock flag needs the reorder level (C13), but `StockBalance` has no `reorder_level` or low-stock field. The screen shows In stock / Out of stock from the quantities only. Recommend `reorder_level` (integer, nullable) and `low_stock` (boolean, set by the server) on StockBalance and StockBalanceWithCost. | F4.4 | Answered: owner approved; contract 0.3.0 adds `reorder_level` and `low_stock` on StockBalance. The stock screen uses `low_stock`. | |
+| FQ-2 | F4.1: the Items list should filter by condition (FE section 4.3) but `/items/` and `/costed-items/` have no `condition` query parameter. The list filters by category, brand, status and search only. Recommend adding `condition` (new, refurbished, used). | F4.1 | Answered: owner approved; contract 0.3.0 adds the `condition` query. The list has a Condition filter. | |
+| FQ-3 | F4.2 notes for the owner: (a) the item form has no selling price field (price list and Manage prices come later; ItemWrite already accepts it); (b) PATCH `key_specs` is sent as the full object: confirm the server replaces rather than merges, so a cleared spec is removed; (c) common-field definitions (`in_key_specs` false) are sent as top-level fields by their key, e.g. grade, description. | F4.2 | Answered: owner approved. (a) Selling price field added, shown only when /me lists `prices.manage` (otherwise never sent; no negatives). (b), (c) as built. | |
 
 ## FIX LOG
 
@@ -753,6 +758,12 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FIX-24 | Branch-list filter query is enabled only in the all-branches view. | frontend | src/features/workingBranch/BranchFilter.tsx, src/components/AppShell.tsx | src/day3-fixes.test.tsx (failed first) | yes | yes |
 | FIX-25 | UsersPage resets to page 1 when the branch filter changes. | frontend | src/features/users/UsersPage.tsx | src/day3-fixes.test.tsx (failed first) | yes | yes |
 | FIX-26 | Removed dead ApiProblem in UserDetail Account card. | frontend | src/features/users/UserDetail.tsx | n/a (dead code removal; existing tests) | yes | yes |
+| FIX-27 | BUG: a Front Staff sign-in could land on the dashboard instead of the branch picker, because the sign-in answer was trusted and /me never asked again. Login now fetches /me after signing in and uses that; the sign-in answer is only a fallback. AppShell uses /me `all_branches` (contract 0.3.0) instead of inferring it. | frontend | n/a (no git during the day) | src/auth/postLogin.test.tsx (failed first); e2e/f4.spec.ts (Front Staff picker) | no | not yet |
+| FIX-28 | Cost could show, and stay cached, for a user without items.view_cost when a PATCH/status/image answer carried average_cost. Cost now shows only if /me allows it and the field is present; the cached row is stripped of it otherwise. | frontend | n/a (no git during the day) | src/day4-fixes.test.tsx (failed first) | no | not yet |
+| FIX-29 | Price string was built with Number().toFixed (loses digits on long values). Now built from the typed text; the form says a price can be changed but not removed. | frontend | n/a (no git during the day) | src/day4-fixes.test.tsx (failed first) | no | not yet |
+| FIX-30 | Mock POST/PATCH items accepted selling_price without prices.manage. Now 403 permission_denied, as the contract says. | frontend | n/a (no git during the day) | src/mocks/handlers.test.ts (failed first) | no | not yet |
+| FIX-31 | If /me answered 401 right after sign-in the app used the sign-in answer. Now it stays on Sign in with "Your sign-in did not hold, try again."; the sign-in answer is used only on a network or server error. | frontend | n/a (no git during the day) | src/day4-fixes.test.tsx (failed first) | no | not yet |
+| FIX-32 | Stock grouped by location name, merging two locations with the same name. Now grouped by location_id. | frontend | n/a (no git during the day) | src/day4-fixes.test.tsx (failed first) | no | not yet |
 
 ## DEPLOYMENT LOG
 
