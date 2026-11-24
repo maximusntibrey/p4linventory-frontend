@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Payless4Laptops Inventory API
-  version: 0.1.2
+  version: 0.3.0
   description: |
     Contract-first API for Sprint 1 (B1.3). Published before the code; from B2 onward the
     drf-spectacular generated schema must match this file. Changes need owner approval.
@@ -693,6 +693,7 @@ paths:
         - {name: status, in: query, schema: {$ref: '#/components/schemas/ItemStatus'}}
         - {name: category_id, in: query, schema: {type: integer}}
         - {name: brand_id, in: query, schema: {type: integer}}
+        - {name: condition, in: query, schema: {type: string, enum: [new, refurbished, used]}}
       responses:
         '200':
           description: Page of items.
@@ -706,14 +707,15 @@ paths:
                       results:
                         type: array
                         items: {$ref: '#/components/schemas/Item'}
+        '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
     post:
       tags: [items]
       operationId: itemsCreate
       summary: Create an item (always starts as Draft)
       description: |
-        SKU is generated (SKU-000001) unless one is supplied. A near-duplicate (same SKU, or
-        near-identical name and model) does not block: it is returned in `warnings`.
+        SKU is generated (SKU-000001) unless one is supplied. A same SKU (any letter case) is 409
+        `conflict` on field `sku`. A near-identical name and model does not block: it is returned in `warnings`.
         Only SA or a user holding Manage prices may send `selling_price`; anyone else who
         sends it gets 403 `permission_denied` (OQ-21). A price is not needed to create or
         activate an item, but the item cannot be sold until a price exists.
@@ -749,6 +751,7 @@ paths:
         - {name: status, in: query, schema: {$ref: '#/components/schemas/ItemStatus'}}
         - {name: category_id, in: query, schema: {type: integer}}
         - {name: brand_id, in: query, schema: {type: integer}}
+        - {name: condition, in: query, schema: {type: string, enum: [new, refurbished, used]}}
       responses:
         '200':
           description: Page of items with cost.
@@ -762,6 +765,7 @@ paths:
                       results:
                         type: array
                         items: {$ref: '#/components/schemas/ItemWithCost'}
+        '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
   /api/v1/costed-items/{id}/:
@@ -804,6 +808,7 @@ paths:
       summary: Edit an item (before and after values are audited)
       description: |
         SKU is immutable once used in a transaction (400). Discontinued items cannot be edited (409).
+        `key_specs` on PATCH REPLACES the whole object (it is not merged): send every spec to keep. Omit it to leave the specs unchanged.
         Only SA or a Manage prices holder may send `selling_price` (else 403 `permission_denied`, OQ-21).
       x-permission: SA, WA (table row 15); selling_price needs SA or manage_prices (row 16)
       parameters:
@@ -939,6 +944,38 @@ paths:
                       results:
                         type: array
                         items: {$ref: '#/components/schemas/StockBalance'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/stock/movements/:
+    get:
+      tags: [stock]
+      operationId: stockMovementsList
+      summary: Stock movement log (read only), newest first
+      description: |
+        One row per bucket changed. Same scope as `/stock/`: SA and WA see every location, BA and FS only
+        their own branch (another `location_id` is 403 `wrong_branch`). Never carries cost.
+      x-permission: SA all, WA all locations, BA and FS own branch (table row 21)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: location_id, in: query, schema: {type: integer}}
+        - {name: item_id, in: query, schema: {type: integer}}
+        - {name: movement_type, in: query, schema: {$ref: '#/components/schemas/MovementType'}}
+      responses:
+        '200':
+          description: Page of ledger rows.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/StockMovement'}
+        '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
   /api/v1/costed-stock/:
@@ -969,6 +1006,7 @@ paths:
                       results:
                         type: array
                         items: {$ref: '#/components/schemas/StockBalanceWithCost'}
+        '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
 
@@ -1412,7 +1450,7 @@ components:
           items: {$ref: '#/components/schemas/PersonPermission'}
     Me:
       type: object
-      required: [user, active_role, working_branch, must_pick_branch, can_assign_multiple_roles, permissions, menu, home_links, must_change_password]
+      required: [user, active_role, working_branch, must_pick_branch, all_branches, can_assign_multiple_roles, permissions, menu, home_links, must_change_password]
       properties:
         user: {$ref: '#/components/schemas/User'}
         active_role: {$ref: '#/components/schemas/RoleCode'}
@@ -1423,6 +1461,9 @@ components:
         must_pick_branch:
           type: boolean
           description: True only when the role requires a working branch and none is chosen (Front Staff). Always false for Super Admin, Branch Admin and Warehouse Admin.
+        all_branches:
+          type: boolean
+          description: True when the user works across all branches without picking one (Super Admin). False for every other role.
         can_assign_multiple_roles:
           type: boolean
           description: True only for Super Admin (table row 7).
@@ -1560,7 +1601,7 @@ components:
         description: {type: string}
         condition: {type: string, enum: [new, refurbished, used]}
         grade: {type: string, enum: [A, B, C], nullable: true}
-        key_specs: {type: object, additionalProperties: true}
+        key_specs: {type: object, additionalProperties: true, description: On PATCH this replaces the whole object (not merged).}
         show_on_website: {type: boolean}
         search_keywords: {type: string}
         selling_price: {allOf: [{$ref: '#/components/schemas/Money'}], description: Only SA or a Manage prices holder may send it; anyone else gets 403 (OQ-21).}
@@ -1572,12 +1613,12 @@ components:
           properties:
             warnings:
               type: array
-              description: Duplicate warnings (matching SKU, or near-identical name and model). Not blocking.
+              description: Duplicate warnings (near-identical name and model). Not blocking.
               items:
                 type: object
                 required: [code, message, item_id]
                 properties:
-                  code: {type: string, enum: [duplicate_sku, duplicate_name_model]}
+                  code: {type: string, enum: [duplicate_name_model]}
                   message: {type: string}
                   item_id: {type: integer}
     BranchAvailability:
@@ -1587,9 +1628,31 @@ components:
         branch_id: {type: integer}
         branch_name: {type: string}
         quantity: {type: integer, minimum: 0, description: Available (on hand minus reserved).}
+    MovementType:
+      type: string
+      enum: [supplier_receipt, opening_balance, dispatch, dispatch_receipt, resolution_return, resolution_loss, resolution_damage, sale, sale_cancellation]
+    StockMovement:
+      type: object
+      required: [id, created_at, location_id, location_name, item_id, sku, item_name, bucket, quantity_delta, balance_after, movement_type, source_type, source_ref, actor_login_id, note]
+      properties:
+        id: {type: integer}
+        created_at: {type: string, format: date-time}
+        location_id: {type: integer}
+        location_name: {type: string}
+        item_id: {type: integer}
+        sku: {type: string}
+        item_name: {type: string}
+        bucket: {type: string, enum: [on_hand, reserved, quarantined]}
+        quantity_delta: {type: integer, description: 'Signed, never zero.'}
+        balance_after: {type: integer, minimum: 0}
+        movement_type: {$ref: '#/components/schemas/MovementType'}
+        source_type: {type: string, enum: [goods_receipt, dispatch, dispatch_resolution, sale, sale_cancellation, csv_import]}
+        source_ref: {type: string, description: 'Public reference of the source, e.g. GRN-000001. May be empty.'}
+        actor_login_id: {type: string, description: Empty for system postings.}
+        note: {type: string}
     StockBalance:
       type: object
-      required: [location_id, location_name, item_id, sku, item_name, on_hand, reserved, available, quarantined]
+      required: [location_id, location_name, item_id, sku, item_name, on_hand, reserved, available, quarantined, reorder_level, low_stock]
       properties:
         location_id: {type: integer}
         location_name: {type: string}
@@ -1600,6 +1663,8 @@ components:
         reserved: {type: integer, minimum: 0}
         available: {type: integer, minimum: 0}
         quarantined: {type: integer, minimum: 0}
+        reorder_level: {type: integer, nullable: true, minimum: 0, description: Optional per item per location (C13).}
+        low_stock: {type: boolean, description: 'Server-computed: true when a reorder level is set and available is at or below it.'}
     StockBalanceWithCost:
       description: '`StockBalance` plus cost. Returned only by `/costed-stock/` (SA; WA warehouse rows).'
       allOf:

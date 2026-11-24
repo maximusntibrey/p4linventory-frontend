@@ -454,8 +454,8 @@ export interface paths {
         put?: never;
         /**
          * Create an item (always starts as Draft)
-         * @description SKU is generated (SKU-000001) unless one is supplied. A near-duplicate (same SKU, or
-         *     near-identical name and model) does not block: it is returned in `warnings`.
+         * @description SKU is generated (SKU-000001) unless one is supplied. A same SKU (any letter case) is 409
+         *     `conflict` on field `sku`. A near-identical name and model does not block: it is returned in `warnings`.
          *     Only SA or a user holding Manage prices may send `selling_price`; anyone else who
          *     sends it gets 403 `permission_denied` (OQ-21). A price is not needed to create or
          *     activate an item, but the item cannot be sold until a price exists.
@@ -526,6 +526,7 @@ export interface paths {
         /**
          * Edit an item (before and after values are audited)
          * @description SKU is immutable once used in a transaction (400). Discontinued items cannot be edited (409).
+         *     `key_specs` on PATCH REPLACES the whole object (it is not merged): send every spec to keep. Omit it to leave the specs unchanged.
          *     Only SA or a Manage prices holder may send `selling_price` (else 403 `permission_denied`, OQ-21).
          */
         patch: operations["itemsUpdate"];
@@ -609,6 +610,27 @@ export interface paths {
          *     Available = on_hand - reserved. In transit is not a bucket here; see `/dispatches/`.
          */
         get: operations["stockList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stock/movements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stock movement log (read only), newest first
+         * @description One row per bucket changed. Same scope as `/stock/`: SA and WA see every location, BA and FS only
+         *     their own branch (another `location_id` is 403 `wrong_branch`). Never carries cost.
+         */
+        get: operations["stockMovementsList"];
         put?: never;
         post?: never;
         delete?: never;
@@ -894,6 +916,8 @@ export interface components {
             working_branch: components["schemas"]["Branch"] | null;
             /** @description True only when the role requires a working branch and none is chosen (Front Staff). Always false for Super Admin, Branch Admin and Warehouse Admin. */
             must_pick_branch: boolean;
+            /** @description True when the user works across all branches without picking one (Super Admin). False for every other role. */
+            all_branches: boolean;
             /** @description True only for Super Admin (table row 7). */
             can_assign_multiple_roles: boolean;
             must_change_password: boolean;
@@ -1018,6 +1042,7 @@ export interface components {
             condition?: "new" | "refurbished" | "used";
             /** @enum {string|null} */
             grade?: "A" | "B" | "C" | null;
+            /** @description On PATCH this replaces the whole object (not merged). */
             key_specs?: {
                 [key: string]: unknown;
             };
@@ -1027,10 +1052,10 @@ export interface components {
             selling_price?: components["schemas"]["Money"];
         };
         ItemWithCostAndWarnings: components["schemas"]["ItemWithCost"] & {
-            /** @description Duplicate warnings (matching SKU, or near-identical name and model). Not blocking. */
+            /** @description Duplicate warnings (near-identical name and model). Not blocking. */
             warnings: {
                 /** @enum {string} */
-                code: "duplicate_sku" | "duplicate_name_model";
+                code: "duplicate_name_model";
                 message: string;
                 item_id: number;
             }[];
@@ -1040,6 +1065,31 @@ export interface components {
             branch_name: string;
             /** @description Available (on hand minus reserved). */
             quantity: number;
+        };
+        /** @enum {string} */
+        MovementType: "supplier_receipt" | "opening_balance" | "dispatch" | "dispatch_receipt" | "resolution_return" | "resolution_loss" | "resolution_damage" | "sale" | "sale_cancellation";
+        StockMovement: {
+            id: number;
+            /** Format: date-time */
+            created_at: string;
+            location_id: number;
+            location_name: string;
+            item_id: number;
+            sku: string;
+            item_name: string;
+            /** @enum {string} */
+            bucket: "on_hand" | "reserved" | "quarantined";
+            /** @description Signed, never zero. */
+            quantity_delta: number;
+            balance_after: number;
+            movement_type: components["schemas"]["MovementType"];
+            /** @enum {string} */
+            source_type: "goods_receipt" | "dispatch" | "dispatch_resolution" | "sale" | "sale_cancellation" | "csv_import";
+            /** @description Public reference of the source, e.g. GRN-000001. May be empty. */
+            source_ref: string;
+            /** @description Empty for system postings. */
+            actor_login_id: string;
+            note: string;
         };
         StockBalance: {
             location_id: number;
@@ -1051,6 +1101,10 @@ export interface components {
             reserved: number;
             available: number;
             quarantined: number;
+            /** @description Optional per item per location (C13). */
+            reorder_level: number | null;
+            /** @description Server-computed: true when a reorder level is set and available is at or below it. */
+            low_stock: boolean;
         };
         /** @description `StockBalance` plus cost. Returned only by `/costed-stock/` (SA; WA warehouse rows). */
         StockBalanceWithCost: components["schemas"]["StockBalance"] & {
@@ -2057,6 +2111,7 @@ export interface operations {
                 status?: components["schemas"]["ItemStatus"];
                 category_id?: number;
                 brand_id?: number;
+                condition?: "new" | "refurbished" | "used";
             };
             header?: never;
             path?: never;
@@ -2075,6 +2130,7 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
         };
     };
@@ -2119,6 +2175,7 @@ export interface operations {
                 status?: components["schemas"]["ItemStatus"];
                 category_id?: number;
                 brand_id?: number;
+                condition?: "new" | "refurbished" | "used";
             };
             header?: never;
             path?: never;
@@ -2137,6 +2194,7 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
@@ -2350,6 +2408,38 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    stockMovementsList: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+                location_id?: number;
+                item_id?: number;
+                movement_type?: components["schemas"]["MovementType"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of ledger rows. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        results?: components["schemas"]["StockMovement"][];
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
@@ -2381,6 +2471,7 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
