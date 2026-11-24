@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { LogIn } from 'lucide-react';
 import { api, ApiError } from '../api';
-import { sessionEndedKey } from '../api/queryClient';
 import { meKey, useMe } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
 import { Button } from '../components/Button';
@@ -35,7 +34,7 @@ export function Login() {
     meta: { keepSession: true },
     gcTime: 0, // the password must not linger in the mutation cache
     onSuccess: (data) => {
-      qc.removeQueries({ queryKey: sessionEndedKey });
+      qc.clear(); // a new sign-in must never see data cached for the previous user
       qc.setQueryData(meKey, data);
     },
     onError: (error) => setFailure((f) => ({ error, n: (f?.n ?? 0) + 1 })),

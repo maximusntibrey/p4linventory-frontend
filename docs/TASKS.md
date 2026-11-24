@@ -739,6 +739,7 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FIX-17 | Login and change-password mutations use gcTime 0 so passwords do not linger in the MutationCache. | frontend | n/a (no git during the day) | src/auth/auth.test.tsx (no password in mutation cache) | no | not yet |
 | FIX-18 | e2e/stub.ts payloads typed with `satisfies` against components['schemas'] (User, Me, menu, Error). | frontend | n/a (no git during the day) | tsc over e2e; `npm run e2e` | no | not yet |
 | FIX-19 | .github/workflows/ci.yml showed " M" with no diff: working file is LF, its hash equals the index and HEAD blob (a764031...), core.filemode false, no mode change. Only the stat cache is stale (file touched, content identical). Nothing to change; the next git index refresh clears it. | frontend | n/a (no git during the day) | n/a (investigation) | no | not yet |
+| FIX-20 | Security review: after a session expired, a new sign-in kept the previous user's cached queries. Login now clears the whole query cache before storing the new /me. | frontend | src/pages/Login.tsx | src/auth/auth.test.tsx (FIX-20, failed first) | yes | yes |
 
 ## DEPLOYMENT LOG
 

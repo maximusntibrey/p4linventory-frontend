@@ -242,6 +242,15 @@ describe('session ended later (FIX-15, FIX-16, FIX-17)', () => {
       ).not.toContain('correct horse'),
     );
   });
+
+  it('signing in drops data cached for the previous user (FIX-20)', async () => {
+    const { client } = renderApp('/login');
+    await screen.findByRole('heading', { name: 'Sign in' });
+    client.setQueryData(['previous-user-data'], { secret: 'cost 123.45' });
+    signIn('SA-0001', 'correct horse');
+    await screen.findByRole('heading', { level: 1, name: 'Home' });
+    expect(client.getQueryData(['previous-user-data'])).toBeUndefined();
+  });
 });
 
 describe('logout', () => {
