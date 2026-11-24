@@ -24,7 +24,7 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
     getValues,
     reset,
     formState: { errors },
-  } = useForm<Values>();
+  } = useForm<Values>({ shouldFocusError: false }); // the error summary owns focus
   const [failure, setFailure] = useState<{ error: unknown; n: number }>();
   const [invalidN, setInvalidN] = useState(0);
   const [done, setDone] = useState(false);
