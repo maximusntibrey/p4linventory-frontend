@@ -306,10 +306,10 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 - [x] F2.1 Login screen (user ID, password, clear errors, too-many-attempts message)
 - [x] F2.2 Layout, route guards and menu per role (built from what the API allows, max 5 items per role; Super Admin: Home, Items, Warehouse, Branches, Users, with Activity, Sell, Find and Receive opened from Home)
 - [x] F2.3 Tests: login and route guards
-- [ ] F3.1 Working-branch selection and switching (top bar shows branch, ID, switch icon with label, logout)
-- [ ] F3.2 Branch management screens
-- [ ] F3.3 User management screens (show the generated ID after creation; deactivate and reset password with confirm step; per-person permissions such as Receive stock)
-- [ ] F3.4 Dashboard shell
+- [x] F3.1 Working-branch selection and switching (top bar shows branch, ID, switch icon with label, logout)
+- [x] F3.2 Branch management screens
+- [x] F3.3 User management screens (show the generated ID after creation; deactivate and reset password with confirm step; per-person permissions such as Receive stock)
+- [x] F3.4 Dashboard shell
 - [ ] F4.1 Item list (search, filters, pagination, status badges, cards on phones; cost shown only if the API returns it)
 - [ ] F4.2 Item add and edit (category-driven form from field definitions, inline validation, save as Draft, activate, duplicate warning)
 - [ ] F4.3 One image upload with clear type and size messages
@@ -697,6 +697,12 @@ Branches: `sprint/9-phase2-complete` in both repos. Tag at end: `v2.4.0` on `mai
 | 2026-11-23 | OQ-21 approved: an item can be activated without a selling price, but cannot be sold until a price exists; only Super Admin or a 'Manage prices' holder may send selling_price. | Owner |
 | 2026-11-23 | OQ-22 approved: an account created (or reset) by a Super Admin starts as pending_activation and becomes active after the user's first password change; pending_activation is set only by the system, never via the status endpoint. | Owner |
 | 2026-11-23 | Brands: a deactivated brand can be reactivated (SA or WA) and cannot be chosen for new items (400). | Owner |
+| 2026-11-24 | OQ-23 approved: add permission and menu codes for Sell, Activity, Find and Receive to the contract with B3.4 (dashboard shell), so Super Admin Home opens them from server data. | Owner |
+| 2026-11-24 | Contract v0.1.2 approved: a generic `conflict` error code (409) used for duplicate stock posts instead of idempotency_conflict, and the 429 response documented on /auth/password/. Publish at the start of Day 3; the frontend re-syncs. | Owner |
+| 2026-11-24 | Super Admin and branches: a Super Admin is never asked to pick a branch at login. Super Admin works across ALL branches: lists and dashboard default to all branches, with an optional branch filter to view one branch, and every action available to them can be performed on any branch (actions on a record use that record's location, OQ-12). /me exposes `must_pick_branch` (true only when the user's role requires a working branch and none is chosen; always false for Super Admin). | Owner |
+| 2026-11-24 | Contract v0.1.2 also approved: /me `home_links` (Sell, Activity, Find, Receive Home tiles, separate from the max-5 menu) and /me `can_assign_multiple_roles` (true only for Super Admin). | Owner |
+| 2026-11-24 | OQ-26 decided: (1) Deactivated is final (suspend for temporary cases). (2) Last-Super-Admin guard: the system must always keep at least one active Super Admin; removing the SA role from, suspending or deactivating the last active SA is refused. (3) A Branch Admin's user list includes users whose permanent branch is theirs AND Front Staff currently working at their branch. (4) Password reset is refused for a deactivated user. | Owner |
+| 2026-11-24 | OQ-25 (backend) decided: Warehouse Admin and Branch Admin open the Activity log from a Home tile (home_links), showing only their own location's activity (OQ-5). | Owner |
 
 ## DEFERRALS
 
@@ -714,7 +720,8 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | OQ-4 to OQ-19 | Proposed answers (question wording kept in the backend docs, not copied here) | Decision log | Answered: approved as written. | Owner, 2026-11-23 |
 | OQ-20 | Brands, image limits, Discontinued, dashboard shell | Decision log | Answered: Super Admin and Warehouse Admin can add, rename and deactivate brands (seeded list; endpoints in v0.1.1); image limit 5 MB, JPEG/PNG/WebP; Discontinued is final (no re-activation); dashboard shell fields as in the contract. | Owner, 2026-11-23 |
 | OQ-21 | Activating an item without a selling price | Decision log | Answered: an item can be activated without a selling price, but cannot be sold until a price exists; only Super Admin or a 'Manage prices' holder may send selling_price. | Owner, 2026-11-23 |
-| OQ-23 | Sell and Activity have no code in the contract's `ActionPermission` list, and the Home links for Activity, Sell, Find and Receive (Super Admin) are not in `menu`. F2.2 guards `/sell` by the server menu and leaves Activity unrouted. Which permission codes will the API use, and where do the Home links come from (dashboard step)? | F2.2 | Open | |
+| OQ-25 | Needs the owner on the v0.1.2 re-sync. (a) /me has no explicit "must pick a branch" flag: F3.1 treats working_branch null plus the working_branch.select permission as must pick, which also forces a Super Admin (whose context branch is optional) to pick one. Add a flag, or confirm. (b) Where will Home links for Activity, Sell, Find and Receive come from? F3.4 draws any /me menu entries beyond the 5 nav items as Home tiles. (c) Several roles per user: no API signal yet, so the user form offers one role; a user who already has several keeps them. (d) The dashboard has no cost field, so none is shown. | F3.1, F3.3, F3.4 | Answered by the 2026-11-24 decisions and contract v0.1.2: (a) /me `must_pick_branch` (never true for Super Admin, who works across all branches and may filter with `?branch=`); (b) /me `home_links`; (c) /me `can_assign_multiple_roles`; (d) no cost on the dashboard, unchanged. Built Day 3. | |
+| OQ-23 | Sell and Activity have no code in the contract's `ActionPermission` list, and the Home links for Activity, Sell, Find and Receive (Super Admin) are not in `menu`. F2.2 guards `/sell` by the server menu and leaves Activity unrouted. Which permission codes will the API use, and where do the Home links come from (dashboard step)? | F2.2 | Approved (owner, 2026-11-24) | |
 
 ## FIX LOG
 
@@ -740,6 +747,12 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FIX-18 | e2e/stub.ts payloads typed with `satisfies` against components['schemas'] (User, Me, menu, Error). | frontend | n/a (no git during the day) | tsc over e2e; `npm run e2e` | no | not yet |
 | FIX-19 | .github/workflows/ci.yml showed " M" with no diff: working file is LF, its hash equals the index and HEAD blob (a764031...), core.filemode false, no mode change. Only the stat cache is stale (file touched, content identical). Nothing to change; the next git index refresh clears it. | frontend | n/a (no git during the day) | n/a (investigation) | no | not yet |
 | FIX-20 | Security review: after a session expired, a new sign-in kept the previous user's cached queries. Login now clears the whole query cache before storing the new /me. | frontend | src/pages/Login.tsx | src/auth/auth.test.tsx (FIX-20, failed first) | yes | yes |
+| FIX-21 | BLOCKER: a branch switch and the Super Admin filter change drop every cached query except /me and the branch directory (dropBranchScoped); Users list no longer keeps another branch's rows as placeholder. | frontend | src/auth/session.ts, src/components/AppShell.tsx, src/features/workingBranch/BranchPicker.tsx, src/features/users/UsersPage.tsx | src/day3-fixes.test.tsx (failed first) | yes | yes |
+| FIX-22 | Focus returns to the opener when ConfirmPanel, the one-time-password panel and the branch form close; a save moves focus to the success notice (useReturnFocus, SuccessNotice). | frontend | src/components/focus.tsx, ConfirmPanel.tsx, OneTimePassword.tsx, BranchesPage.tsx, UserDetail.tsx | src/day3-fixes.test.tsx (failed first) | yes | yes |
+| FIX-23 | UserDetail uses one idempotency key per action (edit, status, reset). | frontend | src/features/users/UserDetail.tsx | src/day3-fixes.test.tsx (failed first) | yes | yes |
+| FIX-24 | Branch-list filter query is enabled only in the all-branches view. | frontend | src/features/workingBranch/BranchFilter.tsx, src/components/AppShell.tsx | src/day3-fixes.test.tsx (failed first) | yes | yes |
+| FIX-25 | UsersPage resets to page 1 when the branch filter changes. | frontend | src/features/users/UsersPage.tsx | src/day3-fixes.test.tsx (failed first) | yes | yes |
+| FIX-26 | Removed dead ApiProblem in UserDetail Account card. | frontend | src/features/users/UserDetail.tsx | n/a (dead code removal; existing tests) | yes | yes |
 
 ## DEPLOYMENT LOG
 
