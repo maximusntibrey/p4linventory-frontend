@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { Card } from './Card';
 
 /** Remembers the focused element when the panel opens and gives focus back when it closes. Call it before the panel's own focus effect. */
 export function useReturnFocus() {
@@ -26,5 +27,16 @@ export function SuccessNotice({ children }: { children: ReactNode }) {
       <CheckCircle2 aria-hidden="true" size={20} />
       <span>{children}</span>
     </p>
+  );
+}
+
+/** A result card (receipt or dispatch confirmed) that takes focus when it appears, so the reference is announced. */
+export function ResultCard({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => ref.current?.focus(), []);
+  return (
+    <div ref={ref} tabIndex={-1} role="status">
+      <Card className="flex flex-col gap-2">{children}</Card>
+    </div>
   );
 }

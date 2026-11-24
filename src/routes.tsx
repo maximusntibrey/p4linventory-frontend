@@ -3,9 +3,14 @@ import { RequireAuth, RequirePermission } from './auth/guards';
 import type { Me } from './auth/session';
 import { AppShell } from './components/AppShell';
 import { BranchesPage } from './features/branches/BranchesPage';
+import { DispatchesPage } from './features/dispatches/DispatchesPage';
+import { DispatchNew } from './features/dispatches/DispatchNew';
+import { GoodsReceiptPage } from './features/goodsReceipts/GoodsReceiptPage';
 import { ItemDetail } from './features/items/ItemDetail';
 import { ItemNew } from './features/items/ItemNew';
 import { ItemsPage } from './features/items/ItemsPage';
+import { ReceiveDispatch } from './features/receiving/ReceiveDispatch';
+import { WaitingPage } from './features/receiving/WaitingPage';
 import { StockPage } from './features/stock/StockPage';
 import { UserDetail } from './features/users/UserDetail';
 import { UserNew } from './features/users/UserNew';
@@ -22,9 +27,6 @@ const guardedScreens: { path: string; title: string; permission: Me['permissions
   { path: 'find', title: 'Find', permission: 'find.use' },
   { path: 'activity', title: 'Activity', permission: 'activity.view' },
   { path: 'sell', title: 'Sell', permission: 'sales.record' },
-  { path: 'receive', title: 'Receive', permission: 'dispatches.waiting' },
-  { path: 'goods-receipts', title: 'Receive stock', permission: 'goods_receipts.manage' },
-  { path: 'dispatches', title: 'Dispatch', permission: 'dispatches.create' },
 ];
 
 export function AppRoutes() {
@@ -49,6 +51,46 @@ export function AppRoutes() {
               }
             />
           ))}
+          <Route
+            path="goods-receipts"
+            element={
+              <RequirePermission permission="goods_receipts.manage">
+                <GoodsReceiptPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="dispatches"
+            element={
+              <RequirePermission permission="dispatches.view">
+                <DispatchesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="dispatches/new"
+            element={
+              <RequirePermission permission="dispatches.create">
+                <DispatchNew />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="receive"
+            element={
+              <RequirePermission permission="dispatches.waiting">
+                <WaitingPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="receive/:id"
+            element={
+              <RequirePermission permission="dispatches.waiting">
+                <ReceiveDispatch />
+              </RequirePermission>
+            }
+          />
           <Route
             path="items"
             element={

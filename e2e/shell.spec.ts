@@ -32,7 +32,7 @@ test('keyboard focus is visible', async ({ page }) => {
 
 test('a page the user may not open shows the 403 page', async ({ page }) => {
   await stubAuth(page, { signedIn: true });
-  await page.goto('/goods-receipts');
+  await page.goto('/sell');
   await expect(page.getByRole('heading', { level: 1, name: '403: Not allowed' })).toBeVisible();
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });

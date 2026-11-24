@@ -90,6 +90,11 @@ export async function stubAuth(page: Page, opts: Opts = {}) {
             'branches.manage',
             'users.view',
             'users.manage',
+            'goods_receipts.manage',
+            'dispatches.create',
+            'dispatches.view',
+            'dispatches.waiting',
+            'dispatches.receive',
           ],
           menu,
         };

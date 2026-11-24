@@ -35,6 +35,8 @@ describe('MSW handlers cover the contract', () => {
 });
 
 describe('mock server behaviour', () => {
+  // One test makes many requests with the shared key K; each is a new action, so each gets its own key.
+  let seq = 0;
   const send = (
     method: string,
     path: string,
@@ -43,7 +45,11 @@ describe('mock server behaviour', () => {
   ) =>
     fetch(new URL(path, globalThis.location.origin), {
       method,
-      headers: { 'Content-Type': 'application/json', ...headers },
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+        ...(headers['Idempotency-Key'] === 'k-1' && { 'Idempotency-Key': 'k-' + ++seq }),
+      },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   const K = { 'X-CSRFToken': 't', 'Idempotency-Key': 'k-1' };
@@ -153,9 +159,13 @@ describe('mock server behaviour', () => {
     ['PATCH', '/api/v1/items/1/', {}],
     ['POST', '/api/v1/items/2/status/', { status: 'active' }],
     ['PUT', '/api/v1/items/1/image/'],
-    ['POST', '/api/v1/goods-receipts/', { supplier_name: 'S', lines: [] }],
-    ['POST', '/api/v1/dispatches/', { lines: [] }],
-    ['POST', '/api/v1/dispatches/1/receive/', { decision: 'approve_all' }],
+    [
+      'POST',
+      '/api/v1/goods-receipts/',
+      { supplier_name: 'S', lines: [{ item_id: 1, quantity: 1, unit_cost: '1.00' }] },
+    ],
+    ['POST', '/api/v1/dispatches/', { destination_id: 2, lines: [{ item_id: 1, quantity: 1 }] }],
+    ['POST', '/api/v1/dispatches/1/receive/', { decision: 'reject', reason: 'Wrong goods' }],
   ];
   it.each(keyed)(
     '%s %s needs an Idempotency-Key (400 without, not 400 with)',
@@ -273,7 +283,14 @@ describe('mock server behaviour', () => {
     const d = await (await send('GET', '/api/v1/dispatches/1/')).json();
     expect(d.status).toBe('in_transit');
     const received = await (
-      await send('POST', '/api/v1/dispatches/1/receive/', K, { decision: 'approve_partial' })
+      await send('POST', '/api/v1/dispatches/1/receive/', K, {
+        decision: 'approve_partial',
+        note: 'Short',
+        lines: [
+          { line_id: 1, qty_received: 1, qty_accepted: 1 },
+          { line_id: 2, qty_received: 5, qty_accepted: 5 },
+        ],
+      })
     ).json();
     expect(received.status).toBe('partially_received');
   });
@@ -477,10 +494,15 @@ describe('FIX-30 selling_price needs prices.manage (403 permission_denied)', () 
     condition: 'new',
     selling_price: '10.00',
   };
+  let calls = 0;
   const call = (m: string, path: string, b: object) =>
     fetch(new URL(path, globalThis.location.origin), {
       method: m,
-      headers: { 'X-CSRFToken': 't', 'Idempotency-Key': 'k-1', 'Content-Type': 'application/json' },
+      headers: {
+        'X-CSRFToken': 't',
+        'Idempotency-Key': 'p-' + ++calls,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(b),
     });
   it('POST and PATCH with a price are 403 without the permission, fine with it or without a price', async () => {

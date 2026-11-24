@@ -20,3 +20,21 @@ export function useIdempotencyKey() {
     },
   };
 }
+
+/**
+ * Lets only one submit through until it settles. A fast double click can land before React shows the
+ * button as disabled, so the guard lives in a ref. Call `end` when the request settles.
+ */
+export function useSingleFlight() {
+  const busy = useRef(false);
+  return {
+    start(): boolean {
+      if (busy.current) return false;
+      busy.current = true;
+      return true;
+    },
+    end() {
+      busy.current = false;
+    },
+  };
+}

@@ -9,6 +9,7 @@ import { Button } from '../../components/Button';
 import { Field } from '../../components/Field';
 import { QueryGate } from '../../components/QueryGate';
 import { Select } from '../../components/Select';
+import { twoDecimals } from '../../lib/money';
 import { conditionCodes, conditionLabels } from './labels';
 
 type S = components['schemas'];
@@ -47,12 +48,6 @@ type Props = {
   error: unknown;
   onSubmit: (body: S['ItemWrite']) => void;
   submitLabel: string;
-};
-
-/** "1250" to "1250.00", "12.5" to "12.50": built from the typed digits, never through a float. */
-const twoDecimals = (text: string) => {
-  const [whole, frac = ''] = text.trim().split('.');
-  return `${whole}.${frac.padEnd(2, '0')}`;
 };
 
 const asText = (v: unknown) => (typeof v === 'boolean' ? v : v == null ? '' : String(v));

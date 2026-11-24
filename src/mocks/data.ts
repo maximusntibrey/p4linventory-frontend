@@ -512,6 +512,18 @@ export const dispatch: S['Dispatch'] = {
       shortfall: 0,
       line_note: null,
     },
+    {
+      id: 2,
+      item_id: 2,
+      sku: 'SKU-000002',
+      item_name: 'Dell 65W charger',
+      qty_sent: 5,
+      qty_received: null,
+      qty_accepted: null,
+      qty_rejected: null,
+      shortfall: 0,
+      line_note: null,
+    },
   ],
   dispatched_at: t,
   dispatched_by: 'USR-0001',
@@ -520,3 +532,37 @@ export const dispatch: S['Dispatch'] = {
   receive_note: null,
   has_open_discrepancy: false,
 };
+
+/** A second delivery, waiting at Kumasi. */
+const dispatchKumasi: S['Dispatch'] = {
+  ...dispatch,
+  id: 2,
+  reference: 'TRF-000002',
+  destination: branchB,
+  lines: [{ ...dispatch.lines[0], id: 3, qty_sent: 3 }],
+};
+
+/** A delivery already received short: 5 sent, 3 accepted, the rest an open shortfall. */
+const dispatchShort: S['Dispatch'] = {
+  ...dispatch,
+  id: 3,
+  reference: 'TRF-000003',
+  status: 'partially_received',
+  lines: [
+    {
+      ...dispatch.lines[0],
+      id: 4,
+      qty_sent: 5,
+      qty_received: 3,
+      qty_accepted: 3,
+      qty_rejected: 0,
+      shortfall: 2,
+    },
+  ],
+  received_at: t,
+  received_by: 'USR-0002',
+  receive_note: 'Two boxes did not arrive.',
+  has_open_discrepancy: true,
+};
+
+export const dispatches: S['Dispatch'][] = [dispatch, dispatchKumasi, dispatchShort];

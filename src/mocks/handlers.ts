@@ -85,9 +85,18 @@ const byId = <T extends { id: number }>(rows: T[], id: unknown) =>
   rows.find((r) => r.id === Number(id));
 
 /** Items made or changed during this mock session. Tests reset it after each test. */
-export const mockStore = { items: structuredClone(d.costedItems) };
+export const mockStore = {
+  items: structuredClone(d.costedItems),
+  stock: structuredClone(d.stock),
+  dispatches: structuredClone(d.dispatches),
+  receipts: [structuredClone(d.goodsReceipt)],
+};
 export const resetMockStore = () => {
+  replays.clear();
   mockStore.items = structuredClone(d.costedItems);
+  mockStore.stock = structuredClone(d.stock);
+  mockStore.dispatches = structuredClone(d.dispatches);
+  mockStore.receipts = [structuredClone(d.goodsReceipt)];
 };
 const withoutCost = (row: S['ItemWithCost']) =>
   Object.fromEntries(Object.entries(row).filter(([k]) => k !== 'average_cost')) as S['Item'];
@@ -165,13 +174,32 @@ const authed = (fn: Resolver): Resolver =>
       ? err(403, 'password_change_required', 'Change your password to continue.')
       : fn(info),
   );
-/** The contract requires an Idempotency-Key on these POSTs. */
+/** Answers kept per key and path, so a replay returns the first answer (contract v0.1.1). Cleared with the mock store. */
+const replays = new Map<string, { body: string; status: number; answer: string }>();
+/** The contract requires an Idempotency-Key on these POSTs; the same key and body replays, another body is 409. */
 const keyed =
   (fn: Resolver): Resolver =>
-  (info) =>
-    info.request.headers.get('Idempotency-Key')
-      ? fn(info)
-      : invalid([{ field: null, message: 'Idempotency-Key header is required.' }]);
+  async (info) => {
+    const key = info.request.headers.get('Idempotency-Key');
+    if (!key) return invalid([{ field: null, message: 'Idempotency-Key header is required.' }]);
+    const id = key + ' ' + new URL(info.request.url).pathname;
+    // Only JSON bodies are compared; an upload is replayed by key alone.
+    const body = info.request.headers.get('Content-Type')?.includes('json')
+      ? await info.request.clone().text()
+      : '';
+    const seen = replays.get(id);
+    if (seen) {
+      return seen.body === body
+        ? new Response(seen.answer || null, {
+            status: seen.status,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        : err(409, 'idempotency_conflict', 'This key was already used for a different request.');
+    }
+    const res = (await fn(info)) as Response;
+    if (res.ok) replays.set(id, { body, status: res.status, answer: await res.clone().text() });
+    return res;
+  };
 /** State-changing operations: logged in, then the Idempotency-Key check. */
 const writeAuthed = (fn: Resolver): Resolver => authed(keyed(fn));
 /** Only Super Admin or a Manage prices holder may send selling_price (403 permission_denied). */
@@ -187,6 +215,32 @@ const costed =
       ? forbidden()
       : fn(info);
 /** BA and WA have a fixed location and cannot choose a working branch (403). */
+/** Branch Admin and Front Staff see only their own branch; undefined means no such limit. */
+const ownBranchId = () =>
+  mockSession.role === 'branch_admin' || mockSession.role === 'front_staff'
+    ? (me().working_branch?.id ?? 0)
+    : undefined;
+/** The stock row of an item at a location, made empty on first use (like a first receipt). */
+const stockRow = (locationId: number, item: S['Item']) => {
+  let row = mockStore.stock.find((r) => r.location_id === locationId && r.item_id === item.id);
+  if (!row) {
+    row = {
+      location_id: locationId,
+      location_name: d.byBranch(String(locationId))?.name ?? '',
+      item_id: item.id,
+      sku: item.sku,
+      item_name: item.name,
+      on_hand: 0,
+      reserved: 0,
+      available: 0,
+      quarantined: 0,
+      reorder_level: null,
+      low_stock: false,
+    };
+    mockStore.stock.push(row);
+  }
+  return row;
+};
 const fixedLocation = () =>
   mockSession.role === 'branch_admin' || mockSession.role === 'warehouse_admin';
 const inactiveBrand = (id: unknown) => d.brands.some((x) => x.id === id && !x.is_active);
@@ -661,7 +715,7 @@ export const handlers: RequestHandler[] = [
       if (own !== undefined && location && Number(location) !== own) return forbidden();
       return paged(
         request,
-        d.stock.filter(
+        mockStore.stock.filter(
           (r) =>
             (own === undefined || r.location_id === own) &&
             (!location || r.location_id === Number(location)) &&
@@ -695,48 +749,285 @@ export const handlers: RequestHandler[] = [
 
   http.get(
     '/api/v1/goods-receipts/',
-    authed(() => page([d.goodsReceipt])),
+    authed(costed(({ request }) => paged(request, [...mockStore.receipts].reverse()))),
   ),
   post(
     '/api/v1/goods-receipts/',
     writeAuthed(async ({ request }) => {
+      if (!me().permissions.includes('goods_receipts.manage')) return forbidden();
       const b = await readJson(request);
-      return HttpResponse.json(
-        {
-          ...d.goodsReceipt,
-          supplier_name: text(b.supplier_name, ''),
-        } satisfies S['GoodsReceipt'],
-        { status: 201 },
-      );
+      const errors: S['Error']['errors'] = [];
+      const supplier = text(b.supplier_name, '').trim();
+      if (!supplier) errors.push({ field: 'supplier_name', message: 'Enter the supplier name.' });
+      const lines = (Array.isArray(b.lines) ? b.lines : []) as Record<string, unknown>[];
+      if (lines.length === 0) errors.push({ field: 'lines', message: 'Add at least one line.' });
+      lines.forEach((l, i) => {
+        if (!mockStore.items.some((x) => x.id === l.item_id && x.status === 'active'))
+          errors.push({
+            field: `lines.${i}.item_id`,
+            message: 'Only active items can be received.',
+          });
+        if (lines.findIndex((x) => x.item_id === l.item_id) !== i)
+          errors.push({
+            field: `lines.${i}.item_id`,
+            message: 'This item is on the receipt twice.',
+          });
+        if (!Number.isInteger(l.quantity) || (l.quantity as number) < 1)
+          errors.push({
+            field: `lines.${i}.quantity`,
+            message: 'Enter a whole number, 1 or more.',
+          });
+        if (typeof l.unit_cost !== 'string' || !/^\d+\.\d{2}$/.test(l.unit_cost))
+          errors.push({ field: `lines.${i}.unit_cost`, message: 'Enter a cost such as 900.00.' });
+      });
+      if (errors.length) return invalid(errors);
+      const id = mockStore.receipts.length + 1;
+      const receipt: S['GoodsReceipt'] = {
+        id,
+        reference: `GRN-${String(id).padStart(6, '0')}`,
+        location_id: d.warehouse.id,
+        supplier_name: supplier,
+        notes: text(b.notes, ''),
+        lines: lines.map((l, i) => {
+          const item = byId(mockStore.items, l.item_id)!;
+          const row = stockRow(d.warehouse.id, item);
+          row.on_hand += l.quantity as number;
+          row.available += l.quantity as number;
+          return {
+            id: id * 100 + i,
+            item_id: item.id,
+            sku: item.sku,
+            item_name: item.name,
+            quantity: l.quantity as number,
+            unit_cost: l.unit_cost as string,
+          };
+        }),
+        received_at: d.t,
+        received_by: me().user.login_id,
+      };
+      mockStore.receipts.push(receipt);
+      return HttpResponse.json(receipt, { status: 201 });
     }),
   ),
-  http.get('/api/v1/goods-receipts/:id/', one([d.goodsReceipt])),
+  http.get(
+    '/api/v1/goods-receipts/:id/',
+    authed(
+      costed(({ params }) => {
+        const row = byId(mockStore.receipts, params.id);
+        return row ? HttpResponse.json(row) : notFound();
+      }),
+    ),
+  ),
 
   http.get(
     '/api/v1/dispatches/',
-    authed(() => page([d.dispatch])),
+    authed(({ request }) => {
+      const p = new URL(request.url).searchParams;
+      const own = ownBranchId();
+      return paged(
+        request,
+        mockStore.dispatches.filter(
+          (x) =>
+            (own === undefined || x.destination.id === own) &&
+            (!p.get('status') || x.status === p.get('status')) &&
+            (!p.get('destination_id') || x.destination.id === Number(p.get('destination_id'))),
+        ),
+      );
+    }),
   ),
   post(
     '/api/v1/dispatches/',
-    writeAuthed(() => HttpResponse.json(d.dispatch, { status: 201 })),
+    writeAuthed(async ({ request }) => {
+      if (!me().permissions.includes('dispatches.create')) return forbidden();
+      const b = await readJson(request);
+      const errors: S['Error']['errors'] = [];
+      const to = d.branches.find(
+        (x) => x.id === b.destination_id && x.kind === 'branch' && x.is_active,
+      );
+      if (!to) errors.push({ field: 'destination_id', message: 'Choose an active branch.' });
+      const lines = (Array.isArray(b.lines) ? b.lines : []) as Record<string, unknown>[];
+      if (lines.length === 0) errors.push({ field: 'lines', message: 'Add at least one line.' });
+      lines.forEach((l, i) => {
+        if (!mockStore.items.some((x) => x.id === l.item_id && x.status === 'active'))
+          errors.push({
+            field: `lines.${i}.item_id`,
+            message: 'Only active items can be dispatched.',
+          });
+        if (lines.findIndex((x) => x.item_id === l.item_id) !== i)
+          errors.push({
+            field: `lines.${i}.item_id`,
+            message: 'This item is on the dispatch twice.',
+          });
+        if (!Number.isInteger(l.quantity) || (l.quantity as number) < 1)
+          errors.push({
+            field: `lines.${i}.quantity`,
+            message: 'Enter a whole number, 1 or more.',
+          });
+      });
+      if (errors.length || !to) return invalid(errors);
+      for (const l of lines) {
+        const item = byId(mockStore.items, l.item_id)!;
+        const have = mockStore.stock.find(
+          (r) => r.location_id === d.warehouse.id && r.item_id === item.id,
+        )?.available;
+        if ((have ?? 0) < (l.quantity as number)) {
+          return err(
+            409,
+            'insufficient_stock',
+            `Not enough ${item.name} at ${d.warehouse.name}: ${have ?? 0} available.`,
+          );
+        }
+      }
+      const id = mockStore.dispatches.length + 1;
+      const made: S['Dispatch'] = {
+        id,
+        reference: `TRF-${String(id).padStart(6, '0')}`,
+        origin: d.warehouse,
+        destination: to,
+        status: 'in_transit',
+        lines: lines.map((l, i) => {
+          const item = byId(mockStore.items, l.item_id)!;
+          const row = stockRow(d.warehouse.id, item);
+          row.reserved += l.quantity as number;
+          row.available -= l.quantity as number;
+          return {
+            id: id * 100 + i,
+            item_id: item.id,
+            sku: item.sku,
+            item_name: item.name,
+            qty_sent: l.quantity as number,
+            qty_received: null,
+            qty_accepted: null,
+            qty_rejected: null,
+            shortfall: 0,
+            line_note: null,
+          };
+        }),
+        dispatched_at: d.t,
+        dispatched_by: me().user.login_id,
+        received_at: null,
+        received_by: null,
+        receive_note: null,
+        has_open_discrepancy: false,
+      };
+      mockStore.dispatches.push(made);
+      return HttpResponse.json(made, { status: 201 });
+    }),
   ),
   http.get(
     '/api/v1/dispatches/waiting/',
-    authed(() => page([d.dispatch])),
+    authed(({ request }) => {
+      if (mockSession.role === 'warehouse_admin') return forbidden();
+      const asked = new URL(request.url).searchParams.get('branch_id');
+      const own = ownBranchId();
+      if (own !== undefined && asked && Number(asked) !== own) return forbidden();
+      const branch = own ?? (asked ? Number(asked) : undefined);
+      if (branch === undefined)
+        return invalid([{ field: 'branch_id', message: 'Choose a branch.' }]);
+      return paged(
+        request,
+        mockStore.dispatches.filter(
+          (x) => x.status === 'in_transit' && x.destination.id === branch,
+        ),
+      );
+    }),
   ),
-  http.get('/api/v1/dispatches/:id/', one([d.dispatch])),
+  http.get(
+    '/api/v1/dispatches/:id/',
+    authed(({ params }) => {
+      const row = byId(mockStore.dispatches, params.id);
+      if (!row) return notFound();
+      const own = ownBranchId();
+      return own !== undefined && row.destination.id !== own ? forbidden() : HttpResponse.json(row);
+    }),
+  ),
   post(
     '/api/v1/dispatches/:id/receive/',
     writeAuthed(async ({ params, request }) => {
-      if (!byId([d.dispatch], params.id)) return notFound();
+      const row = byId(mockStore.dispatches, params.id);
+      if (!row) return notFound();
+      const own = ownBranchId();
+      if (
+        !me().permissions.includes('dispatches.receive') ||
+        (own !== undefined && own !== row.destination.id)
+      )
+        return forbidden();
+      if (row.status !== 'in_transit')
+        return err(409, 'already_decided', 'This delivery already has a decision.');
       const b = await readJson(request);
-      const status: S['DispatchStatus'] =
-        b.decision === 'reject'
-          ? 'rejected'
-          : b.decision === 'approve_partial'
-            ? 'partially_received'
-            : 'completed';
-      return HttpResponse.json({ ...d.dispatch, status });
+      const decision = b.decision;
+      if (decision !== 'approve_all' && decision !== 'approve_partial' && decision !== 'reject')
+        return invalid([{ field: 'decision', message: 'Choose how to receive this delivery.' }]);
+      if (decision === 'reject') {
+        const reason = text(b.reason, '').trim();
+        if (!reason) return invalid([{ field: 'reason', message: 'Give a reason for rejecting.' }]);
+        row.status = 'rejected';
+        row.receive_note = reason;
+        for (const l of row.lines) {
+          l.qty_received = 0;
+          l.qty_accepted = 0;
+          l.qty_rejected = l.qty_sent;
+          l.shortfall = l.qty_sent;
+        }
+      } else {
+        const got = (Array.isArray(b.lines) ? b.lines : []) as Record<string, unknown>[];
+        const errors: S['Error']['errors'] = [];
+        if (
+          got.length !== row.lines.length ||
+          !row.lines.every((l) => got.some((g) => g.line_id === l.id))
+        )
+          errors.push({ field: 'lines', message: 'Give every line once.' });
+        got.forEach((g, i) => {
+          const line = row.lines.find((l) => l.id === g.line_id);
+          const r = g.qty_received;
+          if (
+            !line ||
+            !Number.isInteger(r) ||
+            !Number.isInteger(g.qty_accepted) ||
+            (r as number) < 0
+          )
+            errors.push({
+              field: `lines.${i}.qty_received`,
+              message: 'Enter a whole number, 0 or more.',
+            });
+          else if ((r as number) > line.qty_sent)
+            errors.push({
+              field: `lines.${i}.qty_received`,
+              message: `More than the ${line.qty_sent} that were sent.`,
+            });
+          else if ((g.qty_accepted as number) > (r as number))
+            errors.push({ field: `lines.${i}.qty_accepted`, message: 'More than was received.' });
+        });
+        const short = got.some(
+          (g) => g.qty_accepted !== row.lines.find((l) => l.id === g.line_id)?.qty_sent,
+        );
+        if (decision === 'approve_all' && short)
+          errors.push({ field: 'decision', message: 'Approve all needs every line in full.' });
+        if (decision === 'approve_partial' && !text(b.note, '').trim())
+          errors.push({ field: 'note', message: 'Add a note about the shortfall.' });
+        if (errors.length) return invalid(errors);
+        for (const g of got) {
+          const line = row.lines.find((l) => l.id === g.line_id)!;
+          const a = g.qty_accepted as number;
+          line.qty_received = g.qty_received as number;
+          line.qty_accepted = a;
+          line.qty_rejected = line.qty_received - a;
+          line.shortfall = line.qty_sent - a;
+          const item = byId(mockStore.items, line.item_id)!;
+          const from = stockRow(d.warehouse.id, item);
+          from.reserved -= a;
+          from.on_hand -= a;
+          const to = stockRow(row.destination.id, item);
+          to.on_hand += a;
+          to.available += a;
+        }
+        row.status = decision === 'approve_all' ? 'completed' : 'partially_received';
+        row.receive_note = text(b.note, '').trim() || null;
+      }
+      row.received_at = d.t;
+      row.received_by = me().user.login_id;
+      row.has_open_discrepancy = row.lines.some((l) => l.shortfall > 0);
+      return HttpResponse.json(row);
     }),
   ),
 ];
