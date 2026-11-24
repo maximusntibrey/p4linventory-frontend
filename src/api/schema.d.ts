@@ -752,7 +752,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read one dispatch */
+        /**
+         * Read one dispatch
+         * @description A dispatch to another branch (BA, FS) is 404 `not_found`, the same as an id that does not exist (OQ-30). 403 is for a role that may not read dispatches.
+         */
         get: operations["dispatchesRead"];
         put?: never;
         post?: never;
@@ -773,7 +776,9 @@ export interface paths {
         put?: never;
         /**
          * Receive a dispatch at the destination branch (all, partial or reject)
-         * @description Destination only; the sender cannot approve receipt. Per line `qty_received` is the
+         * @description Destination only; the sender cannot approve receipt. A dispatch to another branch is 404
+         *     `not_found`, the same as an id that does not exist (OQ-30); 403 is for a role or grant that
+         *     may not receive. Per line `qty_received` is the
          *     physical count (at most `qty_sent`; more is 400 on that line) and `qty_accepted` is
          *     what is credited (at most `qty_received`). `approve_all` needs every line received and
          *     accepted in full. `approve_partial` needs a `note`. `reject` needs a `reason` and

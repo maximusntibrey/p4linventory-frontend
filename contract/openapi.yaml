@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Payless4Laptops Inventory API
-  version: 0.3.1
+  version: 0.3.2
   description: |
     Contract-first API for Sprint 1 (B1.3). Published before the code; from B2 onward the
     drf-spectacular generated schema must match this file. Changes need owner approval.
@@ -1164,6 +1164,7 @@ paths:
       tags: [dispatches]
       operationId: dispatchesRead
       summary: Read one dispatch
+      description: A dispatch to another branch (BA, FS) is 404 `not_found`, the same as an id that does not exist (OQ-30). 403 is for a role that may not read dispatches.
       x-permission: SA, WA all; BA, FS to own branch (table row 29)
       parameters:
         - {$ref: '#/components/parameters/Id'}
@@ -1182,7 +1183,9 @@ paths:
       operationId: dispatchesReceive
       summary: Receive a dispatch at the destination branch (all, partial or reject)
       description: |
-        Destination only; the sender cannot approve receipt. Per line `qty_received` is the
+        Destination only; the sender cannot approve receipt. A dispatch to another branch is 404
+        `not_found`, the same as an id that does not exist (OQ-30); 403 is for a role or grant that
+        may not receive. Per line `qty_received` is the
         physical count (at most `qty_sent`; more is 400 on that line) and `qty_accepted` is
         what is credited (at most `qty_received`). `approve_all` needs every line received and
         accepted in full. `approve_partial` needs a `note`. `reject` needs a `reason` and
