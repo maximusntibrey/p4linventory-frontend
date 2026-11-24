@@ -65,6 +65,10 @@ describe('StatusBadge', () => {
     ['low', 'Low'],
     ['out', 'Out of stock'],
     ['error', 'Error'],
+    ['active', 'Active'],
+    ['pending', 'Pending activation'],
+    ['suspended', 'Suspended'],
+    ['deactivated', 'Deactivated'],
   ])('%s shows text and an icon, not colour alone', async (status, text) => {
     const { container } = render(<StatusBadge status={status} />);
     expect(screen.getByText(text)).toBeTruthy();
@@ -76,34 +80,31 @@ describe('StatusBadge', () => {
 describe('TopBar', () => {
   it('shows branch, user and labelled actions', async () => {
     const onLogout = vi.fn();
+    const onSwitchBranch = vi.fn();
     const { container } = render(
-      <TopBar branchName="Accra" userId="SA-0001" onLogout={onLogout} />,
+      <TopBar
+        branchName="Accra"
+        userId="SA-0001"
+        onLogout={onLogout}
+        onSwitchBranch={onSwitchBranch}
+      />,
     );
     expect(screen.getByText('Accra')).toBeTruthy();
     expect(screen.getByText('SA-0001')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Switch branch' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch branch' }));
+    expect(onSwitchBranch).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
     expect(onLogout).toHaveBeenCalledOnce();
     expect(await axe(container)).toHaveNoViolations();
   });
-});
 
-describe('TopBar until F2 wires the actions', () => {
-  it('disables Switch branch and Log out when nothing is wired', () => {
-    render(<TopBar branchName="Accra" userId="SA-0001" />);
-    expect(
-      (screen.getByRole('button', { name: 'Switch branch' }) as HTMLButtonElement).disabled,
-    ).toBe(true);
-    expect((screen.getByRole('button', { name: 'Log out' }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+  it('draws no Switch branch button when the API does not allow switching', () => {
+    render(<TopBar branchName="Accra" userId="USR-0001" onLogout={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Switch branch' })).toBeNull();
   });
 
-  it('enables each action once its handler is given', () => {
-    const onSwitchBranch = vi.fn();
-    render(<TopBar branchName="Accra" userId="SA-0001" onSwitchBranch={onSwitchBranch} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Switch branch' }));
-    expect(onSwitchBranch).toHaveBeenCalledOnce();
+  it('disables Log out until it is wired', () => {
+    render(<TopBar branchName="Accra" userId="SA-0001" />);
     expect((screen.getByRole('button', { name: 'Log out' }) as HTMLButtonElement).disabled).toBe(
       true,
     );
