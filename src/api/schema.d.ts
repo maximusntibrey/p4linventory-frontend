@@ -106,6 +106,8 @@ export interface paths {
         /**
          * Change own password (also the forced change at first login)
          * @description Minimum 10 characters. Clears `must_change_password`. The new password must differ from the old one.
+         *     A wrong current password is limited to 5 tries per 15 minutes per user, then 429 `rate_limited`
+         *     with `Retry-After`.
          */
         post: operations["authChangePassword"];
         delete?: never;
@@ -128,7 +130,9 @@ export interface paths {
         get: operations["workingBranchGet"];
         /**
          * Choose or switch the working branch (every switch is logged)
-         * @description Front Staff may pick any active branch. SA may pick an optional context branch. BA and WA have a fixed location and get 403.
+         * @description Front Staff may pick any active branch. SA may pick an optional context branch. BA and WA have a
+         *     fixed location and get 403. Only active locations of kind `branch` can be chosen (400 otherwise).
+         *     Choosing the branch already in use returns 200 and writes no new switch.
          */
         put: operations["workingBranchSet"];
         post?: never;
@@ -323,7 +327,9 @@ export interface paths {
         get: operations["usersPermissionsRead"];
         /**
          * Set the full list of per-person permissions
-         * @description Missing codes are revoked, new codes are granted. Each grant and revoke is an audit event. A grant never widens branch scope.
+         * @description Missing codes are revoked, new codes are granted. Each grant and revoke is an audit event. A grant
+         *     never widens branch scope. `receive_stock` can be held only by a user with the Front Staff role
+         *     (table section 3), otherwise 400.
          */
         put: operations["usersPermissionsSet"];
         post?: never;
@@ -342,7 +348,7 @@ export interface paths {
         };
         /**
          * Dashboard shell data for the user's role and active location
-         * @description A shell for Sprint 1. Figures are scoped to the active branch (SA, WA see all locations they act in). More figures are added in later sprints.
+         * @description A shell for Sprint 1. Super Admin sees all branches by default and may view one with `branch`; WA sees the warehouse (and per-branch quantities); BA the own branch. Front Staff have no Home tab and get 403. More figures are added in later sprints.
          */
         get: operations["dashboardRead"];
         put?: never;
@@ -808,10 +814,13 @@ export interface components {
         /** @enum {string} */
         PersonPermission: "receive_stock" | "manage_prices" | "discount";
         /**
-         * @description Effective actions of the user in the active context, one per table action.
+         * @description Effective actions of the user in the active context, one per table action. OQ-23 (v0.1.2):
+         *     `sales.record` (Sell, row 36), `activity.view` (Activity, row 41), `find.use` (Find, rows 13 and
+         *     22), `dashboard.view` (Home dashboard, row 40) and the existing `dispatches.receive` (Receive, row 31) drive the Sell, Activity, Find and
+         *     Receive menu entries.
          * @enum {string}
          */
-        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive";
+        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive" | "sales.record" | "activity.view" | "find.use" | "dashboard.view";
         /**
          * @description Code to status word (SKILLS "Item"): `draft` = Draft, `active` = Active,
          *     `discontinued` = Discontinued. Discontinued is final.
@@ -881,19 +890,30 @@ export interface components {
         Me: {
             user: components["schemas"]["User"];
             active_role: components["schemas"]["RoleCode"];
-            /** @description Null until FS (or SA) picks one. BA and WA always have their permanent location here. */
+            /** @description Null until FS (or SA, optionally) picks one. BA and WA always have their permanent location here. The Super Admin is never asked to pick a branch. */
             working_branch: components["schemas"]["Branch"] | null;
+            /** @description True only when the role requires a working branch and none is chosen (Front Staff). Always false for Super Admin, Branch Admin and Warehouse Admin. */
+            must_pick_branch: boolean;
+            /** @description True only for Super Admin (table row 7). */
+            can_assign_multiple_roles: boolean;
             must_change_password: boolean;
             permissions: components["schemas"]["ActionPermission"][];
-            /** @description Menu entries the user may open. The server still checks every request. */
-            menu: {
-                /** @example stock */
-                key: string;
-                /** @example Stock */
-                label: string;
-                /** @example /stock */
-                path: string;
-            }[];
+            /** @description Top navigation entries the user may open (at most 5). The server still checks every request. */
+            menu: components["schemas"]["MenuItem"][];
+            /**
+             * @description Home tiles, separate from `menu` so they never take a navigation slot (OQ-23). Super Admin
+             *     gets Activity, Sell, Find and Receive; Warehouse Admin and Branch Admin get Activity for their
+             *     own location (OQ-25); Front Staff get none.
+             */
+            home_links: components["schemas"]["MenuItem"][];
+        };
+        MenuItem: {
+            /** @example stock */
+            key: string;
+            /** @example Stock */
+            label: string;
+            /** @example /stock */
+            path: string;
         };
         Dashboard: {
             role: components["schemas"]["RoleCode"];
@@ -1161,7 +1181,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description The record is in a state that does not allow this (`insufficient_stock`, `invalid_status_transition`, `already_received`, `idempotency_conflict`). */
+        /** @description The record is in a state that does not allow this, or the request clashes with an existing record (`conflict` for a duplicate or any clash, for example a duplicate stock post or a code already in use; `insufficient_stock`, `invalid_status_transition`, `already_received`; `idempotency_conflict` for an Idempotency-Key reused with a different body). */
         Conflict: {
             headers: {
                 [name: string]: unknown;
@@ -1179,7 +1199,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Login rate limit reached (`rate_limited`). `Retry-After` header in seconds. */
+        /** @description Too many attempts (`rate_limited`), for example failed logins or wrong current passwords. `Retry-After` header in seconds. */
         TooManyRequests: {
             headers: {
                 "Retry-After"?: number;
@@ -1194,6 +1214,11 @@ export interface components {
         Id: number;
         Page: number;
         PageSize: number;
+        /**
+         * @description Optional view filter for the Super Admin, who works across all branches and sees all of them by
+         *     default. Ignored for roles with a fixed location (the server scope applies).
+         */
+        BranchFilter: number;
         /** @description A new UUID per user action. Resend the same value when retrying. */
         IdempotencyKey: string;
     };
@@ -1363,6 +1388,7 @@ export interface operations {
             };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     workingBranchGet: {
@@ -1429,6 +1455,11 @@ export interface operations {
                 page_size?: components["parameters"]["PageSize"];
                 kind?: "branch" | "warehouse";
                 is_active?: boolean;
+                /**
+                 * @description Optional view filter for the Super Admin, who works across all branches and sees all of them by
+                 *     default. Ignored for roles with a fixed location (the server scope applies).
+                 */
+                branch?: components["parameters"]["BranchFilter"];
             };
             header?: never;
             path?: never;
@@ -1608,6 +1639,11 @@ export interface operations {
                 role?: components["schemas"]["RoleCode"];
                 /** @description Match on login ID or name. */
                 q?: string;
+                /**
+                 * @description Optional view filter for the Super Admin, who works across all branches and sees all of them by
+                 *     default. Ignored for roles with a fixed location (the server scope applies).
+                 */
+                branch?: components["parameters"]["BranchFilter"];
             };
             header?: never;
             path?: never;
@@ -1853,7 +1889,13 @@ export interface operations {
     };
     dashboardRead: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Optional view filter for the Super Admin, who works across all branches and sees all of them by
+                 *     default. Ignored for roles with a fixed location (the server scope applies).
+                 */
+                branch?: components["parameters"]["BranchFilter"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1869,7 +1911,9 @@ export interface operations {
                     "application/json": components["schemas"]["Dashboard"];
                 };
             };
+            400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     itemCategoriesList: {

@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
   title: Payless4Laptops Inventory API
-  version: 0.1.1
+  version: 0.1.2
   description: |
     Contract-first API for Sprint 1 (B1.3). Published before the code; from B2 onward the
     drf-spectacular generated schema must match this file. Changes need owner approval.
-    v0.1.1 (owner-approved 2026-11-23): see the changelog in docs/api/README.md.
+    v0.1.2 (owner-approved 2026-11-24): see the changelog in docs/api/README.md.
 
     Conventions
     - URLs: `/api/v1/<plural-noun>/`. `/health/` is outside the versioned API.
@@ -156,7 +156,10 @@ paths:
       tags: [auth]
       operationId: authChangePassword
       summary: Change own password (also the forced change at first login)
-      description: Minimum 10 characters. Clears `must_change_password`. The new password must differ from the old one.
+      description: |
+        Minimum 10 characters. Clears `must_change_password`. The new password must differ from the old one.
+        A wrong current password is limited to 5 tries per 15 minutes per user, then 429 `rate_limited`
+        with `Retry-After`.
       x-permission: any logged-in user (table rows 2, 3)
       requestBody:
         required: true
@@ -172,6 +175,7 @@ paths:
         '204': {description: Password changed.}
         '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
+        '429': {$ref: '#/components/responses/TooManyRequests'}
 
   /api/v1/working-branch/:
     get:
@@ -198,7 +202,10 @@ paths:
       tags: [working-branch]
       operationId: workingBranchSet
       summary: Choose or switch the working branch (every switch is logged)
-      description: Front Staff may pick any active branch. SA may pick an optional context branch. BA and WA have a fixed location and get 403.
+      description: |
+        Front Staff may pick any active branch. SA may pick an optional context branch. BA and WA have a
+        fixed location and get 403. Only active locations of kind `branch` can be chosen (400 otherwise).
+        Choosing the branch already in use returns 200 and writes no new switch.
       x-permission: FS, SA (table row 10)
       parameters:
         - {$ref: '#/components/parameters/IdempotencyKey'}
@@ -234,6 +241,7 @@ paths:
         - {$ref: '#/components/parameters/PageSize'}
         - {name: kind, in: query, schema: {type: string, enum: [branch, warehouse]}}
         - {name: is_active, in: query, schema: {type: boolean}}
+        - {$ref: '#/components/parameters/BranchFilter'}
       responses:
         '200':
           description: Page of locations.
@@ -365,6 +373,7 @@ paths:
         - {name: status, in: query, schema: {$ref: '#/components/schemas/UserStatus'}}
         - {name: role, in: query, schema: {$ref: '#/components/schemas/RoleCode'}}
         - {name: q, in: query, description: 'Match on login ID or name.', schema: {type: string}}
+        - {$ref: '#/components/parameters/BranchFilter'}
       responses:
         '200':
           description: Page of users.
@@ -528,7 +537,10 @@ paths:
       tags: [users]
       operationId: usersPermissionsSet
       summary: Set the full list of per-person permissions
-      description: Missing codes are revoked, new codes are granted. Each grant and revoke is an audit event. A grant never widens branch scope.
+      description: |
+        Missing codes are revoked, new codes are granted. Each grant and revoke is an audit event. A grant
+        never widens branch scope. `receive_stock` can be held only by a user with the Front Staff role
+        (table section 3), otherwise 400.
       x-permission: SA (table row 8)
       parameters:
         - {$ref: '#/components/parameters/IdempotencyKey'}
@@ -554,15 +566,19 @@ paths:
       tags: [dashboard]
       operationId: dashboardRead
       summary: Dashboard shell data for the user's role and active location
-      description: A shell for Sprint 1. Figures are scoped to the active branch (SA, WA see all locations they act in). More figures are added in later sprints.
-      x-permission: any logged-in user (scoped by role and branch)
+      description: A shell for Sprint 1. Super Admin sees all branches by default and may view one with `branch`; WA sees the warehouse (and per-branch quantities); BA the own branch. Front Staff have no Home tab and get 403. More figures are added in later sprints.
+      x-permission: SA all, WA warehouse, BA own branch (table row 40)
+      parameters:
+        - {$ref: '#/components/parameters/BranchFilter'}
       responses:
         '200':
           description: Dashboard data.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Dashboard'}
+        '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
 
   /api/v1/item-categories/:
     get:
@@ -1180,6 +1196,13 @@ components:
       name: page_size
       in: query
       schema: {type: integer, minimum: 1, maximum: 100, default: 25}
+    BranchFilter:
+      name: branch
+      in: query
+      description: |
+        Optional view filter for the Super Admin, who works across all branches and sees all of them by
+        default. Ignored for roles with a fixed location (the server scope applies).
+      schema: {type: integer, minimum: 1}
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -1208,7 +1231,7 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
     Conflict:
-      description: The record is in a state that does not allow this (`insufficient_stock`, `invalid_status_transition`, `already_received`, `idempotency_conflict`).
+      description: The record is in a state that does not allow this, or the request clashes with an existing record (`conflict` for a duplicate or any clash, for example a duplicate stock post or a code already in use; `insufficient_stock`, `invalid_status_transition`, `already_received`; `idempotency_conflict` for an Idempotency-Key reused with a different body).
       content:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
@@ -1218,7 +1241,7 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
     TooManyRequests:
-      description: Login rate limit reached (`rate_limited`). `Retry-After` header in seconds.
+      description: Too many attempts (`rate_limited`), for example failed logins or wrong current passwords. `Retry-After` header in seconds.
       headers:
         Retry-After:
           schema: {type: integer}
@@ -1277,7 +1300,11 @@ components:
       enum: [receive_stock, manage_prices, discount]
     ActionPermission:
       type: string
-      description: Effective actions of the user in the active context, one per table action.
+      description: |
+        Effective actions of the user in the active context, one per table action. OQ-23 (v0.1.2):
+        `sales.record` (Sell, row 36), `activity.view` (Activity, row 41), `find.use` (Find, rows 13 and
+        22), `dashboard.view` (Home dashboard, row 40) and the existing `dispatches.receive` (Receive, row 31) drive the Sell, Activity, Find and
+        Receive menu entries.
       enum:
         - users.manage
         - users.view
@@ -1295,6 +1322,10 @@ components:
         - dispatches.view
         - dispatches.waiting
         - dispatches.receive
+        - sales.record
+        - activity.view
+        - find.use
+        - dashboard.view
     ItemStatus:
       type: string
       description: |
@@ -1381,28 +1412,42 @@ components:
           items: {$ref: '#/components/schemas/PersonPermission'}
     Me:
       type: object
-      required: [user, active_role, working_branch, permissions, menu, must_change_password]
+      required: [user, active_role, working_branch, must_pick_branch, can_assign_multiple_roles, permissions, menu, home_links, must_change_password]
       properties:
         user: {$ref: '#/components/schemas/User'}
         active_role: {$ref: '#/components/schemas/RoleCode'}
         working_branch:
           allOf: [{$ref: '#/components/schemas/Branch'}]
           nullable: true
-          description: Null until FS (or SA) picks one. BA and WA always have their permanent location here.
+          description: Null until FS (or SA, optionally) picks one. BA and WA always have their permanent location here. The Super Admin is never asked to pick a branch.
+        must_pick_branch:
+          type: boolean
+          description: True only when the role requires a working branch and none is chosen (Front Staff). Always false for Super Admin, Branch Admin and Warehouse Admin.
+        can_assign_multiple_roles:
+          type: boolean
+          description: True only for Super Admin (table row 7).
         must_change_password: {type: boolean}
         permissions:
           type: array
           items: {$ref: '#/components/schemas/ActionPermission'}
         menu:
           type: array
-          description: Menu entries the user may open. The server still checks every request.
-          items:
-            type: object
-            required: [key, label, path]
-            properties:
-              key: {type: string, example: stock}
-              label: {type: string, example: Stock}
-              path: {type: string, example: /stock}
+          description: Top navigation entries the user may open (at most 5). The server still checks every request.
+          items: {$ref: '#/components/schemas/MenuItem'}
+        home_links:
+          type: array
+          description: |
+            Home tiles, separate from `menu` so they never take a navigation slot (OQ-23). Super Admin
+            gets Activity, Sell, Find and Receive; Warehouse Admin and Branch Admin get Activity for their
+            own location (OQ-25); Front Staff get none.
+          items: {$ref: '#/components/schemas/MenuItem'}
+    MenuItem:
+      type: object
+      required: [key, label, path]
+      properties:
+        key: {type: string, example: stock}
+        label: {type: string, example: Stock}
+        path: {type: string, example: /stock}
     Dashboard:
       type: object
       required: [role, location, waiting_dispatches, in_transit_dispatches, active_items]
