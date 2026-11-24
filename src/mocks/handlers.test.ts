@@ -67,6 +67,52 @@ describe('mock server behaviour', () => {
     expect((await send('GET', '/api/v1/auth/me/')).status).toBe(200);
   });
 
+  it('v0.1.2: /me carries home_links, can_assign_multiple_roles and must_pick_branch per role', async () => {
+    mockSession.loggedIn = true;
+    mockSession.role = 'super_admin';
+    const sa = await (await send('GET', '/api/v1/auth/me/')).json();
+    expect(sa.home_links.map((l: { label: string }) => l.label)).toEqual([
+      'Activity',
+      'Sell',
+      'Find',
+      'Receive',
+    ]);
+    expect(sa).toMatchObject({ can_assign_multiple_roles: true, must_pick_branch: false });
+    mockSession.role = 'branch_admin';
+    const ba = await (await send('GET', '/api/v1/auth/me/')).json();
+    expect(ba.home_links.map((l: { label: string }) => l.label)).toEqual(['Activity']);
+    expect(ba.can_assign_multiple_roles).toBe(false);
+    mockSession.role = 'front_staff';
+    mockSession.workingBranch = null;
+    expect((await (await send('GET', '/api/v1/auth/me/')).json()).must_pick_branch).toBe(true);
+  });
+
+  it('v0.1.2: ?branch= filters branches, users and the dashboard; Front Staff gets 403 on the dashboard', async () => {
+    mockSession.loggedIn = true;
+    mockSession.role = 'super_admin';
+    expect((await (await send('GET', '/api/v1/branches/?branch=3')).json()).results).toHaveLength(
+      1,
+    );
+    const users = (await (await send('GET', '/api/v1/users/?branch=2')).json()).results;
+    expect(users.map((u: { id: number }) => u.id)).toEqual([2]);
+    expect((await (await send('GET', '/api/v1/dashboard/?branch=3')).json()).location.id).toBe(3);
+    expect((await (await send('GET', '/api/v1/dashboard/')).json()).location).toBeNull();
+    mockSession.role = 'front_staff';
+    expect((await send('GET', '/api/v1/dashboard/')).status).toBe(403);
+  });
+
+  it('v0.1.2: a wrong-too-often current password answers 429 with Retry-After', async () => {
+    mockSession.loggedIn = true;
+    const res = await send(
+      'POST',
+      '/api/v1/auth/password/',
+      { 'X-CSRFToken': 't' },
+      { current_password: 'locked', new_password: 'a-long-new-password' },
+    );
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBe('900');
+  });
+
   it('does not copy unknown request fields into responses', async () => {
     mockSession.loggedIn = true;
     const res = await send('PATCH', '/api/v1/items/1/', K, {
@@ -183,12 +229,32 @@ describe('mock server behaviour', () => {
 
   it.each([
     ['branch_admin', 403],
+    ['warehouse_admin', 403],
     ['super_admin', 200],
     ['front_staff', 200],
   ] as const)('GET working-branch for %s is %i', async (role, status) => {
     mockSession.loggedIn = true;
     mockSession.role = role;
     expect((await send('GET', '/api/v1/working-branch/')).status).toBe(status);
+  });
+
+  it('PUT working-branch is 403 for a fixed location and is remembered for front staff', async () => {
+    mockSession.loggedIn = true;
+    mockSession.role = 'warehouse_admin';
+    expect((await send('PUT', '/api/v1/working-branch/', K, { branch_id: 2 })).status).toBe(403);
+    mockSession.role = 'front_staff';
+    const res = await send('PUT', '/api/v1/working-branch/', K, { branch_id: 3 });
+    expect((await res.json()).working_branch.id).toBe(3);
+    const got = await (await send('GET', '/api/v1/working-branch/')).json();
+    expect(got.working_branch.id).toBe(3);
+  });
+
+  it('GET users filters on q and status', async () => {
+    mockSession.loggedIn = true;
+    const q = await (await send('GET', '/api/v1/users/?q=kofi')).json();
+    expect(q.results.map((u: { login_id: string }) => u.login_id)).toEqual(['USR-0001']);
+    const s = await (await send('GET', '/api/v1/users/?status=pending_activation')).json();
+    expect(s.results.map((u: { login_id: string }) => u.login_id)).toEqual(['USR-0004']);
   });
 
   it('item and dispatch status codes are snake_case', async () => {

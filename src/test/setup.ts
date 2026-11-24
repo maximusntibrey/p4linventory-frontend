@@ -14,6 +14,7 @@ afterEach(() => {
   mockSession.role = 'super_admin';
   mockSession.loginId = undefined;
   mockSession.mustChange = false;
+  mockSession.workingBranch = undefined;
   resetCsrfCache();
   document.cookie = 'csrftoken=; Max-Age=0; path=/';
 });

@@ -33,6 +33,7 @@ export const branchB: S['Branch'] = {
   updated_at: t,
 };
 export const branches = [warehouse, branchA, branchB];
+export const byBranch = (id: string | null) => branches.find((b) => String(b.id) === id);
 
 export const users: S['User'][] = [
   {
@@ -129,10 +130,26 @@ const menus = {
   ],
 } satisfies Record<string, S['Me']['menu']>;
 
+/** Home tiles (v0.1.2): Super Admin gets Activity, Sell, Find and Receive; Warehouse and Branch Admin get Activity (2026-11-24). */
+const homeLinks = {
+  super_admin: [
+    entry('activity', 'Activity', '/activity'),
+    entry('sell', 'Sell', '/sell'),
+    entry('find', 'Find', '/find'),
+    entry('receive', 'Receive', '/receive'),
+  ],
+  warehouse_admin: [entry('activity', 'Activity', '/activity')],
+  branch_admin: [entry('activity', 'Activity', '/activity')],
+  front_staff: [],
+} satisfies Record<string, S['Me']['home_links']>;
+
 export const me: S['Me'] = {
   user: users[0],
   active_role: 'super_admin',
-  working_branch: branchA,
+  // The Super Admin works across all branches and is never asked to pick one.
+  working_branch: null,
+  must_pick_branch: false,
+  can_assign_multiple_roles: true,
   must_change_password: false,
   permissions: [
     'users.manage',
@@ -151,8 +168,13 @@ export const me: S['Me'] = {
     'dispatches.view',
     'dispatches.waiting',
     'dispatches.receive',
+    'sales.record',
+    'activity.view',
+    'find.use',
+    'dashboard.view',
   ],
   menu: menus.super_admin,
+  home_links: homeLinks.super_admin,
 };
 
 /** Mock sessions by role. Menus follow the FE requirements table; Branch Admin and Front Staff get no cost permission. */
@@ -162,6 +184,9 @@ export const meByRole: Record<MockRole, S['Me']> = {
   warehouse_admin: {
     must_change_password: false,
     menu: menus.warehouse_admin,
+    home_links: homeLinks.warehouse_admin,
+    must_pick_branch: false,
+    can_assign_multiple_roles: false,
     user: users[3],
     active_role: 'warehouse_admin',
     working_branch: warehouse,
@@ -176,11 +201,17 @@ export const meByRole: Record<MockRole, S['Me']> = {
       'goods_receipts.manage',
       'dispatches.create',
       'dispatches.view',
+      'activity.view',
+      'find.use',
+      'dashboard.view',
     ],
   },
   branch_admin: {
     must_change_password: false,
     menu: menus.branch_admin,
+    home_links: homeLinks.branch_admin,
+    must_pick_branch: false,
+    can_assign_multiple_roles: false,
     user: users[1],
     active_role: 'branch_admin',
     working_branch: branchA,
@@ -191,11 +222,18 @@ export const meByRole: Record<MockRole, S['Me']> = {
       'dispatches.view',
       'dispatches.waiting',
       'dispatches.receive',
+      'sales.record',
+      'activity.view',
+      'find.use',
+      'dashboard.view',
     ],
   },
   front_staff: {
     must_change_password: false,
     menu: menus.front_staff,
+    home_links: homeLinks.front_staff,
+    must_pick_branch: false,
+    can_assign_multiple_roles: false,
     user: users[2],
     active_role: 'front_staff',
     working_branch: branchA,
@@ -205,6 +243,8 @@ export const meByRole: Record<MockRole, S['Me']> = {
       'stock.view',
       'dispatches.waiting',
       'dispatches.receive',
+      'sales.record',
+      'find.use',
     ],
   },
 };

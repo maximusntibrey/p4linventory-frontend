@@ -12,17 +12,25 @@ export const mockSession: {
   loginId?: string;
   /** One-time password not changed yet (USR-0004): every endpoint but me, password, logout and csrf gives 403. */
   mustChange: boolean;
+  /** Branch chosen with PUT working-branch; undefined means the role's default, null means none chosen yet. */
+  workingBranch?: S['Branch'] | null;
 } = {
   loggedIn: false,
   role: 'super_admin',
   mustChange: false,
 };
 const me = (): S['Me'] => {
-  const base = d.meByRole[mockSession.role];
+  const base = {
+    ...d.meByRole[mockSession.role],
+    ...(mockSession.workingBranch !== undefined && { working_branch: mockSession.workingBranch }),
+  } satisfies S['Me'];
   const user = d.users.find((u) => u.login_id === mockSession.loginId) ?? base.user;
+  // v0.1.2: true only for Front Staff with no branch yet; never for the Super Admin.
+  const mustPick = mockSession.role === 'front_staff' && base.working_branch === null;
   const must = mockSession.mustChange;
   return {
     ...base,
+    must_pick_branch: mustPick,
     must_change_password: must,
     user: {
       ...user,
@@ -113,6 +121,9 @@ const costed =
     mockSession.role === 'branch_admin' || mockSession.role === 'front_staff'
       ? forbidden()
       : fn(info);
+/** BA and WA have a fixed location and cannot choose a working branch (403). */
+const fixedLocation = () =>
+  mockSession.role === 'branch_admin' || mockSession.role === 'warehouse_admin';
 const inactiveBrand = (id: unknown) => d.brands.some((x) => x.id === id && !x.is_active);
 const brandInactive = () =>
   invalid([{ field: 'brand_id', message: 'This brand is deactivated. Pick an active brand.' }]);
@@ -164,6 +175,9 @@ export const handlers: RequestHandler[] = [
     '/api/v1/auth/password/',
     loggedIn(async ({ request }) => {
       const b = await readJson(request);
+      if (b.current_password === 'locked') {
+        return err(429, 'rate_limited', 'Too many wrong passwords.', [], { 'Retry-After': '900' });
+      }
       if (b.current_password === 'wrong') {
         return invalid([
           { field: 'current_password', message: 'Your current password is not right.' },
@@ -185,24 +199,37 @@ export const handlers: RequestHandler[] = [
   http.get(
     '/api/v1/working-branch/',
     authed(() =>
-      mockSession.role === 'branch_admin'
-        ? forbidden()
-        : HttpResponse.json({ working_branch: me().working_branch }),
+      fixedLocation() ? forbidden() : HttpResponse.json({ working_branch: me().working_branch }),
     ),
   ),
   put(
     '/api/v1/working-branch/',
     writeAuthed(async ({ request }) => {
+      if (fixedLocation()) return forbidden();
       const branch = byId(d.branches, (await readJson(request)).branch_id);
-      return branch
-        ? HttpResponse.json({ ...me(), working_branch: branch })
-        : invalid([{ field: 'branch_id', message: 'Pick one of the listed branches.' }]);
+      if (!branch)
+        return invalid([{ field: 'branch_id', message: 'Pick one of the listed branches.' }]);
+      mockSession.workingBranch = branch;
+      return HttpResponse.json(me());
     }),
   ),
 
   http.get(
     '/api/v1/branches/',
-    authed(() => page(d.branches)),
+    authed(({ request }) => {
+      const params = new URL(request.url).searchParams;
+      const only = params.get('branch');
+      const kind = params.get('kind');
+      const active = params.get('is_active');
+      return page(
+        d.branches.filter(
+          (b) =>
+            (!kind || b.kind === kind) &&
+            (!active || String(b.is_active) === active) &&
+            (!only || b.id === Number(only)),
+        ),
+      );
+    }),
   ),
   post(
     '/api/v1/branches/',
@@ -257,7 +284,20 @@ export const handlers: RequestHandler[] = [
 
   http.get(
     '/api/v1/users/',
-    authed(() => page(d.users)),
+    authed(({ request }) => {
+      const url = new URL(request.url);
+      const q = (url.searchParams.get('q') ?? '').toLowerCase();
+      const status = url.searchParams.get('status');
+      const only = url.searchParams.get('branch');
+      return page(
+        d.users.filter(
+          (u) =>
+            (!only || u.permanent_location_id === Number(only)) &&
+            (!q || u.login_id.toLowerCase().includes(q) || u.full_name.toLowerCase().includes(q)) &&
+            (!status || u.status === status),
+        ),
+      );
+    }),
   ),
   post(
     '/api/v1/users/',
@@ -266,8 +306,8 @@ export const handlers: RequestHandler[] = [
       return HttpResponse.json(
         {
           ...d.users[1],
-          id: 4,
-          login_id: 'USR-0003',
+          id: 6,
+          login_id: 'USR-0005',
           status: 'pending_activation',
           full_name: String(b.full_name),
           roles: b.roles as S['RoleCode'][],
@@ -348,13 +388,16 @@ export const handlers: RequestHandler[] = [
 
   http.get(
     '/api/v1/dashboard/',
-    authed(() =>
-      HttpResponse.json({
+    authed(({ request }) => {
+      if (!me().permissions.includes('dashboard.view')) return forbidden();
+      const only = d.byBranch(new URL(request.url).searchParams.get('branch'));
+      return HttpResponse.json({
         ...d.dashboard,
         role: me().active_role,
+        ...(mockSession.role === 'super_admin' && { location: only ?? null }),
         ...(mockSession.role === 'super_admin' ? {} : { stock_per_location: undefined }),
-      } satisfies S['Dashboard']),
-    ),
+      } satisfies S['Dashboard']);
+    }),
   ),
 
   http.get(
