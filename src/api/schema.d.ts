@@ -2585,7 +2585,9 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     dispatchesCreate: {

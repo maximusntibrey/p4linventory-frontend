@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Payless4Laptops Inventory API
-  version: 0.3.0
+  version: 0.3.1
   description: |
     Contract-first API for Sprint 1 (B1.3). Published before the code; from B2 onward the
     drf-spectacular generated schema must match this file. Changes need owner approval.
@@ -1103,7 +1103,9 @@ paths:
                       results:
                         type: array
                         items: {$ref: '#/components/schemas/Dispatch'}
+        '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
     post:
       tags: [dispatches]
       operationId: dispatchesCreate
