@@ -793,6 +793,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sales/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List sales, newest first
+         * @description SA sees every branch (optional `branch` filter). BA and FS see only their own branch; another
+         *     `branch` is 403 `wrong_branch`. WA has no sales access. `date_from` and `date_to` are calendar
+         *     days in Africa/Accra, both inclusive. Never carries cost.
+         */
+        get: operations["salesList"];
+        put?: never;
+        /**
+         * Record a sale in the working branch (deducts stock)
+         * @description One atomic operation: sale, lines, stock deduction, ledger rows and audit rows commit together.
+         *     The price always comes from the price list; the client never sends one. Only Active items with a
+         *     selling price can be sold (an item without a price is 400 on that line, OQ-21). A quantity above
+         *     the available stock is 409 `insufficient_stock` and nothing is written. The branch is the
+         *     caller's working branch (BA fixed; FS and SA the chosen one, else 403 `wrong_branch`).
+         */
+        post: operations["salesCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sales/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read one sale
+         * @description A sale of another branch (BA, FS) is 404 `not_found`, the same as an id that does not exist (OQ-30).
+         */
+        get: operations["salesRead"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sales/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a completed sale (reversal, original stays visible)
+         * @description A reason is required. The stock returns through reversal ledger rows linked to the original rows;
+         *     the sale becomes `cancelled`. A sale that is not `completed` is 409 `conflict`. A sale of another
+         *     branch (BA) is 404. FS and WA are 403.
+         */
+        post: operations["salesCancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/costed-sales/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sales with the cost snapshot per line (Super Admin only)
+         * @description Same scope and filters as `/sales/`. Each line adds `unit_cost`, the average cost copied at sale time
+         *     (stored at 4 dp, shown at 2 dp). BA, FS and WA get 403. Plain `/sales/` never carries cost.
+         */
+        get: operations["costedSalesList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/costed-sales/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one sale with the cost snapshot (Super Admin only) */
+        get: operations["costedSalesRead"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/item-imports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import items and opening quantities from a CSV (dry run first)
+         * @description Multipart upload for one location (WA: the warehouse, `location_id` optional; SA must send it).
+         *     `dry_run` is required: `true` validates and reports, writes nothing; `false` commits, but only when
+         *     the file has no errors (all or nothing). Always 200 with a report; `committed` says what happened and
+         *     `errors[].row` is the CSV row (header = row 1). Columns: `opening_quantity` and `unit_cost` (both
+         *     required), `sku` (an existing SKU is reused unchanged; item columns are then ignored), `name`,
+         *     `category`, `subtype`, `brand`, `model_name`, `mpn`, `condition` (needed for a new SKU, created as
+         *     Draft), `selling_price` (new items, needs the Manage prices right), `reorder_level`, `bin_label`
+         *     (warehouse only). The unit cost feeds the average cost before the opening balance is posted as
+         *     `opening_balance` ledger rows. At most 2 MB and 5000 rows.
+         */
+        post: operations["itemImportsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -844,10 +982,12 @@ export interface components {
          * @description Effective actions of the user in the active context, one per table action. OQ-23 (v0.1.2):
          *     `sales.record` (Sell, row 36), `activity.view` (Activity, row 41), `find.use` (Find, rows 13 and
          *     22), `dashboard.view` (Home dashboard, row 40) and the existing `dispatches.receive` (Receive, row 31) drive the Sell, Activity, Find and
-         *     Receive menu entries.
+         *     Receive menu entries. v0.4.2: `sales.cancel` (cancel a sale, row 39: SA, BA) and `items.import`
+         *     (CSV import, rows 19 and 20: SA, WA). The Sales entry (row 49) is in `menu` for FS and in
+         *     `home_links` for SA and BA, whose menus already hold 5 items.
          * @enum {string}
          */
-        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive" | "sales.record" | "activity.view" | "find.use" | "dashboard.view";
+        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive" | "sales.record" | "activity.view" | "find.use" | "dashboard.view" | "sales.cancel" | "items.import";
         /**
          * @description Code to status word (SKILLS "Item"): `draft` = Draft, `active` = Active,
          *     `discontinued` = Discontinued. Discontinued is final.
@@ -1200,6 +1340,103 @@ export interface components {
                 qty_received: number;
                 qty_accepted: number;
                 line_note?: string;
+            }[];
+        };
+        /**
+         * @description Configurable list; these three are seeded.
+         * @enum {string}
+         */
+        PaymentMethodCode: "cash" | "mobile_money" | "card";
+        /**
+         * @description `completed` = Completed, `cancelled` = Cancelled, `refunded` = Refunded, `exchanged` = Exchanged. Only completed and cancelled are reachable in the MVP.
+         * @enum {string}
+         */
+        SaleStatus: "completed" | "cancelled" | "refunded" | "exchanged";
+        SaleCreate: {
+            /** @description A payment method code, see `PaymentMethodCode`. */
+            payment_method: string;
+            /** @description One line per item (duplicates are 400). The price is never sent. */
+            lines: {
+                item_id: number;
+                quantity: number;
+            }[];
+        };
+        SaleCancel: {
+            reason: string;
+        };
+        /** @description Never carries cost (the cost snapshot is kept server-side). */
+        Sale: {
+            id: number;
+            /** @example SAL-000001 */
+            reference: string;
+            location: components["schemas"]["Branch"];
+            staff: components["schemas"]["LoginId"];
+            status: components["schemas"]["SaleStatus"];
+            payment_method: string;
+            total: components["schemas"]["Money"];
+            /** Format: date-time */
+            sold_at: string;
+            lines: {
+                id: number;
+                item_id: number;
+                sku: string;
+                item_name: string;
+                quantity: number;
+                unit_price: components["schemas"]["Money"];
+                line_total: components["schemas"]["Money"];
+            }[];
+            cancellation: {
+                reason: string;
+                cancelled_by: components["schemas"]["LoginId"];
+                cancelled_role: string;
+                /** Format: date-time */
+                cancelled_at: string;
+            } | null;
+        };
+        ItemImportRequest: {
+            /**
+             * Format: binary
+             * @description UTF-8 CSV.
+             */
+            file: string;
+            /**
+             * @description Required on purpose: an absent value must never commit.
+             * @enum {string}
+             */
+            dry_run: "true" | "false";
+            /** @description Required for SA. WA may only load its own location. */
+            location_id?: number;
+        };
+        ItemImportReport: {
+            dry_run: boolean;
+            /** @description True only for a commit (`dry_run` false) of a file with no errors. */
+            committed: boolean;
+            /** @description Null unless committed. */
+            batch_reference: string | null;
+            location_id: number;
+            rows: number;
+            items_created: number;
+            items_existing: number;
+            opening_quantity_total: number;
+            errors: {
+                /** @description CSV row number; the header is row 1. */
+                row: number;
+                /** @description Column name. */
+                field: string | null;
+                message: string;
+            }[];
+        };
+        /** @description `Sale` plus `unit_cost` on each line. Returned only by `/costed-sales/` (SA). */
+        CostedSale: components["schemas"]["Sale"] & {
+            lines: {
+                id: number;
+                item_id: number;
+                sku: string;
+                item_name: string;
+                quantity: number;
+                unit_price: components["schemas"]["Money"];
+                line_total: components["schemas"]["Money"];
+                unit_cost: components["schemas"]["Money"];
             }[];
         };
     };
@@ -2712,6 +2949,223 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    salesList: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+                branch?: number;
+                status?: components["schemas"]["SaleStatus"];
+                payment_method?: components["schemas"]["PaymentMethodCode"];
+                item_id?: number;
+                staff_id?: number;
+                date_from?: string;
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of sales. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        results?: components["schemas"]["Sale"][];
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    salesCreate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID per user action. Resend the same value when retrying. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleCreate"];
+            };
+        };
+        responses: {
+            /** @description Sale recorded, status `completed`. A replay with the same key returns this response again. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sale"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    salesRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sale. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sale"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    salesCancel: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID per user action. Resend the same value when retrying. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleCancel"];
+            };
+        };
+        responses: {
+            /** @description Sale cancelled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sale"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    costedSalesList: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+                branch?: number;
+                status?: components["schemas"]["SaleStatus"];
+                payment_method?: components["schemas"]["PaymentMethodCode"];
+                item_id?: number;
+                staff_id?: number;
+                date_from?: string;
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of sales with cost. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        results?: components["schemas"]["CostedSale"][];
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    costedSalesRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sale with cost. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostedSale"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    itemImportsCreate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID per user action. Resend the same value when retrying. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ItemImportRequest"];
+            };
+        };
+        responses: {
+            /** @description The import report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemImportReport"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
         };
     };
 }
