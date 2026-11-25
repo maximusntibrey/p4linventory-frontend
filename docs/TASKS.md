@@ -384,9 +384,9 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [x] F7.1 Dashboards (a few big numbers and a short recent-activity list, no charts)
 - [x] F7.2 Activity log screen (filter by user, branch, action, date), opened from Home for Super Admin
 - [x] F7.3 Shortfall list and resolve screen (return to sender, confirm loss, record damage; note required; confirm step)
-- [ ] F8.1 Component tests (item form, lists and filters, sell flow, receiving flow)
-- [ ] F8.2 End-to-end smoke test against staging (login, pick branch, add item, receive, dispatch, receive at branch, sell, find)
-- [ ] F8.3 Bug fixes from testing
+- [x] F8.1 Component tests (item form, lists and filters, sell flow, receiving flow)
+- [ ] F8.2 End-to-end smoke test against staging (login, pick branch, add item, receive, dispatch, receive at branch, sell, find) — BLOCKED: O1.1 hosting/staging not chosen
+- [x] F8.3 Bug fixes from testing
 - [ ] F9.1 UI consistency pass
 - [ ] F9.2 Accessibility check (360 px, 44 px targets, labels on every icon, keyboard-only flows)
 - [ ] F9.3 List performance check and fixes
