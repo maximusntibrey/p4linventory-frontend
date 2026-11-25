@@ -365,10 +365,10 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [ ] B8.1 End-to-end tests (receive, dispatch, branch receive, sell, find)
 - [ ] B8.2 Permission and branch-isolation tests (allowing the cross-branch lookup exception)
 - [ ] B8.3 Bug fixes from testing
-- [ ] B9.1 Performance check (search and product list within about 2 seconds)
-- [ ] B9.2 Security check of the MVP endpoints
-- [ ] B9.3 Automated backups and a tested restore
-- [ ] B9.4 Fixes from the checks
+- [x] B9.1 Performance check (search and product list within about 2 seconds) — backend verified in `tests/test_b9.py`
+- [x] B9.2 Security check of the MVP endpoints — backend contract and permission suites verified
+- [ ] B9.3 Automated backups and a tested restore — local restore verified; automated hosting backups remain blocked by O1.1
+- [x] B9.4 Fixes from the checks — no backend fix required
 - [ ] B10.1 Production deployment (after the owner's go-ahead)
 - [ ] B10.2 Load real data and create real users
 - [ ] B10.3 Short admin notes
@@ -387,9 +387,9 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [x] F8.1 Component tests (item form, lists and filters, sell flow, receiving flow)
 - [ ] F8.2 End-to-end smoke test against staging (login, pick branch, add item, receive, dispatch, receive at branch, sell, find) — BLOCKED: O1.1 hosting/staging not chosen
 - [x] F8.3 Bug fixes from testing
-- [ ] F9.1 UI consistency pass
-- [ ] F9.2 Accessibility check (360 px, 44 px targets, labels on every icon, keyboard-only flows)
-- [ ] F9.3 List performance check and fixes
+- [x] F9.1 UI consistency pass — verified by `e2e/f9.spec.ts` and existing 360 px Playwright coverage
+- [x] F9.2 Accessibility check (360 px, 44 px targets, labels on every icon, keyboard-only flows) — verified by `e2e/f9.spec.ts`, component axe tests and Playwright 360 px suites
+- [x] F9.3 List performance check and fixes — verified `e2e/f9.spec.ts`; no fix was required
 - [ ] F10.1 Short user guide and walkthrough (use the `docx` or `pdf` skill)
 - [ ] F10.2 Checks on the live frontend
 - [ ] F10.3 MVP release (v1.0.0)
