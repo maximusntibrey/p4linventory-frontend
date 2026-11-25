@@ -3,6 +3,7 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { axe } from 'vitest-axe';
 import { meByRole } from '../mocks/data';
+import { mockStore } from '../mocks/handlers';
 import { server } from '../mocks/server';
 import { apiError } from '../test/helpers';
 import { renderApp } from '../test/renderApp';
@@ -54,6 +55,7 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
       ['Find', '/find'],
       ['Receive', '/receive'],
       ['Sales', '/sell/sales'],
+      ['Shortfalls', '/shortfalls'],
     ]) {
       expect(tiles().getByRole('link', { name }).getAttribute('href')).toBe(href);
     }
@@ -61,19 +63,23 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Activity' })).toBeTruthy();
   });
 
-  it('Branch Admin gets Activity and Sales tiles; Warehouse Admin gets none', async () => {
+  it('Branch Admin gets Activity, Sales and Shortfalls tiles; Warehouse Admin gets Activity and Shortfalls', async () => {
     const ba = renderApp('/', { as: 'branch_admin' });
     await screen.findByText('Active items');
     expect(
       tiles()
         .getAllByRole('link')
         .map((l) => l.textContent),
-    ).toEqual(['Activity', 'Sales']);
+    ).toEqual(['Activity', 'Shortfalls', 'Sales']);
     expect(tiles().getByRole('link', { name: 'Sales' }).getAttribute('href')).toBe('/sell/sales');
     ba.unmount();
     renderApp('/', { as: 'warehouse_admin' });
     await screen.findByText('Active items');
-    expect(tiles().queryAllByRole('link')).toHaveLength(0);
+    expect(
+      tiles()
+        .getAllByRole('link')
+        .map((l) => l.textContent),
+    ).toEqual(['Activity', 'Shortfalls']);
   });
 
   it('renders only what me.home_links holds, and none when it is empty', async () => {
@@ -115,5 +121,60 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
     await screen.findByRole('heading', { level: 1, name: 'Home' });
     expect(screen.queryByText('Active items')).toBeNull();
     expect(called).toBe(0);
+  });
+});
+
+describe('dashboards (contract 0.5.0): big numbers, low stock, recent activity', () => {
+  const lowRow = (location_id: number) => {
+    const row = mockStore.stock.find((r) => r.location_id === location_id && r.item_id === 1)!;
+    Object.assign(row, { reorder_level: 5, low_stock: true, available: 2 });
+  };
+
+  it('Super Admin: numbers, a low-stock list and the latest activity, newest first, no charts or cost', async () => {
+    lowRow(2);
+    const { container } = renderApp('/', { as: 'super_admin' });
+    await screen.findByText('Active items');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Low stock' })).toBeTruthy();
+    expect(screen.getByText('1 to reorder')).toBeTruthy();
+    expect(screen.getByText(/Accra Branch: 2 available, reorder at 5/)).toBeTruthy();
+    const recent = within(
+      screen.getByRole('heading', { level: 2, name: 'Recent activity' }).parentElement!,
+    );
+    const items = recent.getAllByRole('listitem');
+    expect(items).toHaveLength(6);
+    expect(items[0].textContent).toContain('User created');
+    expect(container.querySelector('canvas, svg[role="img"], img')).toBeNull();
+    expect(screen.queryByText(/cost|GHS/i)).toBeNull();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('shows at most 10 recent events and says so when nothing is low or recent', async () => {
+    for (const r of mockStore.stock) r.low_stock = false;
+    for (let i = 7; i <= 20; i++) mockStore.activity.push({ ...mockStore.activity[0], id: i });
+    renderApp('/', { as: 'super_admin' });
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Recent activity' });
+    expect(within(heading.parentElement!).getAllByRole('listitem')).toHaveLength(10);
+    expect(screen.getByText('Nothing is at or below its reorder level.')).toBeTruthy();
+  });
+
+  it('Branch Admin sees only own-branch activity and own-branch low stock; Warehouse Admin the warehouse', async () => {
+    lowRow(1);
+    lowRow(2);
+    const ba = renderApp('/', { as: 'branch_admin' });
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Recent activity' });
+    expect(within(heading.parentElement!).getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByText(/Accra Branch: 2 available/)).toBeTruthy();
+    expect(screen.queryByText(/Central Warehouse: 2 available/)).toBeNull();
+    ba.unmount();
+    renderApp('/', { as: 'warehouse_admin' });
+    const h2 = await screen.findByRole('heading', { level: 2, name: 'Recent activity' });
+    expect(within(h2.parentElement!).getAllByRole('listitem')).toHaveLength(3);
+    expect(await screen.findByText(/Central Warehouse: 2 available/)).toBeTruthy();
+  });
+
+  it('Front Staff, who has no dashboard, is sent to the first menu entry', async () => {
+    renderApp('/', { as: 'front_staff' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sell' })).toBeTruthy();
+    expect(screen.queryByText('Recent activity')).toBeNull();
   });
 });

@@ -164,6 +164,9 @@ export async function stubData(page: Page) {
     waiting_dispatches: 0,
     in_transit_dispatches: 0,
     active_items: 3,
+    low_stock_count: 0,
+    low_stock: [],
+    recent_activity: [],
   } satisfies S['Dashboard'];
   await page.route('**/api/v1/dashboard/', (route) => route.fulfill({ json: dashboard }));
   await page.route('**/api/v1/branches/**', (route) => {

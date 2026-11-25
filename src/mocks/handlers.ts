@@ -92,6 +92,10 @@ export const mockStore = {
   dispatches: structuredClone(d.dispatches),
   receipts: [structuredClone(d.goodsReceipt)],
   sales: structuredClone(d.sales),
+  activity: structuredClone(d.activityEvents),
+  /** Resolutions per dispatch line id (the shortfall id). */
+  resolutions: {} as Record<number, S['Shortfall']['resolutions']>,
+  resolutionCount: 0,
   imports: 0,
 };
 export const resetMockStore = () => {
@@ -101,6 +105,9 @@ export const resetMockStore = () => {
   mockStore.dispatches = structuredClone(d.dispatches);
   mockStore.receipts = [structuredClone(d.goodsReceipt)];
   mockStore.sales = structuredClone(d.sales);
+  mockStore.activity = structuredClone(d.activityEvents);
+  mockStore.resolutions = {};
+  mockStore.resolutionCount = 0;
   mockStore.imports = 0;
 };
 const withoutCost = (row: S['ItemWithCost']) =>
@@ -299,6 +306,49 @@ export const commitCsv = (text: string, locationId: number) => {
     stock.available += qty;
   }
 };
+
+/** Activity the caller may see: SA all, WA the warehouse, BA the own branch (contract 0.5.0). */
+const activityScope = (): ((e: S['ActivityEvent']) => boolean) => {
+  if (mockSession.role === 'warehouse_admin') return (e) => e.branch_id === d.warehouse.id;
+  const own = ownBranchId();
+  return own === undefined ? () => true : (e) => e.branch_id === own;
+};
+const newestFirst = (rows: S['ActivityEvent'][]) => [...rows].sort((a, b) => b.id - a.id);
+
+/** Shortfalls (dispatch lines received short) the caller may see: SA all, WA by sender, BA by destination. */
+const shortfallRows = (): S['Shortfall'][] =>
+  mockStore.dispatches.flatMap((disp) =>
+    disp.lines.flatMap((l) => {
+      if (l.qty_accepted === null || l.qty_sent <= l.qty_accepted) return [];
+      const own = ownBranchId();
+      if (mockSession.role === 'warehouse_admin' && disp.origin.id !== me().working_branch?.id)
+        return [];
+      if (mockSession.role === 'branch_admin' && disp.destination.id !== own) return [];
+      const resolutions = mockStore.resolutions[l.id] ?? [];
+      const resolved = resolutions.reduce((n, r) => n + r.quantity, 0);
+      const shortfall = l.qty_sent - l.qty_accepted;
+      return [
+        {
+          id: l.id,
+          dispatch_id: disp.id,
+          dispatch_reference: disp.reference,
+          origin: disp.origin,
+          destination: disp.destination,
+          item_id: l.item_id,
+          sku: l.sku,
+          item_name: l.item_name,
+          qty_sent: l.qty_sent,
+          qty_accepted: l.qty_accepted,
+          shortfall,
+          resolved_quantity: resolved,
+          remaining: shortfall - resolved,
+          status: shortfall - resolved > 0 ? ('open' as const) : ('resolved' as const),
+          received_at: disp.received_at ?? null,
+          resolutions,
+        },
+      ];
+    }),
+  );
 
 export const handlers: RequestHandler[] = [
   http.get('/health/', () => HttpResponse.json({ status: 'ok', database: 'ok' })),
@@ -558,11 +608,28 @@ export const handlers: RequestHandler[] = [
     authed(({ request }) => {
       if (!me().permissions.includes('dashboard.view')) return forbidden();
       const only = d.byBranch(new URL(request.url).searchParams.get('branch'));
+      const sa = mockSession.role === 'super_admin';
+      const scope = activityScope();
+      const where = sa ? only?.id : (me().working_branch?.id ?? 0);
+      const low = mockStore.stock.filter(
+        (r) => r.low_stock && (where === undefined || r.location_id === where),
+      );
       return HttpResponse.json({
         ...d.dashboard,
         role: me().active_role,
-        ...(mockSession.role === 'super_admin' && { location: only ?? null }),
-        ...(mockSession.role === 'super_admin' ? {} : { stock_per_location: undefined }),
+        ...(sa && { location: only ?? null }),
+        ...(sa ? {} : { stock_per_location: undefined }),
+        low_stock_count: low.length,
+        low_stock: low.slice(0, 10).map((r) => ({
+          location_id: r.location_id,
+          location_name: r.location_name,
+          item_id: r.item_id,
+          sku: r.sku,
+          item_name: r.item_name,
+          available: r.available,
+          reorder_level: r.reorder_level ?? 0,
+        })),
+        recent_activity: newestFirst(mockStore.activity.filter(scope)).slice(0, 10),
       } satisfies S['Dashboard']);
     }),
   ),
@@ -1079,6 +1146,126 @@ export const handlers: RequestHandler[] = [
       row.received_by = me().user.login_id;
       row.has_open_discrepancy = row.lines.some((l) => l.shortfall > 0);
       return HttpResponse.json(row);
+    }),
+  ),
+
+  // ---- Activity log and shortfalls (contract 0.5.0). Scope and rules live here, as on the real API. ----
+  http.get(
+    '/api/v1/activity-log/',
+    authed(({ request }) => {
+      if (!me().permissions.includes('activity.view')) return forbidden();
+      const p = new URL(request.url).searchParams;
+      const own = ownBranchId();
+      if (own !== undefined && p.get('branch_id') && Number(p.get('branch_id')) !== own)
+        return err(403, 'wrong_branch', 'That is not your branch.');
+      const day = /^\d{4}-\d{2}-\d{2}$/;
+      const from = p.get('date_from');
+      const to = p.get('date_to');
+      const bad = [
+        ['date_from', from],
+        ['date_to', to],
+      ].flatMap(([field, v]) =>
+        v && (!day.test(v) || Number.isNaN(Date.parse(v)))
+          ? [{ field, message: 'Use a date like 2026-11-24.' }]
+          : [],
+      );
+      if (bad.length) return invalid(bad);
+      if (from && to && from > to)
+        return invalid([{ field: 'date_to', message: 'The end date is before the start date.' }]);
+      const scope = activityScope();
+      return paged(
+        request,
+        newestFirst(mockStore.activity).filter(
+          (e) =>
+            scope(e) &&
+            (!p.get('user_id') || e.user_id === Number(p.get('user_id'))) &&
+            (!p.get('branch_id') || e.branch_id === Number(p.get('branch_id'))) &&
+            (!p.get('action') || e.action === p.get('action')) &&
+            // Accra is UTC+0 all year, so the calendar day is the ISO date.
+            (!from || e.occurred_at.slice(0, 10) >= from) &&
+            (!to || e.occurred_at.slice(0, 10) <= to),
+        ),
+      );
+    }),
+  ),
+  http.get(
+    '/api/v1/shortfalls/',
+    authed(({ request }) => {
+      if (!me().permissions.includes('shortfalls.resolve')) return forbidden();
+      const p = new URL(request.url).searchParams;
+      const status = p.get('status');
+      if (status && status !== 'open' && status !== 'resolved')
+        return invalid([{ field: 'status', message: 'Use open or resolved.' }]);
+      return paged(
+        request,
+        shortfallRows()
+          .reverse()
+          .filter(
+            (r) =>
+              (!status || r.status === status) &&
+              (!p.get('dispatch_id') || r.dispatch_id === Number(p.get('dispatch_id'))),
+          ),
+      );
+    }),
+  ),
+  post(
+    '/api/v1/shortfalls/:id/resolve/',
+    writeAuthed(async ({ request, params }) => {
+      if (!me().permissions.includes('shortfalls.resolve')) return forbidden();
+      // Out of the caller's scope is the same 404 as a missing id.
+      const row = shortfallRows().find((r) => r.id === Number(params.id));
+      if (!row) return notFound();
+      if (row.remaining === 0)
+        return err(409, 'conflict', 'This shortfall is already fully resolved.');
+      const b = await readJson(request);
+      const errors: S['Error']['errors'] = [];
+      const kinds = ['return_to_sender', 'confirm_loss', 'record_damage'];
+      if (!kinds.includes(String(b.resolution)))
+        errors.push({ field: 'resolution', message: 'Choose what happened to the missing items.' });
+      const q = b.quantity;
+      if (!Number.isInteger(q) || (q as number) < 1 || (q as number) > 1_000_000)
+        errors.push({ field: 'quantity', message: 'Enter a whole number, 1 or more.' });
+      else if ((q as number) > row.remaining)
+        errors.push({ field: 'quantity', message: `More than the ${row.remaining} still open.` });
+      const note = text(b.note, '').trim();
+      if (!note) errors.push({ field: 'note', message: 'Add a note.' });
+      else if (note.length > 1000)
+        errors.push({ field: 'note', message: 'Keep the note to 1000 characters.' });
+      if (errors.length) return invalid(errors);
+      const qty = q as number;
+      const item = byId(mockStore.items, row.item_id)!;
+      const from = stockRow(row.origin.id, item);
+      from.reserved = Math.max(0, from.reserved - qty);
+      if (b.resolution !== 'return_to_sender') from.on_hand = Math.max(0, from.on_hand - qty);
+      from.available = from.on_hand - from.reserved;
+      if (b.resolution === 'record_damage') stockRow(row.destination.id, item).quarantined += qty;
+      const disp = mockStore.dispatches.find((x) => x.id === row.dispatch_id)!;
+      mockStore.resolutionCount += 1;
+      const selfApproved = disp.received_by === me().user.login_id;
+      (mockStore.resolutions[row.id] ??= []).push({
+        reference: `RES-${String(mockStore.resolutionCount).padStart(6, '0')}`,
+        action: b.resolution as S['ShortfallResolve']['resolution'],
+        quantity: qty,
+        note,
+        resolved_by: me().user.login_id,
+        resolved_role: me().active_role,
+        resolved_at: d.t,
+        is_self_approval: selfApproved,
+      });
+      mockStore.activity.push({
+        id: mockStore.activity.length + 1,
+        occurred_at: d.t,
+        user_id: me().user.id,
+        user_login_id: me().user.login_id,
+        user_role: me().active_role,
+        branch_id: me().working_branch?.id ?? null,
+        branch_name: me().working_branch?.name ?? null,
+        action: 'shortfall_resolved',
+        target_type: 'dispatch_line',
+        target_ref: row.dispatch_reference,
+        is_self_approval: selfApproved,
+      });
+      return HttpResponse.json(shortfallRows().find((r) => r.id === row.id));
     }),
   ),
 

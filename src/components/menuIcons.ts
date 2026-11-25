@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Boxes,
   Circle,
   Clock,
@@ -29,6 +30,7 @@ const byKey: Record<string, LucideIcon> = {
   receive_stock: Inbox,
   dispatch: Truck,
   activity: Clock,
+  shortfalls: AlertTriangle,
 };
 
 /** Menu entries drawn in the nav bar; the server's further entries are opened from Home (FE doc s3, OQ-23). */

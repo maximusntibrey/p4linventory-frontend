@@ -131,18 +131,23 @@ const menus = {
   ],
 } satisfies Record<string, S['Me']['menu']>;
 
-/** Home tiles (v0.1.2): Super Admin gets Activity, Sell, Find and Receive; Warehouse and Branch Admin get Activity (2026-11-24). */
+/** Home tiles as /me gives them in contract 0.5.2: the screens the full menus cannot hold. */
 const homeLinks = {
   super_admin: [
     entry('activity', 'Activity', '/activity'),
+    entry('shortfalls', 'Shortfalls', '/shortfalls'),
     entry('sell', 'Sell', '/sell'),
     entry('find', 'Find', '/find'),
     entry('receive', 'Receive', '/receive'),
     entry('sales', 'Sales', '/sell/sales'),
   ],
-  warehouse_admin: [],
+  warehouse_admin: [
+    entry('activity', 'Activity', '/activity'),
+    entry('shortfalls', 'Shortfalls', '/shortfalls'),
+  ],
   branch_admin: [
     entry('activity', 'Activity', '/activity'),
+    entry('shortfalls', 'Shortfalls', '/shortfalls'),
     entry('sales', 'Sales', '/sell/sales'),
   ],
   front_staff: [],
@@ -178,6 +183,7 @@ export const me: S['Me'] = {
     'sales.cancel',
     'items.import',
     'activity.view',
+    'shortfalls.resolve',
     'find.use',
     'dashboard.view',
   ],
@@ -212,6 +218,7 @@ export const meByRole: Record<MockRole, S['Me']> = {
       'dispatches.create',
       'dispatches.view',
       'activity.view',
+      'shortfalls.resolve',
       'find.use',
       'dashboard.view',
     ],
@@ -236,6 +243,7 @@ export const meByRole: Record<MockRole, S['Me']> = {
       'sales.record',
       'sales.cancel',
       'activity.view',
+      'shortfalls.resolve',
       'find.use',
       'dashboard.view',
     ],
@@ -276,7 +284,42 @@ export const dashboard: S['Dashboard'] = {
     { location_id: 1, location_name: warehouse.name, on_hand: 12, available: 10 },
     { location_id: 2, location_name: branchA.name, on_hand: 3, available: 3 },
   ],
+  // The mock handler fills these from the stores, scoped to the caller.
+  low_stock_count: 0,
+  low_stock: [],
+  recent_activity: [],
 };
+
+const ev = (
+  id: number,
+  hour: string,
+  user: { id: number; login_id: string; roles: string[] },
+  branch: S['Branch'] | null,
+  action: string,
+  target_type: string,
+  target_ref: string,
+): S['ActivityEvent'] => ({
+  id,
+  occurred_at: `2026-11-2${id < 4 ? 3 : 4}T${hour}:00Z`,
+  user_id: user.id,
+  user_login_id: user.login_id,
+  user_role: user.roles[0],
+  branch_id: branch?.id ?? null,
+  branch_name: branch?.name ?? null,
+  action,
+  target_type,
+  target_ref,
+  is_self_approval: false,
+});
+/** Audit events, oldest first (the API lists newest first). Metadata only, no before/after values, no cost. */
+export const activityEvents: S['ActivityEvent'][] = [
+  ev(1, '08:10', users[3], warehouse, 'goods_receipt_created', 'goods_receipt', 'GRN-000001'),
+  ev(2, '09:20', users[3], warehouse, 'dispatch_created', 'dispatch', 'TRF-000001'),
+  ev(3, '10:30', users[3], warehouse, 'dispatch_created', 'dispatch', 'TRF-000002'),
+  ev(4, '11:45', users[1], branchA, 'dispatch_received', 'dispatch', 'TRF-000003'),
+  ev(5, '13:00', users[2], branchA, 'sale_recorded', 'sale', 'SAL-000001'),
+  ev(6, '14:05', users[0], null, 'user_created', 'user', 'USR-0004'),
+];
 
 export const categories: S['ItemCategory'][] = [
   { id: 1, name: 'Laptop', subtypes: [{ id: 1, name: 'Business laptop' }] },

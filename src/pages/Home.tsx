@@ -5,6 +5,8 @@ import { useCurrentMe } from '../auth/guards';
 import { Card } from '../components/Card';
 import { iconForMenuKey } from '../components/menuIcons';
 import { QueryGate } from '../components/QueryGate';
+import { ActivityList } from '../features/activity/ActivityList';
+import { StatusBadge } from '../components/StatusBadge';
 import { useBranchFilter } from '../features/workingBranch/BranchFilter';
 
 function Tile({ label, value }: { label: string; value: number }) {
@@ -64,6 +66,38 @@ export function Home() {
                 <Tile label="In transit" value={d.in_transit_dispatches} />
                 <Tile label="Active items" value={d.active_items} />
               </div>
+              <Card className="flex flex-col gap-2">
+                <h2 className="text-2xl">Low stock</h2>
+                {d.low_stock_count === 0 ? (
+                  <p className="m-0 text-muted">Nothing is at or below its reorder level.</p>
+                ) : (
+                  <>
+                    <p className="m-0 font-semibold">
+                      <StatusBadge status="low" label={`${d.low_stock_count} to reorder`} />
+                    </p>
+                    <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                      {d.low_stock.map((r) => (
+                        <li
+                          key={`${r.location_id}-${r.item_id}`}
+                          className="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-line pb-2 last:border-0 last:pb-0"
+                        >
+                          <span className="font-semibold">
+                            {r.item_name} <span className="font-normal text-muted">{r.sku}</span>
+                          </span>
+                          <span className="text-muted">
+                            {r.location_name}: {r.available} available, reorder at {r.reorder_level}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    {d.low_stock_count > d.low_stock.length && (
+                      <p className="m-0 text-sm text-muted">
+                        Showing {d.low_stock.length} of {d.low_stock_count}
+                      </p>
+                    )}
+                  </>
+                )}
+              </Card>
               {d.stock_per_location && d.stock_per_location.length > 0 && (
                 <Card className="flex flex-col gap-2">
                   <h2 className="text-2xl">Stock by location</h2>
@@ -82,6 +116,14 @@ export function Home() {
                   </ul>
                 </Card>
               )}
+              <Card className="flex flex-col gap-2">
+                <h2 className="text-2xl">Recent activity</h2>
+                {d.recent_activity.length === 0 ? (
+                  <p className="m-0 text-muted">No activity yet.</p>
+                ) : (
+                  <ActivityList events={d.recent_activity} />
+                )}
+              </Card>
             </>
           )}
         </QueryGate>

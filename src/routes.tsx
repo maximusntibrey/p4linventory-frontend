@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { RequireAuth, RequirePermission } from './auth/guards';
 import type { Me } from './auth/session';
 import { AppShell } from './components/AppShell';
+import { ActivityPage } from './features/activity/ActivityPage';
 import { BranchesPage } from './features/branches/BranchesPage';
 import { DispatchesPage } from './features/dispatches/DispatchesPage';
 import { DispatchNew } from './features/dispatches/DispatchNew';
@@ -15,6 +16,7 @@ import { ReceiveDispatch } from './features/receiving/ReceiveDispatch';
 import { WaitingPage } from './features/receiving/WaitingPage';
 import { SalesPage } from './features/sales/SalesPage';
 import { SellPage } from './features/sales/SellPage';
+import { ShortfallsPage } from './features/shortfalls/ShortfallsPage';
 import { StockPage } from './features/stock/StockPage';
 import { UserDetail } from './features/users/UserDetail';
 import { UserNew } from './features/users/UserNew';
@@ -28,7 +30,6 @@ import { NotFound } from './pages/NotFound';
 /** Screens a later step builds. Each is opened by one permission from the me endpoint; the server still checks every request. */
 const guardedScreens: { path: string; title: string; permission: Me['permissions'][number] }[] = [
   { path: 'warehouse', title: 'Warehouse', permission: 'stock.view' },
-  { path: 'activity', title: 'Activity', permission: 'activity.view' },
 ];
 
 export function AppRoutes() {
@@ -53,6 +54,22 @@ export function AppRoutes() {
               }
             />
           ))}
+          <Route
+            path="activity"
+            element={
+              <RequirePermission permission="activity.view">
+                <ActivityPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="shortfalls"
+            element={
+              <RequirePermission permission="shortfalls.resolve">
+                <ShortfallsPage />
+              </RequirePermission>
+            }
+          />
           <Route
             path="sell"
             element={
