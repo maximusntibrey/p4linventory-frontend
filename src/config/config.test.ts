@@ -23,6 +23,12 @@ describe('apiMode', () => {
     expect((await import('./index')).apiMode).toBe('real');
   });
 
+  it('exposes VITE_API_URL with a trailing slash removed', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://backend.up.railway.app/');
+    const mod = await import('./index');
+    expect(mod.apiUrl).toBe('https://backend.up.railway.app');
+  });
+
   it('is real in a production build even with VITE_API_MODE=mock', async () => {
     vi.stubEnv('VITE_API_MODE', 'mock');
     vi.stubEnv('PROD', true);
