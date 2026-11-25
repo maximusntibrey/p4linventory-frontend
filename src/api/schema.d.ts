@@ -348,7 +348,7 @@ export interface paths {
         };
         /**
          * Dashboard shell data for the user's role and active location
-         * @description A shell for Sprint 1. Super Admin sees all branches by default and may view one with `branch`; WA sees the warehouse (and per-branch quantities); BA the own branch. Front Staff have no Home tab and get 403. More figures are added in later sprints.
+         * @description v0.5.0 (additive) adds `low_stock_count`, `low_stock` (up to 10 rows, Active items whose reorder level is set and available is at or below it) and `recent_activity` (latest 10 activity events), in the same scope as the rest (SA all or the `branch` filter, WA the warehouse, BA the own branch); quantities only, no cost. Super Admin sees all branches by default and may view one with `branch`; WA sees the warehouse (and per-branch quantities); BA the own branch. Front Staff have no Home tab and get 403. More figures are added in later sprints.
          */
         get: operations["dashboardRead"];
         put?: never;
@@ -793,6 +793,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shortfalls/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dispatch shortfalls (received lines that came up short), newest first
+         * @description One row per dispatch line with `qty_sent` above `qty_accepted`; `id` is the dispatch line id. `status` is
+         *     `open` while `remaining` is above 0, else `resolved`. SA sees all; WA those sent from its warehouse;
+         *     BA those to its own branch; FS gets 403. Quantities only, never cost.
+         */
+        get: operations["shortfallsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shortfalls/{id}/resolve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve part or all of a shortfall (return to sender, confirm loss, record damage)
+         * @description `id` is the dispatch line id. A `note` is mandatory. Through the stock service, with ledger and audit rows:
+         *     `return_to_sender` releases reserved at the sender; `confirm_loss` releases reserved and reduces on hand at
+         *     the sender; `record_damage` does that and adds quarantined at the destination. `quantity` may not exceed
+         *     `remaining` (400 on `quantity`). A line with nothing left to resolve is 409 `conflict`. A shortfall outside
+         *     the caller's scope is 404 `not_found`, like a missing id. FS gets 403. Resolving a shortfall the caller
+         *     recorded (receiver of the dispatch) is allowed and flagged (`is_self_approval`, OQ-9c).
+         */
+        post: operations["shortfallsResolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activity-log/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Activity log (audit events), newest first
+         * @description SA sees every event; WA those of the warehouse; BA those of its own branch (a different `branch_id` is 403
+         *     `wrong_branch`). FS gets 403. `date_from` and `date_to` are calendar days in Africa/Accra, both inclusive; `date_from` after `date_to` is 400 on `date_to`.
+         *     Metadata only: no before/after values and never cost.
+         */
+        get: operations["activityLogList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sales/": {
         parameters: {
             query?: never;
@@ -983,11 +1052,11 @@ export interface components {
          *     `sales.record` (Sell, row 36), `activity.view` (Activity, row 41), `find.use` (Find, rows 13 and
          *     22), `dashboard.view` (Home dashboard, row 40) and the existing `dispatches.receive` (Receive, row 31) drive the Sell, Activity, Find and
          *     Receive menu entries. v0.4.2: `sales.cancel` (cancel a sale, row 39: SA, BA) and `items.import`
-         *     (CSV import, rows 19 and 20: SA, WA). The Sales entry (row 49) is in `menu` for FS and in
+         *     (CSV import, rows 19 and 20: SA, WA). v0.5.0: `shortfalls.resolve` (rows 33 to 35: SA, WA, BA). The Sales entry (row 49) is in `menu` for FS and in
          *     `home_links` for SA and BA, whose menus already hold 5 items.
          * @enum {string}
          */
-        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive" | "sales.record" | "activity.view" | "find.use" | "dashboard.view" | "sales.cancel" | "items.import";
+        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive" | "sales.record" | "activity.view" | "find.use" | "dashboard.view" | "sales.cancel" | "items.import" | "shortfalls.resolve";
         /**
          * @description Code to status word (SKILLS "Item"): `draft` = Draft, `active` = Active,
          *     `discontinued` = Discontinued. Discontinued is final.
@@ -1071,8 +1140,10 @@ export interface components {
             menu: components["schemas"]["MenuItem"][];
             /**
              * @description Home tiles, separate from `menu` so they never take a navigation slot (OQ-23). Super Admin
-             *     gets Activity, Sell, Find and Receive; Warehouse Admin and Branch Admin get Activity for their
-             *     own location (OQ-25); Front Staff get none.
+             *     gets Activity, Shortfalls, Sell, Find, Receive and Sales; Warehouse Admin gets Activity and
+             *     Shortfalls; Branch Admin gets Activity, Shortfalls and Sales (own location, OQ-25). A tile is
+             *     shown only to a holder of its action (`activity.view`, `shortfalls.resolve`); Front Staff get none.
+             *     Shortfalls opens `/shortfalls`, Activity opens `/activity` (v0.5.2, FQ-16).
              */
             home_links: components["schemas"]["MenuItem"][];
         };
@@ -1098,6 +1169,76 @@ export interface components {
                 location_name: string;
                 on_hand: number;
                 available: number;
+            }[];
+            /** @description Number of stock rows at or below their reorder level in scope. */
+            low_stock_count: number;
+            /** @description Up to 10 rows, by location then item. Quantities only. */
+            low_stock: {
+                location_id: number;
+                location_name: string;
+                item_id: number;
+                sku: string;
+                item_name: string;
+                available: number;
+                reorder_level: number;
+            }[];
+            /** @description The latest 10 activity events in scope. No cost. */
+            recent_activity: components["schemas"]["ActivityEvent"][];
+        };
+        ActivityEvent: {
+            id: number;
+            /** Format: date-time */
+            occurred_at: string;
+            user_id: number | null;
+            user_login_id: string;
+            user_role: string;
+            branch_id: number | null;
+            branch_name: string | null;
+            /**
+             * @description Open-ended list.
+             * @example dispatch_created
+             */
+            action: string;
+            target_type: string;
+            target_ref: string;
+            is_self_approval: boolean;
+        };
+        ShortfallResolve: {
+            /** @enum {string} */
+            resolution: "return_to_sender" | "confirm_loss" | "record_damage";
+            quantity: number;
+            note: string;
+        };
+        Shortfall: {
+            /** @description The dispatch line id. */
+            id: number;
+            dispatch_id: number;
+            dispatch_reference: string;
+            origin: components["schemas"]["Branch"];
+            destination: components["schemas"]["Branch"];
+            item_id: number;
+            sku: string;
+            item_name: string;
+            qty_sent: number;
+            qty_accepted: number;
+            shortfall: number;
+            resolved_quantity: number;
+            remaining: number;
+            /** @enum {string} */
+            status: "open" | "resolved";
+            /** Format: date-time */
+            received_at: string | null;
+            resolutions: {
+                reference: string;
+                /** @enum {string} */
+                action: "return_to_sender" | "confirm_loss" | "record_damage";
+                quantity: number;
+                note: string;
+                resolved_by: components["schemas"]["LoginId"];
+                resolved_role: string;
+                /** Format: date-time */
+                resolved_at: string;
+                is_self_approval: boolean;
             }[];
         };
         ItemCategory: {
@@ -2949,6 +3090,103 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    shortfallsList: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+                status?: "open" | "resolved";
+                dispatch_id?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of shortfalls. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        results?: components["schemas"]["Shortfall"][];
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    shortfallsResolve: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description A new UUID per user action. Resend the same value when retrying. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShortfallResolve"];
+            };
+        };
+        responses: {
+            /** @description The shortfall with its updated resolutions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Shortfall"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    activityLogList: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+                user_id?: number;
+                branch_id?: number;
+                action?: string;
+                date_from?: string;
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of activity events. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        results?: components["schemas"]["ActivityEvent"][];
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     salesList: {

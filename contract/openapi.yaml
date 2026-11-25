@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Payless4Laptops Inventory API
-  version: 0.4.2
+  version: 0.5.2
   description: |
     Contract-first API for Sprint 1 (B1.3). Published before the code; from B2 onward the
     drf-spectacular generated schema must match this file. Changes need owner approval.
@@ -52,6 +52,8 @@ tags:
   - name: dispatches
   - name: sales
   - name: imports
+  - name: activity
+  - name: shortfalls
 paths:
   /health/:
     get:
@@ -568,7 +570,7 @@ paths:
       tags: [dashboard]
       operationId: dashboardRead
       summary: Dashboard shell data for the user's role and active location
-      description: A shell for Sprint 1. Super Admin sees all branches by default and may view one with `branch`; WA sees the warehouse (and per-branch quantities); BA the own branch. Front Staff have no Home tab and get 403. More figures are added in later sprints.
+      description: v0.5.0 (additive) adds `low_stock_count`, `low_stock` (up to 10 rows, Active items whose reorder level is set and available is at or below it) and `recent_activity` (latest 10 activity events), in the same scope as the rest (SA all or the `branch` filter, WA the warehouse, BA the own branch); quantities only, no cost. Super Admin sees all branches by default and may view one with `branch`; WA sees the warehouse (and per-branch quantities); BA the own branch. Front Staff have no Home tab and get 403. More figures are added in later sprints.
       x-permission: SA all, WA warehouse, BA own branch (table row 40)
       parameters:
         - {$ref: '#/components/parameters/BranchFilter'}
@@ -1215,6 +1217,104 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
 
+  /api/v1/shortfalls/:
+    get:
+      tags: [shortfalls]
+      operationId: shortfallsList
+      summary: Dispatch shortfalls (received lines that came up short), newest first
+      description: |
+        One row per dispatch line with `qty_sent` above `qty_accepted`; `id` is the dispatch line id. `status` is
+        `open` while `remaining` is above 0, else `resolved`. SA sees all; WA those sent from its warehouse;
+        BA those to its own branch; FS gets 403. Quantities only, never cost.
+      x-permission: SA all, WA sender warehouse, BA own destination branch (table row 33)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: status, in: query, schema: {type: string, enum: [open, resolved]}}
+        - {name: dispatch_id, in: query, schema: {type: integer, minimum: 1}}
+      responses:
+        '200':
+          description: Page of shortfalls.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/Shortfall'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/shortfalls/{id}/resolve/:
+    post:
+      tags: [shortfalls]
+      operationId: shortfallsResolve
+      summary: Resolve part or all of a shortfall (return to sender, confirm loss, record damage)
+      description: |
+        `id` is the dispatch line id. A `note` is mandatory. Through the stock service, with ledger and audit rows:
+        `return_to_sender` releases reserved at the sender; `confirm_loss` releases reserved and reduces on hand at
+        the sender; `record_damage` does that and adds quarantined at the destination. `quantity` may not exceed
+        `remaining` (400 on `quantity`). A line with nothing left to resolve is 409 `conflict`. A shortfall outside
+        the caller's scope is 404 `not_found`, like a missing id. FS gets 403. Resolving a shortfall the caller
+        recorded (receiver of the dispatch) is allowed and flagged (`is_self_approval`, OQ-9c).
+      x-permission: SA both sides, WA sender warehouse, BA own destination branch (table row 34)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ShortfallResolve'}
+      responses:
+        '200':
+          description: The shortfall with its updated resolutions.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Shortfall'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/activity-log/:
+    get:
+      tags: [activity]
+      operationId: activityLogList
+      summary: Activity log (audit events), newest first
+      description: |
+        SA sees every event; WA those of the warehouse; BA those of its own branch (a different `branch_id` is 403
+        `wrong_branch`). FS gets 403. `date_from` and `date_to` are calendar days in Africa/Accra, both inclusive; `date_from` after `date_to` is 400 on `date_to`.
+        Metadata only: no before/after values and never cost.
+      x-permission: SA all, WA warehouse, BA own branch (table row 41)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: user_id, in: query, schema: {type: integer, minimum: 1}}
+        - {name: branch_id, in: query, schema: {type: integer, minimum: 1}}
+        - {name: action, in: query, schema: {type: string, maxLength: 60}}
+        - {name: date_from, in: query, schema: {type: string, format: date}}
+        - {name: date_to, in: query, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: Page of activity events.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/ActivityEvent'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
   /api/v1/sales/:
     get:
       tags: [sales]
@@ -1550,7 +1650,7 @@ components:
         `sales.record` (Sell, row 36), `activity.view` (Activity, row 41), `find.use` (Find, rows 13 and
         22), `dashboard.view` (Home dashboard, row 40) and the existing `dispatches.receive` (Receive, row 31) drive the Sell, Activity, Find and
         Receive menu entries. v0.4.2: `sales.cancel` (cancel a sale, row 39: SA, BA) and `items.import`
-        (CSV import, rows 19 and 20: SA, WA). The Sales entry (row 49) is in `menu` for FS and in
+        (CSV import, rows 19 and 20: SA, WA). v0.5.0: `shortfalls.resolve` (rows 33 to 35: SA, WA, BA). The Sales entry (row 49) is in `menu` for FS and in
         `home_links` for SA and BA, whose menus already hold 5 items.
       enum:
         - users.manage
@@ -1575,6 +1675,7 @@ components:
         - dashboard.view
         - sales.cancel
         - items.import
+        - shortfalls.resolve
     ItemStatus:
       type: string
       description: |
@@ -1690,8 +1791,10 @@ components:
           type: array
           description: |
             Home tiles, separate from `menu` so they never take a navigation slot (OQ-23). Super Admin
-            gets Activity, Sell, Find and Receive; Warehouse Admin and Branch Admin get Activity for their
-            own location (OQ-25); Front Staff get none.
+            gets Activity, Shortfalls, Sell, Find, Receive and Sales; Warehouse Admin gets Activity and
+            Shortfalls; Branch Admin gets Activity, Shortfalls and Sales (own location, OQ-25). A tile is
+            shown only to a holder of its action (`activity.view`, `shortfalls.resolve`); Front Staff get none.
+            Shortfalls opens `/shortfalls`, Activity opens `/activity` (v0.5.2, FQ-16).
           items: {$ref: '#/components/schemas/MenuItem'}
     MenuItem:
       type: object
@@ -1702,7 +1805,7 @@ components:
         path: {type: string, example: /stock}
     Dashboard:
       type: object
-      required: [role, location, waiting_dispatches, in_transit_dispatches, active_items]
+      required: [role, location, waiting_dispatches, in_transit_dispatches, active_items, low_stock_count, low_stock, recent_activity]
       properties:
         role: {$ref: '#/components/schemas/RoleCode'}
         location:
@@ -1722,6 +1825,80 @@ components:
               location_name: {type: string}
               on_hand: {type: integer}
               available: {type: integer}
+        low_stock_count: {type: integer, description: Number of stock rows at or below their reorder level in scope.}
+        low_stock:
+          type: array
+          description: Up to 10 rows, by location then item. Quantities only.
+          items:
+            type: object
+            required: [location_id, location_name, item_id, sku, item_name, available, reorder_level]
+            properties:
+              location_id: {type: integer}
+              location_name: {type: string}
+              item_id: {type: integer}
+              sku: {type: string}
+              item_name: {type: string}
+              available: {type: integer}
+              reorder_level: {type: integer, minimum: 0}
+        recent_activity:
+          type: array
+          description: The latest 10 activity events in scope. No cost.
+          items: {$ref: '#/components/schemas/ActivityEvent'}
+    ActivityEvent:
+      type: object
+      required: [id, occurred_at, user_id, user_login_id, user_role, branch_id, branch_name, action, target_type, target_ref, is_self_approval]
+      properties:
+        id: {type: integer}
+        occurred_at: {type: string, format: date-time}
+        user_id: {type: integer, nullable: true}
+        user_login_id: {type: string}
+        user_role: {type: string}
+        branch_id: {type: integer, nullable: true}
+        branch_name: {type: string, nullable: true}
+        action: {type: string, example: dispatch_created, description: Open-ended list.}
+        target_type: {type: string}
+        target_ref: {type: string}
+        is_self_approval: {type: boolean}
+    ShortfallResolve:
+      type: object
+      required: [resolution, quantity, note]
+      properties:
+        resolution: {type: string, enum: [return_to_sender, confirm_loss, record_damage]}
+        quantity: {type: integer, minimum: 1, maximum: 1000000}
+        note: {type: string, minLength: 1, maxLength: 1000}
+    Shortfall:
+      type: object
+      required: [id, dispatch_id, dispatch_reference, origin, destination, item_id, sku, item_name, qty_sent, qty_accepted, shortfall, resolved_quantity, remaining, status, received_at, resolutions]
+      properties:
+        id: {type: integer, description: The dispatch line id.}
+        dispatch_id: {type: integer}
+        dispatch_reference: {type: string, pattern: '^TRF-\d{6,}$'}
+        origin: {$ref: '#/components/schemas/Branch'}
+        destination: {$ref: '#/components/schemas/Branch'}
+        item_id: {type: integer}
+        sku: {type: string}
+        item_name: {type: string}
+        qty_sent: {type: integer}
+        qty_accepted: {type: integer}
+        shortfall: {type: integer, minimum: 1}
+        resolved_quantity: {type: integer, minimum: 0}
+        remaining: {type: integer, minimum: 0}
+        status: {type: string, enum: [open, resolved]}
+        received_at: {type: string, format: date-time, nullable: true}
+        resolutions:
+          type: array
+          items:
+            type: object
+            required: [reference, action, quantity, note, resolved_by, resolved_role, resolved_at, is_self_approval]
+            properties:
+              reference: {type: string, pattern: '^RES-\d{6,}$'}
+              action: {type: string, enum: [return_to_sender, confirm_loss, record_damage]}
+              quantity: {type: integer, minimum: 1}
+              note: {type: string}
+              resolved_by: {$ref: '#/components/schemas/LoginId'}
+              resolved_role: {type: string}
+              resolved_at: {type: string, format: date-time}
+              is_self_approval: {type: boolean}
     ItemCategory:
       type: object
       required: [id, name, subtypes]
