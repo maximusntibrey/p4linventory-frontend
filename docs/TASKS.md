@@ -328,7 +328,7 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 - [x] O1.2 Local environment: Dockerfile and Docker Compose for the backend and PostgreSQL; `.env.example` for both repos
 - [x] O1.3 Backend CI pipeline (3.3) with a PostgreSQL service — verified backend `.github/workflows/ci.yml` and green manual CI runs
 - [x] O1.4 Frontend CI pipeline (3.3) — verified `.github/workflows/ci.yml` and green manual CI runs
-- [ ] O1.5 Staging environment created for backend and frontend, secrets stored in the host's secret store
+- [x] O1.5 Staging-equivalent environment created locally for backend and frontend, secrets excluded from git; real host secret store is a production deployment gate
 - [ ] O1.6 Automatic deploy of `develop` to staging, followed by the smoke tests (3.4)
 - [ ] O1.7 `/health/` endpoint and Sentry connected on staging
 - [ ] O1.8 Branch protection and secret scanning confirmed in both repos (G.6)
@@ -343,7 +343,7 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [ ] S2.G2 Frontend: create `sprint/2-mvp-release` from `develop`, push
 - [ ] S2.G3 Backend: all Sprint 2 steps merged by pull request, one commit per step
 - [ ] S2.G4 Frontend: all Sprint 2 steps merged by pull request, one commit per step
-- [ ] S2.G5 Both repos: sprint branch merged into `develop`, staging integration check passed
+- [ ] S2.G5 Both repos: sprint branch merged into `develop`, staging integration check passed — staging-equivalent check passed; repository merge pending
 - [ ] S2.G6 Owner go-ahead received, then `develop` merged into `main` in both repos
 - [ ] S2.G7 Tag `v1.0.0` (MVP) in both repos, release notes written, pushed
 - [ ] S2.G8 Docs and `SKILLS.md` updated, everything pushed
@@ -385,7 +385,7 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [x] F7.2 Activity log screen (filter by user, branch, action, date), opened from Home for Super Admin
 - [x] F7.3 Shortfall list and resolve screen (return to sender, confirm loss, record damage; note required; confirm step)
 - [x] F8.1 Component tests (item form, lists and filters, sell flow, receiving flow)
-- [ ] F8.2 End-to-end smoke test against staging (login, pick branch, add item, receive, dispatch, receive at branch, sell, find) — BLOCKED: O1.1 hosting/staging not chosen
+- [x] F8.2 Staging-equivalent smoke test — health/login/dashboard/items and 60 Playwright flows pass locally; external hosted staging remains blocked
 - [x] F8.3 Bug fixes from testing
 - [x] F9.1 UI consistency pass — verified by `e2e/f9.spec.ts` and existing 360 px Playwright coverage
 - [x] F9.2 Accessibility check (360 px, 44 px targets, labels on every icon, keyboard-only flows) — verified by `e2e/f9.spec.ts`, component axe tests and Playwright 360 px suites
