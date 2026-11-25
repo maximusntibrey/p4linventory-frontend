@@ -73,7 +73,9 @@ export const newIdempotencyKey = (): string => crypto.randomUUID();
 
 const unsafe = new Set<Method>(['post', 'put', 'patch', 'delete']);
 let csrfFallback: string | undefined;
-const isMockMode = import.meta.env.VITE_API_MODE === 'mock' && !import.meta.env.PROD;
+const isMockMode =
+  import.meta.env.MODE === 'test' ||
+  (import.meta.env.VITE_API_MODE === 'mock' && !import.meta.env.PROD);
 
 function csrfFromCookie(): string | undefined {
   const m = /(?:^|;\s*)csrftoken=([^;]*)/.exec(document.cookie);
