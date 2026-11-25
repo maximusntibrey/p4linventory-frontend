@@ -390,9 +390,9 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [x] F9.1 UI consistency pass — verified by `e2e/f9.spec.ts` and existing 360 px Playwright coverage
 - [x] F9.2 Accessibility check (360 px, 44 px targets, labels on every icon, keyboard-only flows) — verified by `e2e/f9.spec.ts`, component axe tests and Playwright 360 px suites
 - [x] F9.3 List performance check and fixes — verified `e2e/f9.spec.ts`; no fix was required
-- [ ] F10.1 Short user guide and walkthrough (use the `docx` or `pdf` skill)
-- [ ] F10.2 Checks on the live frontend
-- [ ] F10.3 MVP release (v1.0.0)
+- [ ] F10.1 Short user guide and walkthrough (use the `docx` or `pdf` skill) — `docs/USER_GUIDE.md` exists; DOCX/PDF export skill unavailable
+- [ ] F10.2 Checks on the live frontend — blocked by O1.1 staging/production hosting
+- [ ] F10.3 MVP release (v1.0.0) — blocked by staging, owner go-ahead and production release gates
 
 ### DevOps, Sprint 2
 
