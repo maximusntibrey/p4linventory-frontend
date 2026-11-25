@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
       include: ['src/**/*.test.{ts,tsx}'],
       setupFiles: ['src/test/setup.ts'],
       css: false,
+      maxWorkers: 4,
     },
   };
 });
