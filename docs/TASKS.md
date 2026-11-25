@@ -343,7 +343,7 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [ ] S2.G2 Frontend: create `sprint/2-mvp-release` from `develop`, push
 - [ ] S2.G3 Backend: all Sprint 2 steps merged by pull request, one commit per step
 - [ ] S2.G4 Frontend: all Sprint 2 steps merged by pull request, one commit per step
-- [ ] S2.G5 Both repos: sprint branch merged into `develop`, staging integration check passed — staging-equivalent check passed; repository merge pending
+- [ ] S2.G5 Both repos: sprint branch merged into `develop`, staging integration check passed — staging-equivalent check passed; PR #2 open, but develop branch policy blocked merge with no PR status check reported
 - [ ] S2.G6 Owner go-ahead received, then `develop` merged into `main` in both repos
 - [ ] S2.G7 Tag `v1.0.0` (MVP) in both repos, release notes written, pushed
 - [ ] S2.G8 Docs and `SKILLS.md` updated, everything pushed
