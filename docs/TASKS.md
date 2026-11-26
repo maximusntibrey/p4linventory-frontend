@@ -326,8 +326,8 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 
 - [x] O1.1 Owner decision recorded: Railway project `test-production`, existing PostgreSQL service `Postgres`, Django `FileSystemStorage` on a Railway Volume intended at `/data`, and generated backend/frontend domains; see `docs/RAILWAY.md`. Verify the volume mount in the dashboard before release.
 - [x] O1.2 Local environment: Dockerfile and Docker Compose for the backend and PostgreSQL; `.env.example` for both repos
-- [x] O1.3 Backend CI pipeline (3.3) with a PostgreSQL service — verified backend `.github/workflows/ci.yml` and green manual CI runs
-- [x] O1.4 Frontend CI pipeline (3.3) — verified `.github/workflows/ci.yml` and green manual CI runs
+- [x] O1.3 Backend CI pipeline (3.3) with a PostgreSQL service — verified backend `.github/workflows/ci.yml`; manual run 45771645404 passed on 2026-11-26.
+- [x] O1.4 Frontend CI pipeline (3.3) — verified `.github/workflows/ci.yml`; manual run 45771644995 passed on 2026-11-26.
 - [x] O1.5 Staging-equivalent environment created locally for backend and frontend, secrets excluded from git; real host secret store is a production deployment gate
 - [ ] O1.6 Automatic deploy of `develop` to staging, followed by the smoke tests (3.4)
 - [ ] O1.7 `/health/` endpoint and Sentry connected on staging
