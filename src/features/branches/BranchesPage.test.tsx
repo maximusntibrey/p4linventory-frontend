@@ -7,12 +7,19 @@ import { server } from '../../mocks/server';
 import { apiError, capture, click, type } from '../../test/helpers';
 import { renderApp } from '../../test/renderApp';
 
+const pick = (name: string) =>
+  fireEvent.click(
+    within(screen.getByRole('radiogroup', { name: 'Branch Type' })).getByRole('radio', {
+      name: new RegExp(name),
+    }),
+  );
+
 describe('branches list', () => {
   it('lists locations with status as text and an icon, and has no axe violations', async () => {
     const { container } = renderApp('/branches', { as: 'super_admin' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Branches' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Accra Branch' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Central Warehouse' })).toBeTruthy();
+    expect(await screen.findByRole('cell', { name: 'Accra Branch' })).toBeTruthy();
+    expect(screen.getByRole('cell', { name: 'Central Warehouse' })).toBeTruthy();
     expect(screen.getAllByText('Active')).toHaveLength(3);
     expect(container.querySelectorAll('svg[aria-hidden="true"]').length).toBeGreaterThan(3);
     expect(await axe(container)).toHaveNoViolations();
@@ -21,6 +28,7 @@ describe('branches list', () => {
   it('a user who may only view sees no manage buttons', async () => {
     renderApp('/branches', { as: 'branch_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Branches' });
+    await screen.findByRole('cell', { name: 'Central Warehouse' });
     expect(screen.queryByRole('button', { name: /Add a branch/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Edit/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Deactivate/ })).toBeNull();
@@ -57,14 +65,20 @@ describe('add and edit a branch', () => {
     server.use(post.handler);
     const { container } = renderApp('/branches', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Branches' });
+    await screen.findByRole('cell', { name: 'Central Warehouse' });
     click('Add a branch');
     expect(await axe(container)).toHaveNoViolations();
     type('Code', 'TAM');
     type('Name', 'Tamale Branch');
+    pick('Normal Branch');
     click('Save branch');
     expect((await screen.findByRole('status')).textContent).toContain('Branch saved.');
     expect(post.seen).toHaveLength(1);
-    expect(post.seen[0].body).toEqual({ code: 'TAM', name: 'Tamale Branch' });
+    expect(post.seen[0].body).toEqual({
+      code: 'TAM',
+      name: 'Tamale Branch',
+      branch_type: 'branch',
+    });
     expect(post.seen[0].key).toMatch(/^[0-9a-f-]{36}$/);
   });
 
@@ -73,10 +87,12 @@ describe('add and edit a branch', () => {
     server.use(post.handler);
     renderApp('/branches', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Branches' });
+    await screen.findByRole('cell', { name: 'Central Warehouse' });
     click('Add a branch');
     click('Save branch');
     expect(await screen.findByText('Enter a code.')).toBeTruthy();
     expect(screen.getByText('Enter a name.')).toBeTruthy();
+    expect(screen.getByText('Choose a branch type.')).toBeTruthy();
     expect(post.seen).toHaveLength(0);
   });
 
@@ -91,9 +107,11 @@ describe('add and edit a branch', () => {
     server.use(post.handler);
     renderApp('/branches', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Branches' });
+    await screen.findByRole('cell', { name: 'Central Warehouse' });
     click('Add a branch');
     type('Code', 'ACC');
     type('Name', 'Another');
+    pick('Normal Branch');
     click('Save branch');
     await waitFor(() => expect(n).toBe(1));
     const field = await screen.findAllByText('A branch with this code exists.');
@@ -116,9 +134,11 @@ describe('add and edit a branch', () => {
     );
     renderApp('/branches', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Branches' });
+    await screen.findByRole('cell', { name: 'Central Warehouse' });
     click('Add a branch');
     type('Code', 'X');
     type('Name', 'X');
+    pick('Normal Branch');
     click('Save branch');
     expect((await screen.findByRole('alert')).textContent).toContain('You cannot add branches.');
   });
@@ -130,12 +150,17 @@ describe('add and edit a branch', () => {
     server.use(patch.handler);
     renderApp('/branches', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Branches' });
+    await screen.findByRole('cell', { name: 'Central Warehouse' });
     click('Edit Accra Branch');
     expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Accra Branch');
     type('Name', 'Accra Central');
     click('Save branch');
     expect((await screen.findByRole('status')).textContent).toContain('Branch saved.');
-    expect(patch.seen[0].body).toEqual({ code: 'ACC', name: 'Accra Central' });
+    expect(patch.seen[0].body).toEqual({
+      code: 'ACC',
+      name: 'Accra Central',
+      branch_type: 'branch',
+    });
     expect(patch.seen[0].key).toBeTruthy();
   });
 });
@@ -148,6 +173,7 @@ describe('deactivate with a confirm step', () => {
     server.use(post.handler);
     const { container } = renderApp('/branches', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Branches' });
+    await screen.findByRole('cell', { name: 'Central Warehouse' });
     click('Deactivate Accra Branch');
     const group = await screen.findByRole('group', { name: /Deactivate Accra Branch\?/ });
     await waitFor(() => expect(document.activeElement).toBe(group));
@@ -171,6 +197,7 @@ describe('deactivate with a confirm step', () => {
   it('the API refusing (the warehouse) is shown inside the confirm step', async () => {
     renderApp('/branches', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Branches' });
+    await screen.findByRole('cell', { name: 'Central Warehouse' });
     click('Deactivate Central Warehouse');
     fireEvent.click(
       within(await screen.findByRole('group')).getByRole('button', { name: 'Yes, deactivate' }),

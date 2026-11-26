@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { Home, Tag } from 'lucide-react';
-import { Card, CommandPalette, Topbar } from '.';
+import { Card, CommandPalette, SegmentedControl, Topbar } from '.';
 
 const items = [
   { id: '/', label: 'Home', icon: Home },
@@ -71,5 +71,33 @@ describe('Topbar command search and unavailable bell', () => {
     expect(bell).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(bell);
     expect(onClick).not.toHaveBeenCalled();
+  });
+});
+
+describe('SegmentedControl form use (legend, required, error)', () => {
+  it('shows a visible legend, marks it required, wires the error and has no axe violations', async () => {
+    const { container } = render(
+      <SegmentedControl
+        variant="cards"
+        label="Branch Type"
+        legend="Branch Type"
+        required
+        error="A warehouse already exists."
+        value=""
+        onValueChange={() => {}}
+        options={[
+          { value: 'branch', label: 'Normal Branch', description: 'A shop' },
+          { value: 'warehouse', label: 'Warehouse', description: 'Holds stock' },
+        ]}
+      />,
+    );
+    const group = screen.getByRole('radiogroup', { name: 'Branch Type' });
+    expect(group).toHaveAttribute('aria-invalid', 'true');
+    expect(group).toHaveAttribute('aria-required', 'true');
+    expect(screen.getByText('(required)')).toBeInTheDocument();
+    expect(screen.getByText('A warehouse already exists.').closest('p')?.id).toBe(
+      group.getAttribute('aria-describedby'),
+    );
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

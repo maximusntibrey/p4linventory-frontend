@@ -1,3 +1,4 @@
+import { AlertCircle } from 'lucide-react';
 import { useId } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cx } from './cx';
@@ -18,6 +19,11 @@ export type SegmentedControlProps<T extends string> = {
   options: SegmentOption<T>[];
   /** `segments` = compact joined buttons, `cards` = radio cards with icon and description. */
   variant?: 'segments' | 'cards';
+  /** Visible label above the group (form use). Without it the group is named by `label` only. */
+  legend?: string;
+  required?: boolean;
+  /** Plain-language message from the API or the form, shown under the group. */
+  error?: string;
 };
 
 /** Native radios underneath: arrow keys, one tab stop and form semantics come for free. */
@@ -27,13 +33,20 @@ export function SegmentedControl<T extends string>({
   onValueChange,
   options,
   variant = 'segments',
+  legend,
+  required,
+  error,
 }: SegmentedControlProps<T>) {
   const name = useId();
   const cards = variant === 'cards';
-  return (
+  const errorId = `${name}-error`;
+  const group = (
     <div
       role="radiogroup"
       aria-label={label}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error ? errorId : undefined}
+      aria-required={required || undefined}
       className={cx(
         cards
           ? 'grid gap-2 sm:grid-cols-2'
@@ -68,5 +81,23 @@ export function SegmentedControl<T extends string>({
         </label>
       ))}
     </div>
+  );
+  if (!legend && !error) return group;
+  return (
+    <fieldset className="m-0 flex min-w-0 flex-col gap-1 border-0 p-0">
+      {legend && (
+        <legend className="mb-1 p-0 font-semibold">
+          {legend}
+          {required && <span className="text-bad"> (required)</span>}
+        </legend>
+      )}
+      {group}
+      {error && (
+        <p id={errorId} className="m-0 flex items-center gap-1 text-sm font-semibold text-bad">
+          <AlertCircle aria-hidden="true" size={16} />
+          <span>{error}</span>
+        </p>
+      )}
+    </fieldset>
   );
 }
