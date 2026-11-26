@@ -1,0 +1,2285 @@
+openapi: 3.0.3
+info:
+  title: Payless4Laptops Inventory API
+  version: 0.5.2
+  description: |
+    Contract-first API for Sprint 1 (B1.3). Published before the code; from B2 onward the
+    drf-spectacular generated schema must match this file. Changes need owner approval.
+    v0.1.2 (owner-approved 2026-11-24): see the changelog in docs/api/README.md.
+
+    Conventions
+    - URLs: `/api/v1/<plural-noun>/`. `/health/` is outside the versioned API.
+    - Auth: Django session cookie. Every unsafe method (POST, PUT, PATCH, DELETE) also needs
+      the `X-CSRFToken` header (token from `GET /api/v1/auth/csrf/`).
+    - `Idempotency-Key` (UUID) header is required on every state-changing operation (POST,
+      PUT, PATCH, DELETE) except login, logout and password change. A repeat with the same
+      key and body returns the first response; the same key with a different body returns 409
+      `idempotency_conflict`. A missing or malformed key is 400.
+    - Status values are snake_case codes mapped 1:1 to the status words shown on screens
+      (SKILLS "Status vocabularies"). The mapping is in the description of each status schema.
+    - Money: decimal string, GHS, exactly 2 decimals (for example "1250.00").
+    - Timestamps: ISO 8601 UTC (for example "2026-11-23T14:05:00Z"). Screens show Africa/Accra.
+    - Errors: one schema (`Error`). `errors[].field` names the field at fault.
+    - Lists: paginated envelope (`count`, `page`, `page_size`, `next`, `previous`, `results`).
+    - Scope: the server scopes every request to the user's active branch (or the warehouse).
+      The client never sends a scope it is not allowed to use.
+    - Cost (`average_cost`) is for Super Admin (SA) and Warehouse Admin (WA) only. The base
+      schemas `Item` and `StockBalance` (served to every role) carry no cost field at all.
+      Cost lives in the `ItemWithCost` and `StockBalanceWithCost` variants, which only the
+      SA/WA operations return: `/costed-items/`, `/costed-items/{id}/`, `/costed-stock/`
+      (BA and FS get 403) and the item write responses (SA, WA only).
+    - Every operation lists its permission in `x-permission`, taken from
+      docs/design/PERMISSION_TABLE.md (row numbers in brackets). Roles: SA Super Admin,
+      WA Warehouse Admin, BA Branch Admin, FS Front Staff.
+    - Until the user changes a one-time password (`must_change_password` true), every
+      endpoint except `/auth/me/`, `/auth/password/`, `/auth/logout/` and `/auth/csrf/`
+      returns 403 `password_change_required`.
+servers:
+  - url: /
+security:
+  - sessionAuth: []
+    csrfToken: []
+tags:
+  - name: health
+  - name: auth
+  - name: working-branch
+  - name: branches
+  - name: users
+  - name: dashboard
+  - name: items
+  - name: stock
+  - name: goods-receipts
+  - name: dispatches
+  - name: sales
+  - name: imports
+  - name: activity
+  - name: shortfalls
+paths:
+  /health/:
+    get:
+      tags: [health]
+      operationId: health
+      summary: App and database health
+      x-permission: public
+      security: []
+      responses:
+        '200':
+          description: App and database are up.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, database]
+                properties:
+                  status: {type: string, enum: [ok]}
+                  database: {type: string, enum: [ok]}
+        '503':
+          description: Database unreachable.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, database]
+                properties:
+                  status: {type: string, enum: [error]}
+                  database: {type: string, enum: [unavailable]}
+
+  /api/v1/auth/csrf/:
+    get:
+      tags: [auth]
+      operationId: authCsrf
+      summary: Set the CSRF cookie and return the token
+      x-permission: public
+      security: []
+      responses:
+        '200':
+          description: Cookie set.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [csrf_token]
+                properties:
+                  csrf_token: {type: string}
+  /api/v1/auth/login/:
+    post:
+      tags: [auth]
+      operationId: authLogin
+      summary: Log in by login ID and password
+      description: |
+        Rate limited: 5 failed attempts per login ID and IP per 15 minutes, then 429 with
+        `Retry-After`. Every success and failure is logged. Suspended or deactivated users
+        get 403 `account_inactive`.
+      x-permission: public (table row 1)
+      security:
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login_id, password]
+              properties:
+                login_id: {$ref: '#/components/schemas/LoginId'}
+                password: {type: string, format: password}
+      responses:
+        '200':
+          description: Logged in. If `must_change_password` is true the client must call `/auth/password/` next.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Me'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/TooManyRequests'}
+  /api/v1/auth/logout/:
+    post:
+      tags: [auth]
+      operationId: authLogout
+      summary: Log out and end the session
+      x-permission: any logged-in user (table row 1)
+      responses:
+        '204': {description: Logged out.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/auth/me/:
+    get:
+      tags: [auth]
+      operationId: authMe
+      summary: Current user, roles, permissions and allowed menu
+      x-permission: any logged-in user (table row 1)
+      responses:
+        '200':
+          description: The current user.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Me'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/auth/password/:
+    post:
+      tags: [auth]
+      operationId: authChangePassword
+      summary: Change own password (also the forced change at first login)
+      description: |
+        Minimum 10 characters. Clears `must_change_password`. The new password must differ from the old one.
+        A wrong current password is limited to 5 tries per 15 minutes per user, then 429 `rate_limited`
+        with `Retry-After`.
+      x-permission: any logged-in user (table rows 2, 3)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: {type: string, format: password}
+                new_password: {type: string, format: password, minLength: 10}
+      responses:
+        '204': {description: Password changed.}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '429': {$ref: '#/components/responses/TooManyRequests'}
+
+  /api/v1/working-branch/:
+    get:
+      tags: [working-branch]
+      operationId: workingBranchGet
+      summary: Current working branch
+      description: FS and SA only (BA and WA have a fixed location and get 403; they read it from `/auth/me/`).
+      x-permission: FS, SA (table row 10)
+      responses:
+        '200':
+          description: Active branch, or null if none chosen yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [working_branch]
+                properties:
+                  working_branch:
+                    allOf: [{$ref: '#/components/schemas/Branch'}]
+                    nullable: true
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    put:
+      tags: [working-branch]
+      operationId: workingBranchSet
+      summary: Choose or switch the working branch (every switch is logged)
+      description: |
+        Front Staff may pick any active branch. SA may pick an optional context branch. BA and WA have a
+        fixed location and get 403. Only active locations of kind `branch` can be chosen (400 otherwise).
+        Choosing the branch already in use returns 200 and writes no new switch.
+      x-permission: FS, SA (table row 10)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id]
+              properties:
+                branch_id: {type: integer}
+      responses:
+        '200':
+          description: Working branch set.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Me'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /api/v1/branches/:
+    get:
+      tags: [branches]
+      operationId: branchesList
+      summary: List locations (branches and the warehouse)
+      description: Only SA may filter on `is_active=false`; everyone else always gets active ones.
+      x-permission: any logged-in user (table row 12)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: kind, in: query, schema: {type: string, enum: [branch, warehouse]}}
+        - {name: is_active, in: query, schema: {type: boolean}}
+        - {$ref: '#/components/parameters/BranchFilter'}
+      responses:
+        '200':
+          description: Page of locations.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/Branch'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    post:
+      tags: [branches]
+      operationId: branchesCreate
+      summary: Create a branch
+      description: Always creates `kind` = branch. There is exactly one warehouse, created by seed.
+      x-permission: SA (table row 11)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BranchWrite'}
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Branch'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/branches/{id}/:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    get:
+      tags: [branches]
+      operationId: branchesRead
+      summary: Read one location
+      x-permission: any logged-in user (table row 12)
+      responses:
+        '200':
+          description: The location.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Branch'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    patch:
+      tags: [branches]
+      operationId: branchesUpdate
+      summary: Edit a branch
+      x-permission: SA (table row 11)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BranchWrite'}
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Branch'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/branches/{id}/deactivate/:
+    post:
+      tags: [branches]
+      operationId: branchesDeactivate
+      summary: Deactivate a branch (history kept)
+      description: The warehouse cannot be deactivated (409).
+      x-permission: SA (table row 11)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200':
+          description: Deactivated.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Branch'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/branches/{id}/activate/:
+    post:
+      tags: [branches]
+      operationId: branchesActivate
+      summary: Activate a deactivated branch
+      x-permission: SA (table row 11)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200':
+          description: Activated.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Branch'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /api/v1/users/:
+    get:
+      tags: [users]
+      operationId: usersList
+      summary: List users
+      description: SA sees all users, BA own branch, WA the warehouse (OQ-5). FS get 403.
+      x-permission: SA all, BA own branch, WA warehouse (table row 9, OQ-5)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/UserStatus'}}
+        - {name: role, in: query, schema: {$ref: '#/components/schemas/RoleCode'}}
+        - {name: q, in: query, description: 'Match on login ID or name.', schema: {type: string}}
+        - {$ref: '#/components/parameters/BranchFilter'}
+      responses:
+        '200':
+          description: Page of users.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/User'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [users]
+      operationId: usersCreate
+      summary: Create a user
+      description: |
+        The login ID is generated (SA-0001 only for accounts created as Super Admin, otherwise
+        USR-0001) and never changes. The one-time password is returned once, here only, and is
+        valid 72 hours. The user must change it at first login.
+      x-permission: SA (table rows 4, 6, 7)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserCreate'}
+      responses:
+        '201':
+          description: Created. The only response that ever carries the one-time password.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserWithOneTimePassword'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/users/{id}/:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    get:
+      tags: [users]
+      operationId: usersRead
+      summary: Read one user
+      x-permission: SA all, BA own branch, WA warehouse (table row 9, OQ-5)
+      responses:
+        '200':
+          description: The user.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    patch:
+      tags: [users]
+      operationId: usersUpdate
+      summary: Edit name, role or permanent location
+      description: The login ID cannot be changed (400 on attempt). Only SA may assign more than one role.
+      x-permission: SA (table rows 4, 6, 7)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserUpdate'}
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/users/{id}/reset-password/:
+    post:
+      tags: [users]
+      operationId: usersResetPassword
+      summary: Reset a user's password
+      description: Returns a new one-time password once and sets `must_change_password`. Existing sessions end.
+      x-permission: SA (table row 5)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200':
+          description: The new one-time password, shown once. A replay with the same key returns it again.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [one_time_password, one_time_password_expires_at]
+                properties:
+                  one_time_password: {type: string}
+                  one_time_password_expires_at: {type: string, format: date-time}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/users/{id}/status/:
+    post:
+      tags: [users]
+      operationId: usersSetStatus
+      summary: Activate, suspend or deactivate a user
+      description: |
+        Suspend is temporary and reversible; deactivate is permanent leaving. Both end all the
+        user's sessions at once and keep history. SA cannot change their own status (409).
+        `pending_activation` is not a valid target here (400); see OQ-22.
+      x-permission: SA (table row 4, OQ-14)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [active, suspended, deactivated]}
+                reason: {type: string, maxLength: 500}
+      responses:
+        '200':
+          description: Status changed.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/users/{id}/permissions/:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    get:
+      tags: [users]
+      operationId: usersPermissionsRead
+      summary: Per-person permissions of a user
+      x-permission: SA (table row 8)
+      responses:
+        '200':
+          description: Current grants.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPermissions'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      tags: [users]
+      operationId: usersPermissionsSet
+      summary: Set the full list of per-person permissions
+      description: |
+        Missing codes are revoked, new codes are granted. Each grant and revoke is an audit event. A grant
+        never widens branch scope. `receive_stock` can be held only by a user with the Front Staff role
+        (table section 3), otherwise 400.
+      x-permission: SA (table row 8)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserPermissions'}
+      responses:
+        '200':
+          description: Grants after the change.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPermissions'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /api/v1/dashboard/:
+    get:
+      tags: [dashboard]
+      operationId: dashboardRead
+      summary: Dashboard shell data for the user's role and active location
+      description: v0.5.0 (additive) adds `low_stock_count`, `low_stock` (up to 10 rows, Active items whose reorder level is set and available is at or below it) and `recent_activity` (latest 10 activity events), in the same scope as the rest (SA all or the `branch` filter, WA the warehouse, BA the own branch); quantities only, no cost. Super Admin sees all branches by default and may view one with `branch`; WA sees the warehouse (and per-branch quantities); BA the own branch. Front Staff have no Home tab and get 403. More figures are added in later sprints.
+      x-permission: SA all, WA warehouse, BA own branch (table row 40)
+      parameters:
+        - {$ref: '#/components/parameters/BranchFilter'}
+      responses:
+        '200':
+          description: Dashboard data.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Dashboard'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
+  /api/v1/item-categories/:
+    get:
+      tags: [items]
+      operationId: itemCategoriesList
+      summary: Categories with their sub-types
+      x-permission: any logged-in user (table row 13)
+      responses:
+        '200':
+          description: Laptop, Laptop Part, Accessory with sub-types.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ItemCategory'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/brands/:
+    get:
+      tags: [items]
+      operationId: brandsList
+      summary: Managed brand list
+      description: All brands with `is_active`. Clients offer only active brands when creating or editing an item.
+      x-permission: any logged-in user (table row 13)
+      responses:
+        '200':
+          description: All brands.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Brand'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    post:
+      tags: [items]
+      operationId: brandsCreate
+      summary: Add a brand
+      description: The name is unique (400 on a duplicate). New brands are active.
+      x-permission: SA, WA (table row 43, OQ-20)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BrandWrite'}
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Brand'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/brands/{id}/:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    patch:
+      tags: [items]
+      operationId: brandsUpdate
+      summary: Rename, deactivate or reactivate a brand
+      description: Brands are never deleted. A deactivated brand stays on existing items and cannot be chosen for new items or edits (400).
+      x-permission: SA, WA (table row 43, OQ-20)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BrandWrite'}
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Brand'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/item-field-definitions/:
+    get:
+      tags: [items]
+      operationId: itemFieldDefinitionsList
+      summary: Item field definitions per category (drives the item form and key_specs validation)
+      x-permission: any logged-in user (table row 13)
+      parameters:
+        - {name: category_id, in: query, required: true, schema: {type: integer}}
+      responses:
+        '200':
+          description: Common fields and key spec fields for the category.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ItemFieldDefinition'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/items/:
+    get:
+      tags: [items]
+      operationId: itemsList
+      summary: Search and list items
+      description: Never carries cost. SA and WA read cost from `/costed-items/`.
+      x-permission: any logged-in user (table row 13)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: q, in: query, description: 'Match on name, SKU, brand, model or part number.', schema: {type: string}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/ItemStatus'}}
+        - {name: category_id, in: query, schema: {type: integer}}
+        - {name: brand_id, in: query, schema: {type: integer}}
+        - {name: condition, in: query, schema: {type: string, enum: [new, refurbished, used]}}
+      responses:
+        '200':
+          description: Page of items.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/Item'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    post:
+      tags: [items]
+      operationId: itemsCreate
+      summary: Create an item (always starts as Draft)
+      description: |
+        SKU is generated (SKU-000001) unless one is supplied. A same SKU (any letter case) is 409
+        `conflict` on field `sku`. A near-identical name and model does not block: it is returned in `warnings`.
+        Only SA or a user holding Manage prices may send `selling_price`; anyone else who
+        sends it gets 403 `permission_denied` (OQ-21). A price is not needed to create or
+        activate an item, but the item cannot be sold until a price exists.
+      x-permission: SA, WA (table row 15); selling_price needs SA or manage_prices (row 16)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ItemWrite'}
+      responses:
+        '201':
+          description: Created as Draft. Includes `average_cost` (SA and WA only call this).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ItemWithCostAndWarnings'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/costed-items/:
+    get:
+      tags: [items]
+      operationId: costedItemsList
+      summary: Search and list items with average cost (SA, WA)
+      description: Same filters and rows as `/items/` but each row is `ItemWithCost`. BA and FS get 403.
+      x-permission: SA, WA (table row 14)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: q, in: query, description: 'Match on name, SKU, brand, model or part number.', schema: {type: string}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/ItemStatus'}}
+        - {name: category_id, in: query, schema: {type: integer}}
+        - {name: brand_id, in: query, schema: {type: integer}}
+        - {name: condition, in: query, schema: {type: string, enum: [new, refurbished, used]}}
+      responses:
+        '200':
+          description: Page of items with cost.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/ItemWithCost'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/costed-items/{id}/:
+    get:
+      tags: [items]
+      operationId: costedItemsRead
+      summary: Read one item with average cost (SA, WA)
+      x-permission: SA, WA (table row 14)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: The item with cost.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ItemWithCost'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/items/{id}/:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    get:
+      tags: [items]
+      operationId: itemsRead
+      summary: Read one item
+      description: Never carries cost. SA and WA read cost from `/costed-items/{id}/`.
+      x-permission: any logged-in user (table row 13)
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Item'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    patch:
+      tags: [items]
+      operationId: itemsUpdate
+      summary: Edit an item (before and after values are audited)
+      description: |
+        SKU is immutable once used in a transaction (400). Discontinued items cannot be edited (409).
+        `key_specs` on PATCH REPLACES the whole object (it is not merged): send every spec to keep. Omit it to leave the specs unchanged.
+        Only SA or a Manage prices holder may send `selling_price` (else 403 `permission_denied`, OQ-21).
+      x-permission: SA, WA (table row 15); selling_price needs SA or manage_prices (row 16)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ItemWrite'}
+      responses:
+        '200':
+          description: Updated. Includes `average_cost` (SA and WA only call this).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ItemWithCostAndWarnings'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/items/{id}/status/:
+    post:
+      tags: [items]
+      operationId: itemsSetStatus
+      summary: Activate or discontinue an item
+      description: |
+        Allowed moves: `draft` (Draft) to `active` (Active; needs the image and the required
+        fields, not a price), `active` to `discontinued` (Discontinued). Discontinued is final:
+        there is no move back. Anything else is 409. Only active items can be received or
+        dispatched, and an item cannot be sold until it has a selling price (OQ-21).
+      x-permission: SA, WA (table row 15)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [active, discontinued]}
+      responses:
+        '200':
+          description: Status changed. Includes `average_cost` (SA and WA only call this).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ItemWithCost'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/items/{id}/image/:
+    put:
+      tags: [items]
+      operationId: itemsImageUpload
+      summary: Upload the one item image (replaces any existing one)
+      description: JPEG, PNG or WebP, content checked (not only the extension), at most 5 MB. Wrong type 400, too large 413.
+      x-permission: SA, WA (table row 15)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image: {type: string, format: binary}
+      responses:
+        '200':
+          description: Image stored. Includes `average_cost` (SA and WA only call this).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ItemWithCost'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+  /api/v1/items/{id}/branch-availability/:
+    get:
+      tags: [stock]
+      operationId: itemsBranchAvailability
+      summary: Cross-branch lookup for one item
+      description: Branch name and available quantity only, for every other active branch. No prices, costs, customers or sales. Explicit exception to branch isolation.
+      x-permission: any logged-in user (table row 22)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: One row per other active branch.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/BranchAvailability'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+  /api/v1/stock/:
+    get:
+      tags: [stock]
+      operationId: stockList
+      summary: Stock balances in scope
+      description: |
+        SA sees all locations (optional `location_id`). WA sees the warehouse in full and
+        per-branch quantities (OQ-8). BA and FS see only their own branch; asking for another
+        `location_id` is 403. Never carries cost (SA and WA read it from `/costed-stock/`).
+        Available = on_hand - reserved. In transit is not a bucket here; see `/dispatches/`.
+      x-permission: SA all, WA warehouse and branch quantities, BA and FS own branch (table row 21)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: location_id, in: query, schema: {type: integer}}
+        - {name: item_id, in: query, schema: {type: integer}}
+        - {name: q, in: query, description: 'Match on item name, SKU, brand or model.', schema: {type: string}}
+      responses:
+        '200':
+          description: Page of stock balances.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/StockBalance'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/stock/movements/:
+    get:
+      tags: [stock]
+      operationId: stockMovementsList
+      summary: Stock movement log (read only), newest first
+      description: |
+        One row per bucket changed. Same scope as `/stock/`: SA and WA see every location, BA and FS only
+        their own branch (another `location_id` is 403 `wrong_branch`). Never carries cost.
+      x-permission: SA all, WA all locations, BA and FS own branch (table row 21)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: location_id, in: query, schema: {type: integer}}
+        - {name: item_id, in: query, schema: {type: integer}}
+        - {name: movement_type, in: query, schema: {$ref: '#/components/schemas/MovementType'}}
+      responses:
+        '200':
+          description: Page of ledger rows.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/StockMovement'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/costed-stock/:
+    get:
+      tags: [stock]
+      operationId: costedStockList
+      summary: Stock balances with average cost (SA, WA warehouse rows)
+      description: |
+        Same filters as `/stock/`. SA gets every location. WA gets warehouse rows only (branch
+        quantities carry no cost for WA, OQ-8; use `/stock/` for those). BA and FS get 403.
+      x-permission: SA all, WA warehouse rows (table rows 14, 21)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: location_id, in: query, schema: {type: integer}}
+        - {name: item_id, in: query, schema: {type: integer}}
+        - {name: q, in: query, description: 'Match on item name, SKU, brand or model.', schema: {type: string}}
+      responses:
+        '200':
+          description: Page of stock balances with cost.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/StockBalanceWithCost'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
+  /api/v1/goods-receipts/:
+    get:
+      tags: [goods-receipts]
+      operationId: goodsReceiptsList
+      summary: List supplier receipts
+      x-permission: SA, WA (table row 27)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: supplier_name, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: Page of receipts.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/GoodsReceipt'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [goods-receipts]
+      operationId: goodsReceiptsCreate
+      summary: Record a supplier receipt (increases warehouse stock)
+      description: |
+        One atomic operation: balances, average cost, ledger rows and audit row commit together.
+        Only Active items. Confirmed receipts are never edited or deleted (no PATCH or DELETE).
+      x-permission: SA, WA (table row 25)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GoodsReceiptCreate'}
+      responses:
+        '201':
+          description: Receipt confirmed. A replay with the same key returns this response again.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GoodsReceipt'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/goods-receipts/{id}/:
+    get:
+      tags: [goods-receipts]
+      operationId: goodsReceiptsRead
+      summary: Read one receipt
+      x-permission: SA, WA (table row 27)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: The receipt.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GoodsReceipt'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+  /api/v1/dispatches/:
+    get:
+      tags: [dispatches]
+      operationId: dispatchesList
+      summary: List dispatches and their status
+      description: SA and WA see all. BA and FS see only dispatches to their own branch.
+      x-permission: SA, WA all; BA, FS to own branch (table row 29)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/DispatchStatus'}}
+        - {name: destination_id, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: Page of dispatches.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/Dispatch'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [dispatches]
+      operationId: dispatchesCreate
+      summary: Dispatch stock from the warehouse to a branch (reserves it, in transit)
+      description: |
+        One atomic operation: validates available stock under row locks, reserves it, writes
+        ledger and audit. Insufficient stock is 409 `insufficient_stock` naming the item and
+        location. Only Active items. No cancel or edit after creation (OQ-15).
+      x-permission: SA, WA (table row 28)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DispatchCreate'}
+      responses:
+        '201':
+          description: Dispatch created, status `in_transit` (In transit).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Dispatch'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/dispatches/waiting/:
+    get:
+      tags: [dispatches]
+      operationId: dispatchesWaiting
+      summary: Dispatches waiting to be received at a branch
+      description: Dispatches with status `in_transit` for the branch. BA and FS get their own branch (a different `branch_id` is 403). SA must pass `branch_id` (400 otherwise). WA gets 403.
+      x-permission: SA, BA own branch, FS own branch (table row 30)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: branch_id, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: Page of waiting dispatches.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/Dispatch'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/dispatches/{id}/:
+    get:
+      tags: [dispatches]
+      operationId: dispatchesRead
+      summary: Read one dispatch
+      description: A dispatch to another branch (BA, FS) is 404 `not_found`, the same as an id that does not exist (OQ-30). 403 is for a role that may not read dispatches.
+      x-permission: SA, WA all; BA, FS to own branch (table row 29)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: The dispatch.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Dispatch'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/dispatches/{id}/receive/:
+    post:
+      tags: [dispatches]
+      operationId: dispatchesReceive
+      summary: Receive a dispatch at the destination branch (all, partial or reject)
+      description: |
+        Destination only; the sender cannot approve receipt. A dispatch to another branch is 404
+        `not_found`, the same as an id that does not exist (OQ-30); 403 is for a role or grant that
+        may not receive. Per line `qty_received` is the
+        physical count (at most `qty_sent`; more is 400 on that line) and `qty_accepted` is
+        what is credited (at most `qty_received`). `approve_all` needs every line received and
+        accepted in full. `approve_partial` needs a `note`. `reject` needs a `reason` and
+        credits nothing. Any shortfall (`qty_sent` - `qty_accepted`) stays reserved at the
+        sender and the dispatch gets `has_open_discrepancy` true. One decision per dispatch;
+        a second decision is 409.
+      x-permission: SA, BA own branch, FS with receive_stock at the working branch (table row 31)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DispatchReceive'}
+      responses:
+        '200':
+          description: Decision recorded. Status is `completed`, `partially_received` or `rejected`.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Dispatch'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /api/v1/shortfalls/:
+    get:
+      tags: [shortfalls]
+      operationId: shortfallsList
+      summary: Dispatch shortfalls (received lines that came up short), newest first
+      description: |
+        One row per dispatch line with `qty_sent` above `qty_accepted`; `id` is the dispatch line id. `status` is
+        `open` while `remaining` is above 0, else `resolved`. SA sees all; WA those sent from its warehouse;
+        BA those to its own branch; FS gets 403. Quantities only, never cost.
+      x-permission: SA all, WA sender warehouse, BA own destination branch (table row 33)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: status, in: query, schema: {type: string, enum: [open, resolved]}}
+        - {name: dispatch_id, in: query, schema: {type: integer, minimum: 1}}
+      responses:
+        '200':
+          description: Page of shortfalls.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/Shortfall'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/shortfalls/{id}/resolve/:
+    post:
+      tags: [shortfalls]
+      operationId: shortfallsResolve
+      summary: Resolve part or all of a shortfall (return to sender, confirm loss, record damage)
+      description: |
+        `id` is the dispatch line id. A `note` is mandatory. Through the stock service, with ledger and audit rows:
+        `return_to_sender` releases reserved at the sender; `confirm_loss` releases reserved and reduces on hand at
+        the sender; `record_damage` does that and adds quarantined at the destination. `quantity` may not exceed
+        `remaining` (400 on `quantity`). A line with nothing left to resolve is 409 `conflict`. A shortfall outside
+        the caller's scope is 404 `not_found`, like a missing id. FS gets 403. Resolving a shortfall the caller
+        recorded (receiver of the dispatch) is allowed and flagged (`is_self_approval`, OQ-9c).
+      x-permission: SA both sides, WA sender warehouse, BA own destination branch (table row 34)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ShortfallResolve'}
+      responses:
+        '200':
+          description: The shortfall with its updated resolutions.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Shortfall'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/activity-log/:
+    get:
+      tags: [activity]
+      operationId: activityLogList
+      summary: Activity log (audit events), newest first
+      description: |
+        SA sees every event; WA those of the warehouse; BA those of its own branch (a different `branch_id` is 403
+        `wrong_branch`). FS gets 403. `date_from` and `date_to` are calendar days in Africa/Accra, both inclusive; `date_from` after `date_to` is 400 on `date_to`.
+        Metadata only: no before/after values and never cost.
+      x-permission: SA all, WA warehouse, BA own branch (table row 41)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: user_id, in: query, schema: {type: integer, minimum: 1}}
+        - {name: branch_id, in: query, schema: {type: integer, minimum: 1}}
+        - {name: action, in: query, schema: {type: string, maxLength: 60}}
+        - {name: date_from, in: query, schema: {type: string, format: date}}
+        - {name: date_to, in: query, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: Page of activity events.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/ActivityEvent'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
+  /api/v1/sales/:
+    get:
+      tags: [sales]
+      operationId: salesList
+      summary: List sales, newest first
+      description: |
+        SA sees every branch (optional `branch` filter). BA and FS see only their own branch; another
+        `branch` is 403 `wrong_branch`. WA has no sales access. `date_from` and `date_to` are calendar
+        days in Africa/Accra, both inclusive. Never carries cost.
+      x-permission: SA all, BA own branch, FS own branch (table row 38)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: branch, in: query, schema: {type: integer, minimum: 1}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/SaleStatus'}}
+        - {name: payment_method, in: query, schema: {$ref: '#/components/schemas/PaymentMethodCode'}}
+        - {name: item_id, in: query, schema: {type: integer}}
+        - {name: staff_id, in: query, schema: {type: integer}}
+        - {name: date_from, in: query, schema: {type: string, format: date}}
+        - {name: date_to, in: query, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: Page of sales.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/Sale'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [sales]
+      operationId: salesCreate
+      summary: Record a sale in the working branch (deducts stock)
+      description: |
+        One atomic operation: sale, lines, stock deduction, ledger rows and audit rows commit together.
+        The price always comes from the price list; the client never sends one. Only Active items with a
+        selling price can be sold (an item without a price is 400 on that line, OQ-21). A quantity above
+        the available stock is 409 `insufficient_stock` and nothing is written. The branch is the
+        caller's working branch (BA fixed; FS and SA the chosen one, else 403 `wrong_branch`).
+      x-permission: SA, BA, FS at the working branch (table row 36)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SaleCreate'}
+      responses:
+        '201':
+          description: Sale recorded, status `completed`. A replay with the same key returns this response again.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Sale'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/sales/{id}/:
+    get:
+      tags: [sales]
+      operationId: salesRead
+      summary: Read one sale
+      description: A sale of another branch (BA, FS) is 404 `not_found`, the same as an id that does not exist (OQ-30).
+      x-permission: SA all, BA own branch, FS own branch (table row 38)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: The sale.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Sale'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/sales/{id}/cancel/:
+    post:
+      tags: [sales]
+      operationId: salesCancel
+      summary: Cancel a completed sale (reversal, original stays visible)
+      description: |
+        A reason is required. The stock returns through reversal ledger rows linked to the original rows;
+        the sale becomes `cancelled`. A sale that is not `completed` is 409 `conflict`. A sale of another
+        branch (BA) is 404. FS and WA are 403.
+      x-permission: SA, BA own branch (table row 39)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SaleCancel'}
+      responses:
+        '200':
+          description: Sale cancelled.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Sale'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /api/v1/costed-sales/:
+    get:
+      tags: [sales]
+      operationId: costedSalesList
+      summary: Sales with the cost snapshot per line (Super Admin only)
+      description: |
+        Same scope and filters as `/sales/`. Each line adds `unit_cost`, the average cost copied at sale time
+        (stored at 4 dp, shown at 2 dp). BA, FS and WA get 403. Plain `/sales/` never carries cost.
+      x-permission: SA (table row 48)
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: branch, in: query, schema: {type: integer, minimum: 1}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/SaleStatus'}}
+        - {name: payment_method, in: query, schema: {$ref: '#/components/schemas/PaymentMethodCode'}}
+        - {name: item_id, in: query, schema: {type: integer}}
+        - {name: staff_id, in: query, schema: {type: integer}}
+        - {name: date_from, in: query, schema: {type: string, format: date}}
+        - {name: date_to, in: query, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: Page of sales with cost.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items: {$ref: '#/components/schemas/CostedSale'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/costed-sales/{id}/:
+    get:
+      tags: [sales]
+      operationId: costedSalesRead
+      summary: Read one sale with the cost snapshot (Super Admin only)
+      x-permission: SA (table row 48)
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: The sale with cost.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CostedSale'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+  /api/v1/item-imports/:
+    post:
+      tags: [imports]
+      operationId: itemImportsCreate
+      summary: Import items and opening quantities from a CSV (dry run first)
+      description: |
+        Multipart upload for one location (WA: the warehouse, `location_id` optional; SA must send it).
+        `dry_run` is required: `true` validates and reports, writes nothing; `false` commits, but only when
+        the file has no errors (all or nothing). Always 200 with a report; `committed` says what happened and
+        `errors[].row` is the CSV row (header = row 1). Columns: `opening_quantity` and `unit_cost` (both
+        required), `sku` (an existing SKU is reused unchanged; item columns are then ignored), `name`,
+        `category`, `subtype`, `brand`, `model_name`, `mpn`, `condition` (needed for a new SKU, created as
+        Draft), `selling_price` (new items, needs the Manage prices right), `reorder_level`, `bin_label`
+        (warehouse only). The unit cost feeds the average cost before the opening balance is posted as
+        `opening_balance` ledger rows. At most 2 MB and 5000 rows.
+      x-permission: SA, WA (table rows 19, 20)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: '#/components/schemas/ItemImportRequest'}
+      responses:
+        '200':
+          description: The import report.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ItemImportReport'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+      description: Django session cookie set by login.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRFToken
+      description: Required on POST, PUT, PATCH, DELETE. Token from `GET /api/v1/auth/csrf/`.
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: {type: integer}
+    Page:
+      name: page
+      in: query
+      schema: {type: integer, minimum: 1, default: 1}
+    PageSize:
+      name: page_size
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 25}
+    BranchFilter:
+      name: branch
+      in: query
+      description: |
+        Optional view filter for the Super Admin, who works across all branches and sees all of them by
+        default. Ignored for roles with a fixed location (the server scope applies).
+      schema: {type: integer, minimum: 1}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: A new UUID per user action. Resend the same value when retrying.
+      schema: {type: string, format: uuid}
+  responses:
+    ValidationError:
+      description: Bad input. `errors[].field` names the field at fault.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Unauthorized:
+      description: Not logged in, or bad credentials (`not_authenticated`, `invalid_credentials`).
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Forbidden:
+      description: Role, per-person permission, branch or account state does not allow it (`permission_denied`, `wrong_branch`, `account_inactive`, `password_change_required`, `csrf_failed`).
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    NotFound:
+      description: No such record in the user's scope (`not_found`).
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Conflict:
+      description: The record is in a state that does not allow this, or the request clashes with an existing record (`conflict` for a duplicate or any clash, for example a duplicate stock post or a code already in use; `insufficient_stock`, `invalid_status_transition`, `already_received`; `idempotency_conflict` for an Idempotency-Key reused with a different body).
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    PayloadTooLarge:
+      description: Upload over the size limit (`file_too_large`).
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    TooManyRequests:
+      description: Too many attempts (`rate_limited`), for example failed logins or wrong current passwords. `Retry-After` header in seconds.
+      headers:
+        Retry-After:
+          schema: {type: integer}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    Error:
+      type: object
+      required: [code, message, errors]
+      properties:
+        code: {type: string, example: validation_error}
+        message: {type: string, description: Plain-language summary., example: 'Check the highlighted fields.'}
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+                nullable: true
+                description: Name of the request field at fault, dotted for nested (`lines.0.quantity`). Null if no single field.
+                example: lines.0.quantity
+              message: {type: string, example: Only 12 of HP 250 G9 are available at Central Warehouse.}
+    Page:
+      type: object
+      required: [count, page, page_size, next, previous, results]
+      properties:
+        count: {type: integer}
+        page: {type: integer}
+        page_size: {type: integer}
+        next: {type: string, nullable: true}
+        previous: {type: string, nullable: true}
+        results: {type: array, items: {}}
+    Money:
+      type: string
+      pattern: '^\d+\.\d{2}$'
+      description: GHS decimal with exactly 2 decimals.
+      example: '1250.00'
+    LoginId:
+      type: string
+      pattern: '^(SA|USR)-\d{4,}$'
+      example: USR-0001
+    RoleCode:
+      type: string
+      enum: [super_admin, warehouse_admin, branch_admin, front_staff]
+    UserStatus:
+      type: string
+      description: |
+        Code to status word (SKILLS "Account"): `active` = Active, `pending_activation` =
+        Pending activation, `suspended` = Suspended, `deactivated` = Deactivated.
+      enum: [active, pending_activation, suspended, deactivated]
+    PersonPermission:
+      type: string
+      enum: [receive_stock, manage_prices, discount]
+    ActionPermission:
+      type: string
+      description: |
+        Effective actions of the user in the active context, one per table action. OQ-23 (v0.1.2):
+        `sales.record` (Sell, row 36), `activity.view` (Activity, row 41), `find.use` (Find, rows 13 and
+        22), `dashboard.view` (Home dashboard, row 40) and the existing `dispatches.receive` (Receive, row 31) drive the Sell, Activity, Find and
+        Receive menu entries. v0.4.2: `sales.cancel` (cancel a sale, row 39: SA, BA) and `items.import`
+        (CSV import, rows 19 and 20: SA, WA). v0.5.0: `shortfalls.resolve` (rows 33 to 35: SA, WA, BA). The Sales entry (row 49) is in `menu` for FS and in
+        `home_links` for SA and BA, whose menus already hold 5 items.
+      enum:
+        - users.manage
+        - users.view
+        - branches.manage
+        - branches.view
+        - working_branch.select
+        - items.view
+        - items.manage
+        - items.view_cost
+        - prices.manage
+        - stock.view
+        - stock.lookup_other_branches
+        - goods_receipts.manage
+        - dispatches.create
+        - dispatches.view
+        - dispatches.waiting
+        - dispatches.receive
+        - sales.record
+        - activity.view
+        - find.use
+        - dashboard.view
+        - sales.cancel
+        - items.import
+        - shortfalls.resolve
+    ItemStatus:
+      type: string
+      description: |
+        Code to status word (SKILLS "Item"): `draft` = Draft, `active` = Active,
+        `discontinued` = Discontinued. Discontinued is final.
+      enum: [draft, active, discontinued]
+    DispatchStatus:
+      type: string
+      description: |
+        Code to status word (SKILLS "Transfer"): `in_transit` = In transit, `completed` =
+        Completed, `partially_received` = Partially received, `rejected` = Rejected. Draft,
+        Dispatched and Under investigation are not used in the MVP (OQ-17).
+      enum: [in_transit, completed, partially_received, rejected]
+    Branch:
+      type: object
+      required: [id, kind, code, name, is_active]
+      properties:
+        id: {type: integer}
+        kind: {type: string, enum: [branch, warehouse]}
+        code: {type: string}
+        name: {type: string}
+        is_active: {type: boolean}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    BranchWrite:
+      type: object
+      description: Both fields required on create. Code and name are unique.
+      properties:
+        code: {type: string, maxLength: 20}
+        name: {type: string, maxLength: 100}
+    User:
+      type: object
+      required: [id, login_id, full_name, status, roles, permanent_location_id, must_change_password, permissions]
+      properties:
+        id: {type: integer}
+        login_id: {$ref: '#/components/schemas/LoginId'}
+        full_name: {type: string}
+        status: {$ref: '#/components/schemas/UserStatus'}
+        roles:
+          type: array
+          items: {$ref: '#/components/schemas/RoleCode'}
+        permanent_location_id: {type: integer, nullable: true, description: Null for SA and Front Staff.}
+        must_change_password: {type: boolean}
+        permissions:
+          type: array
+          description: Active per-person grants.
+          items: {$ref: '#/components/schemas/PersonPermission'}
+        last_login_at: {type: string, format: date-time, nullable: true}
+        created_at: {type: string, format: date-time}
+    UserCreate:
+      type: object
+      required: [full_name, roles]
+      properties:
+        full_name: {type: string, maxLength: 150}
+        roles:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/RoleCode'}
+        permanent_location_id: {type: integer, description: 'Required for branch_admin (a branch) and warehouse_admin (the warehouse). Must be absent for super_admin and front_staff.'}
+    UserUpdate:
+      type: object
+      properties:
+        full_name: {type: string, maxLength: 150}
+        roles:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/RoleCode'}
+        permanent_location_id: {type: integer, nullable: true}
+    UserWithOneTimePassword:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          required: [one_time_password, one_time_password_expires_at]
+          properties:
+            one_time_password: {type: string, description: Shown once. Never returned again.}
+            one_time_password_expires_at: {type: string, format: date-time}
+    UserPermissions:
+      type: object
+      required: [permissions]
+      properties:
+        permissions:
+          type: array
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/PersonPermission'}
+    Me:
+      type: object
+      required: [user, active_role, working_branch, must_pick_branch, all_branches, can_assign_multiple_roles, permissions, menu, home_links, must_change_password]
+      properties:
+        user: {$ref: '#/components/schemas/User'}
+        active_role: {$ref: '#/components/schemas/RoleCode'}
+        working_branch:
+          allOf: [{$ref: '#/components/schemas/Branch'}]
+          nullable: true
+          description: Null until FS (or SA, optionally) picks one. BA and WA always have their permanent location here. The Super Admin is never asked to pick a branch.
+        must_pick_branch:
+          type: boolean
+          description: True only when the role requires a working branch and none is chosen (Front Staff). Always false for Super Admin, Branch Admin and Warehouse Admin.
+        all_branches:
+          type: boolean
+          description: True when the user works across all branches without picking one (Super Admin). False for every other role.
+        can_assign_multiple_roles:
+          type: boolean
+          description: True only for Super Admin (table row 7).
+        must_change_password: {type: boolean}
+        permissions:
+          type: array
+          items: {$ref: '#/components/schemas/ActionPermission'}
+        menu:
+          type: array
+          description: Top navigation entries the user may open (at most 5). The server still checks every request.
+          items: {$ref: '#/components/schemas/MenuItem'}
+        home_links:
+          type: array
+          description: |
+            Home tiles, separate from `menu` so they never take a navigation slot (OQ-23). Super Admin
+            gets Activity, Shortfalls, Sell, Find, Receive and Sales; Warehouse Admin gets Activity and
+            Shortfalls; Branch Admin gets Activity, Shortfalls and Sales (own location, OQ-25). A tile is
+            shown only to a holder of its action (`activity.view`, `shortfalls.resolve`); Front Staff get none.
+            Shortfalls opens `/shortfalls`, Activity opens `/activity` (v0.5.2, FQ-16).
+          items: {$ref: '#/components/schemas/MenuItem'}
+    MenuItem:
+      type: object
+      required: [key, label, path]
+      properties:
+        key: {type: string, example: stock}
+        label: {type: string, example: Stock}
+        path: {type: string, example: /stock}
+    Dashboard:
+      type: object
+      required: [role, location, waiting_dispatches, in_transit_dispatches, active_items, low_stock_count, low_stock, recent_activity]
+      properties:
+        role: {$ref: '#/components/schemas/RoleCode'}
+        location:
+          allOf: [{$ref: '#/components/schemas/Branch'}]
+          nullable: true
+        waiting_dispatches: {type: integer, description: In transit dispatches waiting at the working branch. 0 for WA.}
+        in_transit_dispatches: {type: integer, description: 'In transit dispatches from the warehouse (SA, WA) or to the working branch.'}
+        active_items: {type: integer}
+        stock_per_location:
+          type: array
+          description: Present for SA and WA only. Quantities only, no cost.
+          items:
+            type: object
+            required: [location_id, location_name, on_hand, available]
+            properties:
+              location_id: {type: integer}
+              location_name: {type: string}
+              on_hand: {type: integer}
+              available: {type: integer}
+        low_stock_count: {type: integer, description: Number of stock rows at or below their reorder level in scope.}
+        low_stock:
+          type: array
+          description: Up to 10 rows, by location then item. Quantities only.
+          items:
+            type: object
+            required: [location_id, location_name, item_id, sku, item_name, available, reorder_level]
+            properties:
+              location_id: {type: integer}
+              location_name: {type: string}
+              item_id: {type: integer}
+              sku: {type: string}
+              item_name: {type: string}
+              available: {type: integer}
+              reorder_level: {type: integer, minimum: 0}
+        recent_activity:
+          type: array
+          description: The latest 10 activity events in scope. No cost.
+          items: {$ref: '#/components/schemas/ActivityEvent'}
+    ActivityEvent:
+      type: object
+      required: [id, occurred_at, user_id, user_login_id, user_role, branch_id, branch_name, action, target_type, target_ref, is_self_approval]
+      properties:
+        id: {type: integer}
+        occurred_at: {type: string, format: date-time}
+        user_id: {type: integer, nullable: true}
+        user_login_id: {type: string}
+        user_role: {type: string}
+        branch_id: {type: integer, nullable: true}
+        branch_name: {type: string, nullable: true}
+        action: {type: string, example: dispatch_created, description: Open-ended list.}
+        target_type: {type: string}
+        target_ref: {type: string}
+        is_self_approval: {type: boolean}
+    ShortfallResolve:
+      type: object
+      required: [resolution, quantity, note]
+      properties:
+        resolution: {type: string, enum: [return_to_sender, confirm_loss, record_damage]}
+        quantity: {type: integer, minimum: 1, maximum: 1000000}
+        note: {type: string, minLength: 1, maxLength: 1000}
+    Shortfall:
+      type: object
+      required: [id, dispatch_id, dispatch_reference, origin, destination, item_id, sku, item_name, qty_sent, qty_accepted, shortfall, resolved_quantity, remaining, status, received_at, resolutions]
+      properties:
+        id: {type: integer, description: The dispatch line id.}
+        dispatch_id: {type: integer}
+        dispatch_reference: {type: string, pattern: '^TRF-\d{6,}$'}
+        origin: {$ref: '#/components/schemas/Branch'}
+        destination: {$ref: '#/components/schemas/Branch'}
+        item_id: {type: integer}
+        sku: {type: string}
+        item_name: {type: string}
+        qty_sent: {type: integer}
+        qty_accepted: {type: integer}
+        shortfall: {type: integer, minimum: 1}
+        resolved_quantity: {type: integer, minimum: 0}
+        remaining: {type: integer, minimum: 0}
+        status: {type: string, enum: [open, resolved]}
+        received_at: {type: string, format: date-time, nullable: true}
+        resolutions:
+          type: array
+          items:
+            type: object
+            required: [reference, action, quantity, note, resolved_by, resolved_role, resolved_at, is_self_approval]
+            properties:
+              reference: {type: string, pattern: '^RES-\d{6,}$'}
+              action: {type: string, enum: [return_to_sender, confirm_loss, record_damage]}
+              quantity: {type: integer, minimum: 1}
+              note: {type: string}
+              resolved_by: {$ref: '#/components/schemas/LoginId'}
+              resolved_role: {type: string}
+              resolved_at: {type: string, format: date-time}
+              is_self_approval: {type: boolean}
+    ItemCategory:
+      type: object
+      required: [id, name, subtypes]
+      properties:
+        id: {type: integer}
+        name: {type: string, example: Laptop}
+        subtypes:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: {type: integer}
+              name: {type: string}
+    Brand:
+      type: object
+      required: [id, name, is_active]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        is_active: {type: boolean}
+    BrandWrite:
+      type: object
+      description: '`name` is required on create. Both fields optional on PATCH.'
+      properties:
+        name: {type: string, minLength: 1, maxLength: 100}
+        is_active: {type: boolean}
+    ItemFieldDefinition:
+      type: object
+      required: [key, label, type, required]
+      properties:
+        key: {type: string, example: ram_gb}
+        label: {type: string, example: RAM (GB)}
+        type: {type: string, enum: [text, integer, decimal, boolean, choice]}
+        required: {type: boolean, description: True means required to activate the item.}
+        choices:
+          type: array
+          items: {type: string}
+        group: {type: string, nullable: true, description: Form section (for example Memory).}
+        in_key_specs: {type: boolean, description: 'True if stored inside `key_specs`, false if a common item field.'}
+    Item:
+      type: object
+      required: [id, sku, name, category_id, subtype_id, brand_id, model_name, mpn, condition, unit_of_measure, status, key_specs, show_on_website]
+      properties:
+        id: {type: integer}
+        sku: {type: string, example: SKU-000001}
+        name: {type: string}
+        category_id: {type: integer}
+        subtype_id: {type: integer}
+        brand_id: {type: integer}
+        brand_name: {type: string, readOnly: true}
+        model_name: {type: string}
+        mpn: {type: string}
+        description: {type: string}
+        condition: {type: string, enum: [new, refurbished, used]}
+        grade: {type: string, enum: [A, B, C], nullable: true}
+        unit_of_measure: {type: string, enum: [piece]}
+        status: {$ref: '#/components/schemas/ItemStatus'}
+        key_specs: {type: object, additionalProperties: true, description: Validated against the category field definitions.}
+        image_url: {type: string, nullable: true}
+        show_on_website: {type: boolean}
+        search_keywords: {type: string}
+        selling_price: {allOf: [{$ref: '#/components/schemas/Money'}], nullable: true, description: Null until a price is set. An item cannot be sold while it is null (OQ-21).}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    ItemWithCost:
+      description: '`Item` plus cost. Returned only to SA and WA (cost-bearing operations).'
+      allOf:
+        - $ref: '#/components/schemas/Item'
+        - type: object
+          required: [average_cost]
+          properties:
+            average_cost:
+              allOf: [{$ref: '#/components/schemas/Money'}]
+              nullable: true
+              description: Null until the first goods receipt.
+    ItemWrite:
+      type: object
+      description: Required on create - name, category_id, subtype_id, brand_id, model_name, mpn, condition. All optional on PATCH.
+      properties:
+        sku: {type: string, description: Optional on create (an imported SKU is kept unchanged). Rejected on PATCH once used.}
+        name: {type: string, maxLength: 200}
+        category_id: {type: integer}
+        subtype_id: {type: integer}
+        brand_id: {type: integer}
+        model_name: {type: string}
+        mpn: {type: string}
+        description: {type: string}
+        condition: {type: string, enum: [new, refurbished, used]}
+        grade: {type: string, enum: [A, B, C], nullable: true}
+        key_specs: {type: object, additionalProperties: true, description: On PATCH this replaces the whole object (not merged).}
+        show_on_website: {type: boolean}
+        search_keywords: {type: string}
+        selling_price: {allOf: [{$ref: '#/components/schemas/Money'}], description: Only SA or a Manage prices holder may send it; anyone else gets 403 (OQ-21).}
+    ItemWithCostAndWarnings:
+      allOf:
+        - $ref: '#/components/schemas/ItemWithCost'
+        - type: object
+          required: [warnings]
+          properties:
+            warnings:
+              type: array
+              description: Duplicate warnings (near-identical name and model). Not blocking.
+              items:
+                type: object
+                required: [code, message, item_id]
+                properties:
+                  code: {type: string, enum: [duplicate_name_model]}
+                  message: {type: string}
+                  item_id: {type: integer}
+    BranchAvailability:
+      type: object
+      required: [branch_id, branch_name, quantity]
+      properties:
+        branch_id: {type: integer}
+        branch_name: {type: string}
+        quantity: {type: integer, minimum: 0, description: Available (on hand minus reserved).}
+    MovementType:
+      type: string
+      enum: [supplier_receipt, opening_balance, dispatch, dispatch_receipt, resolution_return, resolution_loss, resolution_damage, sale, sale_cancellation]
+    StockMovement:
+      type: object
+      required: [id, created_at, location_id, location_name, item_id, sku, item_name, bucket, quantity_delta, balance_after, movement_type, source_type, source_ref, actor_login_id, note]
+      properties:
+        id: {type: integer}
+        created_at: {type: string, format: date-time}
+        location_id: {type: integer}
+        location_name: {type: string}
+        item_id: {type: integer}
+        sku: {type: string}
+        item_name: {type: string}
+        bucket: {type: string, enum: [on_hand, reserved, quarantined]}
+        quantity_delta: {type: integer, description: 'Signed, never zero.'}
+        balance_after: {type: integer, minimum: 0}
+        movement_type: {$ref: '#/components/schemas/MovementType'}
+        source_type: {type: string, enum: [goods_receipt, dispatch, dispatch_resolution, sale, sale_cancellation, csv_import]}
+        source_ref: {type: string, description: 'Public reference of the source, e.g. GRN-000001. May be empty.'}
+        actor_login_id: {type: string, description: Empty for system postings.}
+        note: {type: string}
+    StockBalance:
+      type: object
+      required: [location_id, location_name, item_id, sku, item_name, on_hand, reserved, available, quarantined, reorder_level, low_stock]
+      properties:
+        location_id: {type: integer}
+        location_name: {type: string}
+        item_id: {type: integer}
+        sku: {type: string}
+        item_name: {type: string}
+        on_hand: {type: integer, minimum: 0}
+        reserved: {type: integer, minimum: 0}
+        available: {type: integer, minimum: 0}
+        quarantined: {type: integer, minimum: 0}
+        reorder_level: {type: integer, nullable: true, minimum: 0, description: Optional per item per location (C13).}
+        low_stock: {type: boolean, description: 'Server-computed: true when a reorder level is set and available is at or below it.'}
+    StockBalanceWithCost:
+      description: '`StockBalance` plus cost. Returned only by `/costed-stock/` (SA; WA warehouse rows).'
+      allOf:
+        - $ref: '#/components/schemas/StockBalance'
+        - type: object
+          required: [average_cost]
+          properties:
+            average_cost:
+              allOf: [{$ref: '#/components/schemas/Money'}]
+              nullable: true
+              description: Null until the first goods receipt of the item.
+    GoodsReceiptCreate:
+      type: object
+      required: [supplier_name, lines]
+      properties:
+        supplier_name: {type: string, minLength: 1, maxLength: 200}
+        notes: {type: string, maxLength: 1000}
+        lines:
+          type: array
+          minItems: 1
+          description: One line per item (duplicates are 400).
+          items:
+            type: object
+            required: [item_id, quantity, unit_cost]
+            properties:
+              item_id: {type: integer}
+              quantity: {type: integer, minimum: 1}
+              unit_cost: {$ref: '#/components/schemas/Money'}
+    GoodsReceipt:
+      type: object
+      required: [id, reference, location_id, supplier_name, lines, received_at, received_by]
+      properties:
+        id: {type: integer}
+        reference: {type: string, pattern: '^GRN-\d{6,}$', example: GRN-000001}
+        location_id: {type: integer, description: The warehouse.}
+        supplier_name: {type: string}
+        notes: {type: string}
+        lines:
+          type: array
+          items:
+            type: object
+            required: [id, item_id, sku, item_name, quantity, unit_cost]
+            properties:
+              id: {type: integer}
+              item_id: {type: integer}
+              sku: {type: string}
+              item_name: {type: string}
+              quantity: {type: integer}
+              unit_cost: {$ref: '#/components/schemas/Money'}
+        received_at: {type: string, format: date-time}
+        received_by: {$ref: '#/components/schemas/LoginId'}
+    DispatchCreate:
+      type: object
+      required: [destination_id, lines]
+      properties:
+        destination_id: {type: integer, description: An active branch (not the warehouse).}
+        lines:
+          type: array
+          minItems: 1
+          description: One line per item (duplicates are 400).
+          items:
+            type: object
+            required: [item_id, quantity]
+            properties:
+              item_id: {type: integer}
+              quantity: {type: integer, minimum: 1}
+    Dispatch:
+      type: object
+      required: [id, reference, origin, destination, status, lines, dispatched_at, dispatched_by, has_open_discrepancy]
+      properties:
+        id: {type: integer}
+        reference: {type: string, pattern: '^TRF-\d{6,}$', example: TRF-000001}
+        origin: {$ref: '#/components/schemas/Branch'}
+        destination: {$ref: '#/components/schemas/Branch'}
+        status: {$ref: '#/components/schemas/DispatchStatus'}
+        lines:
+          type: array
+          items: {$ref: '#/components/schemas/DispatchLine'}
+        dispatched_at: {type: string, format: date-time}
+        dispatched_by: {$ref: '#/components/schemas/LoginId'}
+        received_at: {type: string, format: date-time, nullable: true}
+        received_by: {allOf: [{$ref: '#/components/schemas/LoginId'}], nullable: true}
+        receive_note: {type: string, nullable: true}
+        has_open_discrepancy: {type: boolean, description: True when any line has a shortfall not yet resolved.}
+    DispatchLine:
+      type: object
+      required: [id, item_id, sku, item_name, qty_sent, qty_received, qty_accepted, qty_rejected, shortfall]
+      properties:
+        id: {type: integer}
+        item_id: {type: integer}
+        sku: {type: string}
+        item_name: {type: string}
+        qty_sent: {type: integer}
+        qty_received: {type: integer, nullable: true, description: Null until received.}
+        qty_accepted: {type: integer, nullable: true}
+        qty_rejected: {type: integer, nullable: true}
+        shortfall: {type: integer, minimum: 0, description: 'qty_sent minus qty_accepted once received, else 0.'}
+        line_note: {type: string, nullable: true}
+    DispatchReceive:
+      type: object
+      required: [decision]
+      properties:
+        decision: {type: string, enum: [approve_all, approve_partial, reject]}
+        note: {type: string, maxLength: 1000, description: Required for approve_partial and for any line accepted below sent.}
+        reason: {type: string, maxLength: 1000, description: Required for reject.}
+        lines:
+          type: array
+          description: Required for approve_all and approve_partial (every dispatch line once). Ignored for reject.
+          items:
+            type: object
+            required: [line_id, qty_received, qty_accepted]
+            properties:
+              line_id: {type: integer}
+              qty_received: {type: integer, minimum: 0}
+              qty_accepted: {type: integer, minimum: 0}
+              line_note: {type: string, maxLength: 500}
+    PaymentMethodCode:
+      type: string
+      enum: [cash, mobile_money, card]
+      description: Configurable list; these three are seeded.
+    SaleStatus:
+      type: string
+      enum: [completed, cancelled, refunded, exchanged]
+      description: '`completed` = Completed, `cancelled` = Cancelled, `refunded` = Refunded, `exchanged` = Exchanged. Only completed and cancelled are reachable in the MVP.'
+    SaleCreate:
+      type: object
+      required: [payment_method, lines]
+      properties:
+        payment_method: {type: string, maxLength: 30, description: 'A payment method code, see `PaymentMethodCode`.'}
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 200
+          description: One line per item (duplicates are 400). The price is never sent.
+          items:
+            type: object
+            required: [item_id, quantity]
+            properties:
+              item_id: {type: integer}
+              quantity: {type: integer, minimum: 1}
+    SaleCancel:
+      type: object
+      required: [reason]
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 1000}
+    Sale:
+      type: object
+      description: Never carries cost (the cost snapshot is kept server-side).
+      required: [id, reference, location, staff, status, payment_method, total, sold_at, lines, cancellation]
+      properties:
+        id: {type: integer}
+        reference: {type: string, pattern: '^SAL-\d{6,}$', example: SAL-000001}
+        location: {$ref: '#/components/schemas/Branch'}
+        staff: {$ref: '#/components/schemas/LoginId'}
+        status: {$ref: '#/components/schemas/SaleStatus'}
+        payment_method: {type: string}
+        total: {$ref: '#/components/schemas/Money'}
+        sold_at: {type: string, format: date-time}
+        lines:
+          type: array
+          items:
+            type: object
+            required: [id, item_id, sku, item_name, quantity, unit_price, line_total]
+            properties:
+              id: {type: integer}
+              item_id: {type: integer}
+              sku: {type: string}
+              item_name: {type: string}
+              quantity: {type: integer}
+              unit_price: {$ref: '#/components/schemas/Money'}
+              line_total: {$ref: '#/components/schemas/Money'}
+        cancellation:
+          nullable: true
+          allOf:
+            - type: object
+              required: [reason, cancelled_by, cancelled_role, cancelled_at]
+              properties:
+                reason: {type: string}
+                cancelled_by: {$ref: '#/components/schemas/LoginId'}
+                cancelled_role: {type: string}
+                cancelled_at: {type: string, format: date-time}
+    ItemImportRequest:
+      type: object
+      required: [file, dry_run]
+      properties:
+        file: {type: string, format: binary, description: UTF-8 CSV.}
+        dry_run: {type: string, enum: ['true', 'false'], description: 'Required on purpose: an absent value must never commit.'}
+        location_id: {type: integer, minimum: 1, description: 'Required for SA. WA may only load its own location.'}
+    ItemImportReport:
+      type: object
+      required: [dry_run, committed, batch_reference, location_id, rows, items_created, items_existing, opening_quantity_total, errors]
+      properties:
+        dry_run: {type: boolean}
+        committed: {type: boolean, description: 'True only for a commit (`dry_run` false) of a file with no errors.'}
+        batch_reference: {type: string, nullable: true, pattern: '^IMP-\d{6,}$', description: Null unless committed.}
+        location_id: {type: integer}
+        rows: {type: integer}
+        items_created: {type: integer}
+        items_existing: {type: integer}
+        opening_quantity_total: {type: integer}
+        errors:
+          type: array
+          items:
+            type: object
+            required: [row, field, message]
+            properties:
+              row: {type: integer, description: 'CSV row number; the header is row 1.'}
+              field: {type: string, nullable: true, description: Column name.}
+              message: {type: string}
+    CostedSale:
+      description: '`Sale` plus `unit_cost` on each line. Returned only by `/costed-sales/` (SA).'
+      allOf:
+        - $ref: '#/components/schemas/Sale'
+        - type: object
+          required: [lines]
+          properties:
+            lines:
+              type: array
+              items:
+                type: object
+                required: [id, item_id, sku, item_name, quantity, unit_price, line_total, unit_cost]
+                properties:
+                  id: {type: integer}
+                  item_id: {type: integer}
+                  sku: {type: string}
+                  item_name: {type: string}
+                  quantity: {type: integer}
+                  unit_price: {$ref: '#/components/schemas/Money'}
+                  line_total: {$ref: '#/components/schemas/Money'}
+                  unit_cost: {$ref: '#/components/schemas/Money'}

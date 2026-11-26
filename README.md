@@ -13,7 +13,7 @@ Or manually: `npm ci`, `copy .env.example .env`, `npm run dev`.
 Modes (set `VITE_API_MODE` in `.env`):
 
 - `mock`: MSW mock responses, no backend needed. Only in dev, and only when set explicitly; a production build is always `real`.
-- `real` (anything else, including unset): calls go through the Vite proxy (`/api`, `/media`, `/health`) to `VITE_BACKEND_URL` (default http://localhost:8000).
+- `real` (anything else, including unset): calls the API at `VITE_API_URL` (local `.env.example` defaults to `http://localhost:8000`; Railway sets the backend's public HTTPS origin before building).
 
 ## Commands
 
