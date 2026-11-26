@@ -369,7 +369,7 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [x] B9.2 Security check of the MVP endpoints — backend contract and permission suites verified
 - [ ] B9.3 Automated backups and a tested restore — local restore verified; Railway Trial cannot create hosted backups, and no alternative verified method is approved.
 - [x] B9.4 Fixes from the checks — no backend fix required
-- [ ] B10.1 Production release — owner go-ahead received; blocked by O2.6 until a verified backup is available. Railway's sprint-branch auto-deploy attempt on 2026-11-26 failed for the backend; migration state must be confirmed before further deployment.
+- [ ] B10.1 Production release — the `main` branch now holds the Sprint 1 and 2 code and Railway deployed it (backend `/health/` returns database ok, 2026-11-26). Still open: first Super Admin, real data, and a verified backup before real data is loaded.
 - [ ] B10.2 Load real data and create real users — blocked until B10.1; no real users or business data have been loaded.
 - [ ] B10.3 Short admin notes
 - [ ] B10.4 MVP release (v1.0.0)
@@ -396,12 +396,12 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 
 ### DevOps, Sprint 2
 
-- [ ] O2.1 Railway services and generated domains are identified; both production services were connected to `sprint/2-mvp-release`, so auto-deploy is disabled. Set and verify `main`, production variables/reference variables, and the `/data` volume mount only after the backup gate is satisfied.
+- [x] O2.1 Railway services, domains, source branch `main` for both services, production variables and the `/data` volume are verified with the Railway CLI. Backend `DJANGO_ALLOWED_HOSTS` includes `healthcheck.railway.app`; `PORT=8080`.
 - [ ] O2.2 Automated daily backups for PostgreSQL and the image volume — blocked: Railway Trial cannot create backups; no alternative verified method is approved.
 - [ ] O2.3 Restore test on hosted staging — blocked because no hosted staging service exists.
 - [ ] O2.4 Rollback rehearsed on hosted staging — blocked because no hosted staging service exists.
 - [ ] O2.5 Monitoring and uptime checks on production — blocked until a production deployment is approved and completed.
-- [ ] O2.6 Owner go-ahead received; production release remains blocked until a verified database-and-image backup is available. A sprint-branch deploy attempt occurred on 2026-11-26; auto-deploy is disabled and backend migration status must be confirmed.
+- [ ] O2.6 Owner go-ahead received. Fresh deploy from `main` succeeded on 2026-11-26 (backend deployment 069a98a7, frontend 3d338b46). Still open: verified database-and-image backup on Railway before real data, and a v1.0.0 smoke-test sign-off.
 - [ ] O2.7 Deployment log entry written for `v1.0.0` — deferred until O2.6 passes.
 
 ## SPRINT 3 (Days 11 to 15): Fixes from real use, laptop, parts and accessory specifications, warranty terms, product and variant split, several images and spec sheets. Release: `v1.1.0`.
