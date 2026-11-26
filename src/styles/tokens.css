@@ -1,0 +1,97 @@
+/*
+ * Design tokens: the single source of truth for colour, type, spacing, radius, border,
+ * shadow, focus and z-index. Raw colour values are allowed ONLY in this file.
+ * Everything else uses the Tailwind utilities generated from @theme (bg-primary-solid, text-ink...)
+ * or var(--token). AA pairs are verified numerically in src/styles/tokens.test.ts.
+ */
+@theme static {
+  /* Typography (fonts are self-hosted via @fontsource) */
+  --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --text-display: 2.5rem; /* big numbers and page titles in Bebas Neue */
+  --text-display--line-height: 1;
+  --text-title: 1.75rem;
+  --text-title--line-height: 1.1;
+
+  /*
+   * Brand colours. APPROXIMATIONS: no logo file was available, these were supplied by the owner
+   * as the brand look (vivid orange, amber accents, deep navy, slate). Replace when the real logo arrives.
+   * #FF6B00 with white text is 2.9:1 and FAILS WCAG AA, so it is never a text fill.
+   * Use primary for icons, accents, large graphics. Solid fills with white text use primary-solid.
+   */
+  --color-primary: #ff6b00;
+  --color-amber: #ff8c00;
+  --color-amber-light: #ffa31a;
+  --color-primary-solid: #c2410c; /* owner decision: AA fill with white text, 5.2:1 */
+  --color-primary-solid-hover: #9a3412;
+  --color-primary-soft: #fff7ed; /* light tint */
+  --color-primary-soft-strong: #ffedd5; /* active pill, selected row */
+  --color-primary-line: #ea580c; /* borders and focus ring, 3.6:1 on white */
+  --color-on-primary: #ffffff;
+
+  /* Legacy names kept working; they point at the tokens above. */
+  --color-accent: var(--color-primary-solid);
+  --color-accent-hover: var(--color-primary-solid-hover);
+  --color-accent-tint: var(--color-primary-soft);
+  --color-accent-mid: var(--color-primary-line);
+
+  /* Text and neutrals */
+  --color-ink: #1e293b; /* deep navy text, 14:1 on white */
+  --color-muted: #4b5563; /* slate gray secondary text, 7.5:1 on white */
+  --color-canvas: #ffffff;
+  --color-surface: #f3f4f6;
+  --color-line: #d1d5db; /* decorative dividers only */
+  --color-control: #6b7280; /* input borders, 4.8:1 */
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af; /* decorative only, not text */
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #111827;
+  --color-scrim: rgb(30 41 59 / 0.55);
+
+  /* Semantic: foreground (-text) on soft background (-bg), plus a solid for white text and borders */
+  --color-ok: #166534;
+  --color-ok-bg: #f0fdf4;
+  --color-warn: #92400e;
+  --color-warn-bg: #fffbeb;
+  --color-bad: #b91c1c;
+  --color-bad-bg: #fef2f2;
+  --color-info: #1d4ed8;
+  --color-info-bg: #eff6ff;
+
+  /* Spacing: Tailwind's 0.25rem step stays the base. Touch target below. */
+  --spacing-target: 2.75rem; /* 44 px minimum tap target */
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-pill: 9999px;
+
+  /* Shadow */
+  --shadow-card: 0 1px 2px rgb(30 41 59 / 0.08);
+  --shadow-pop: 0 8px 24px rgb(30 41 59 / 0.16);
+  --shadow-float: 0 12px 32px rgb(30 41 59 / 0.24);
+}
+
+:root {
+  /* Border widths */
+  --border-thin: 1px;
+  --border-thick: 2px;
+  /* Focus ring: 3.6:1 against white (#FF6B00 would be 2.9:1 and fail the 3:1 non-text rule) */
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-primary-line);
+  /* Layers */
+  --z-sticky: 10;
+  --z-nav: 20;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+}
