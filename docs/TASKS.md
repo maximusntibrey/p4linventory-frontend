@@ -369,8 +369,8 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [x] B9.2 Security check of the MVP endpoints — backend contract and permission suites verified
 - [ ] B9.3 Automated backups and a tested restore — local restore verified; Railway Trial cannot create hosted backups, and no alternative verified method is approved.
 - [x] B9.4 Fixes from the checks — no backend fix required
-- [ ] B10.1 Production deployment — owner go-ahead received; blocked by O2.6 until a verified backup is available. No production deploy or migration has run.
-- [ ] B10.2 Load real data and create real users — blocked until B10.1; no production users or business data have been created.
+- [ ] B10.1 Production release — owner go-ahead received; blocked by O2.6 until a verified backup is available. Railway's sprint-branch auto-deploy attempt on 2026-11-26 failed for the backend; migration state must be confirmed before further deployment.
+- [ ] B10.2 Load real data and create real users — blocked until B10.1; no real users or business data have been loaded.
 - [ ] B10.3 Short admin notes
 - [ ] B10.4 MVP release (v1.0.0)
 
@@ -391,17 +391,17 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [x] F9.2 Accessibility check (360 px, 44 px targets, labels on every icon, keyboard-only flows) — verified by `e2e/f9.spec.ts`, component axe tests and Playwright 360 px suites
 - [x] F9.3 List performance check and fixes — verified `e2e/f9.spec.ts`; no fix was required
 - [ ] F10.1 Short user guide and walkthrough (use the `docx` or `pdf` skill) — `docs/USER_GUIDE.md` exists; DOCX/PDF export skill unavailable
-- [ ] F10.2 Checks on the live frontend — blocked until O2.6 passes and the frontend is deployed.
+- [ ] F10.2 Checks on the live frontend — `/login` returns HTTP 200, but live API/login checks remain blocked while the backend `/health/` returns HTTP 502 and the backup gate is unresolved.
 - [ ] F10.3 MVP release (v1.0.0) — blocked by the verified-backup gate; owner go-ahead is already recorded.
 
 ### DevOps, Sprint 2
 
-- [ ] O2.1 Railway services and generated domains are identified; verify production variables, reference variables, and the `/data` volume mount before deployment.
+- [ ] O2.1 Railway services and generated domains are identified; both production services were connected to `sprint/2-mvp-release`, so auto-deploy is disabled. Set and verify `main`, production variables/reference variables, and the `/data` volume mount only after the backup gate is satisfied.
 - [ ] O2.2 Automated daily backups for PostgreSQL and the image volume — blocked: Railway Trial cannot create backups; no alternative verified method is approved.
 - [ ] O2.3 Restore test on hosted staging — blocked because no hosted staging service exists.
 - [ ] O2.4 Rollback rehearsed on hosted staging — blocked because no hosted staging service exists.
 - [ ] O2.5 Monitoring and uptime checks on production — blocked until a production deployment is approved and completed.
-- [ ] O2.6 Owner go-ahead received; production deployment remains blocked until a verified database and image-storage backup is available. No migration or deployment has run.
+- [ ] O2.6 Owner go-ahead received; production release remains blocked until a verified database-and-image backup is available. A sprint-branch deploy attempt occurred on 2026-11-26; auto-deploy is disabled and backend migration status must be confirmed.
 - [ ] O2.7 Deployment log entry written for `v1.0.0` — deferred until O2.6 passes.
 
 ## SPRINT 3 (Days 11 to 15): Fixes from real use, laptop, parts and accessory specifications, warranty terms, product and variant split, several images and spec sheets. Release: `v1.1.0`.
