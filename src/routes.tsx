@@ -1,5 +1,6 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { RequireAuth, RequirePermission } from './auth/guards';
+import { RequireAuth, RequirePermission, useCurrentMe } from './auth/guards';
 import type { Me } from './auth/session';
 import { AppShell } from './components/AppShell';
 import { ActivityPage } from './features/activity/ActivityPage';
@@ -24,8 +25,25 @@ import { UsersPage } from './features/users/UsersPage';
 import { ChangePassword } from './pages/ChangePassword';
 import { ComingSoon } from './pages/ComingSoon';
 import { Home } from './pages/Home';
+import { Forbidden } from './pages/Forbidden';
 import { Login } from './pages/Login';
 import { NotFound } from './pages/NotFound';
+
+const DesignSystem = lazy(() => import('./pages/DesignSystem'));
+
+/**
+ * Living design-system showcase: open in dev, and in production only when the server says the user
+ * works across all branches (Super Admin). The contract has no dedicated permission for it (see TASKS Open questions).
+ */
+function DesignSystemGate() {
+  const me = useCurrentMe();
+  if (!import.meta.env.DEV && !me.all_branches) return <Forbidden />;
+  return (
+    <Suspense fallback={<p role="status">Loading…</p>}>
+      <DesignSystem />
+    </Suspense>
+  );
+}
 
 /** Screens a later step builds. Each is opened by one permission from the me endpoint; the server still checks every request. */
 const guardedScreens: { path: string; title: string; permission: Me['permissions'][number] }[] = [
@@ -206,6 +224,7 @@ export function AppRoutes() {
               </RequirePermission>
             }
           />
+          <Route path="design-system" element={<DesignSystemGate />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Route>
