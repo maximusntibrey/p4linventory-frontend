@@ -126,8 +126,8 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
   return forced ? (
     <AuthLayout title="Choose a new password">{body}</AuthLayout>
   ) : (
-    <div className="mx-auto flex max-w-md flex-col gap-4">
-      <h1 className="text-4xl text-ink">Change password</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Change password</h1>
       <Card className="flex flex-col gap-4">{body}</Card>
     </div>
   );

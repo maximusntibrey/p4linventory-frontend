@@ -37,7 +37,7 @@ export function Home() {
               <li key={m.key}>
                 <Link
                   to={m.path}
-                  className="flex min-h-14 items-center gap-2 rounded-xl border border-line bg-white p-3 font-semibold text-ink no-underline shadow-sm hover:bg-surface"
+                  className="flex min-h-14 items-center gap-2 rounded-xl border border-line bg-canvas p-3 font-semibold text-ink no-underline shadow-sm hover:bg-surface"
                 >
                   <Icon aria-hidden="true" size={22} />
                   <span>{m.label}</span>
@@ -58,7 +58,7 @@ export function Home() {
                 <StatCard label="Active items" value={d.active_items} />
               </StatsStrip>
               <Card className="flex flex-col gap-2">
-                <h2 className="text-2xl">Low stock</h2>
+                <h2 className="text-title">Low stock</h2>
                 {d.low_stock_count === 0 ? (
                   <p className="m-0 text-muted">Nothing is at or below its reorder level.</p>
                 ) : (
@@ -91,7 +91,7 @@ export function Home() {
               </Card>
               {d.stock_per_location && d.stock_per_location.length > 0 && (
                 <Card className="flex flex-col gap-2">
-                  <h2 className="text-2xl">Stock by location</h2>
+                  <h2 className="text-title">Stock by location</h2>
                   <ul className="m-0 flex list-none flex-col gap-2 p-0">
                     {d.stock_per_location.map((s) => (
                       <li

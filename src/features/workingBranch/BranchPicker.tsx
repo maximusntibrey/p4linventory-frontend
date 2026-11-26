@@ -43,8 +43,8 @@ export function BranchPicker({ onCancel, onDone }: Props) {
   const current = me.working_branch?.id;
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4">
-      <h1 className="text-4xl text-ink">{current ? 'Switch branch' : 'Choose your branch'}</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">{current ? 'Switch branch' : 'Choose your branch'}</h1>
       <p className="m-0 text-muted">Pick the branch you are working at.</p>
       <ApiProblem error={choose.error} at={choose.submittedAt} />
       <QueryGate query={list}>

@@ -37,8 +37,8 @@ export function UserNew() {
     });
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4">
-      <h1 className="text-4xl text-ink">{created ? 'User created' : 'Add a user'}</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">{created ? 'User created' : 'Add a user'}</h1>
       {created ? (
         <>
           <p role="status" className="m-0 font-semibold">
@@ -75,7 +75,7 @@ export function UserNew() {
           </Card>
           <Link
             to="/users"
-            className="inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline"
+            className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
           >
             <ArrowLeft aria-hidden="true" size={20} />
             <span>Back to users</span>

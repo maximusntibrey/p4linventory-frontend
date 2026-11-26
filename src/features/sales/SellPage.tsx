@@ -138,8 +138,8 @@ export function SellPage() {
   // A Super Admin works in the branch picked here; nobody sells without one.
   if (!where) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Sell</h1>
+      <div className="flex flex-col gap-4">
+        <h1 className="text-display">Sell</h1>
         <p className="m-0">Choose the branch you are selling at.</p>
         <BranchPicker onDone={() => undefined} />
       </div>
@@ -148,8 +148,8 @@ export function SellPage() {
 
   if (done) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Sell</h1>
+      <div className="flex flex-col gap-4">
+        <h1 className="text-display">Sell</h1>
         <ResultCard>
           <p className="m-0 text-lg font-semibold">Sale {done.reference} is recorded.</p>
           <p className="m-0">
@@ -177,9 +177,9 @@ export function SellPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-4xl text-ink">Sell</h1>
+        <h1 className="text-display">Sell</h1>
         <Link to="/sell/sales" className={linkButton}>
           <ListChecks aria-hidden="true" size={20} />
           <span>Sales list</span>
@@ -193,7 +193,7 @@ export function SellPage() {
           <li
             key={s}
             aria-current={s === step ? 'step' : undefined}
-            className={`rounded-full border px-3 py-1 text-sm font-semibold ${s === step ? 'border-accent bg-accent text-white' : 'border-line text-muted'}`}
+            className={`rounded-full border px-3 py-1 text-sm font-semibold ${s === step ? 'border-primary-solid bg-primary-solid text-on-primary' : 'border-line text-muted'}`}
           >
             Step {i + 1} of 3: {stepTitle[s]}
           </li>

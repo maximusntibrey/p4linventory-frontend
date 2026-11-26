@@ -74,7 +74,7 @@ export function DispatchNew() {
   const back = (
     <Link
       to="/dispatches"
-      className="inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline"
+      className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
     >
       <ArrowLeft aria-hidden="true" size={20} />
       <span>Back to dispatches</span>
@@ -83,8 +83,8 @@ export function DispatchNew() {
 
   if (done) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Dispatch to a branch</h1>
+      <div className="flex flex-col gap-4">
+        <h1 className="text-display">Dispatch to a branch</h1>
         <ResultCard>
           <p className="m-0 text-lg font-semibold">
             Dispatch {done.reference} to {done.destination.name} is on its way.
@@ -106,8 +106,8 @@ export function DispatchNew() {
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Dispatch to a branch</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Dispatch to a branch</h1>
       <ApiProblem error={create.error} at={create.submittedAt} />
       <QueryGate query={places}>
         {(page) => {

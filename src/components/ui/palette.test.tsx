@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { Home, Tag } from 'lucide-react';
-import { Card, CommandPalette, SegmentedControl, Topbar } from '.';
+import { MemoryRouter } from 'react-router-dom';
+import { Card, CommandPalette, LinkButton, SegmentedControl, Topbar } from '.';
 
 const items = [
   { id: '/', label: 'Home', icon: Home },
@@ -99,5 +100,20 @@ describe('SegmentedControl form use (legend, required, error)', () => {
       group.getAttribute('aria-describedby'),
     );
     expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe('LinkButton', () => {
+  it('is a link with a visible label that wears the button look', () => {
+    render(
+      <MemoryRouter>
+        <LinkButton to="/items/new" icon={Home}>
+          New item
+        </LinkButton>
+      </MemoryRouter>,
+    );
+    const link = screen.getByRole('link', { name: 'New item' });
+    expect(link).toHaveAttribute('href', '/items/new');
+    expect(link.className).toMatch(/min-h-11/);
   });
 });

@@ -90,8 +90,8 @@ export function GoodsReceiptPage() {
 
   if (done) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Receive stock</h1>
+      <div className="flex flex-col gap-4">
+        <h1 className="text-display">Receive stock</h1>
         <ResultCard>
           <p className="m-0 text-lg font-semibold">
             Receipt {done.reference} is confirmed. The stock is in the warehouse.
@@ -115,8 +115,8 @@ export function GoodsReceiptPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Receive stock</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Receive stock</h1>
       <ApiProblem error={create.error} at={create.submittedAt} />
       {reviewing ? (
         <Card className="flex flex-col gap-3">

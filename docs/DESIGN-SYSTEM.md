@@ -66,7 +66,7 @@ All accept typed props. Every control keeps a 44 px tap target, a visible focus 
 | `SearchInput` | Labelled `type="search"`, search icon, optional shortcut hint (`⌘K`). | Placeholder as the only label. |
 | `Checkbox` | Whole row is the tap target; `indeterminate` supported. | |
 | `Switch` | `role="switch"`, shows On or Off as text. | Colour as the only state. |
-| `SegmentedControl` | Native radios. `variant="segments"` compact; `variant="cards"` radio cards with icon and description. | More than about five options. |
+| `SegmentedControl` | Native radios. `variant="segments"` compact; `variant="cards"` radio cards with icon and description; `legend`, `required` and `error` give it a visible label and an API error (form use). | More than about five options. |
 | `Modal`, `Drawer` | Focus trap, Escape, scroll lock, focus returns to the opener, visible Close button. Modal is a bottom sheet on phones. | Nest dialogs. |
 | `ConfirmDialog` | `alertdialog`; cancel is focused first; `tone="danger"` for destructive actions. | Confirm without saying what happens. |
 | `Tabs` | WAI-ARIA tabs: roving tabindex, Arrow, Home and End keys; controlled or uncontrolled. | Use as navigation between routes. |
@@ -81,7 +81,9 @@ All accept typed props. Every control keeps a 44 px tap target, a visible focus 
 | `ToastProvider`, `useToast` | Mount once; `toast({ title, description, tone })`; errors announced assertively, others politely; Dismiss button; auto-dismiss 6 s (0 = stay). | Use a toast for a form error: use `FormField`. |
 | `PageHeader` | Bold Bebas `h1`, muted subtitle, actions slot. | Two `h1` per page. |
 | `Sidebar` | Grouped sections with small muted uppercase labels, icon plus label items, active item = soft tinted pill with `aria-current`, count badges, header and footer slots (functions get the collapsed state), collapse control. Collapsed keeps each label for assistive tech and as a tooltip. | |
-| `Topbar` | Global `SearchInput` (Ctrl+K or Cmd+K focuses it from anywhere), round notification bell, user pill (Avatar, name, email). | |
+| `Topbar` | Either a global `SearchInput` or `commandSearch` (a button that opens a `CommandPalette`; Ctrl+K or Cmd+K opens it). Global `SearchInput` (Ctrl+K or Cmd+K focuses it from anywhere), round notification bell (`unavailable` makes it a non-interactive button whose label says why), user pill (Avatar, name, email). | |
+| `CommandPalette` | Modal search-and-jump list. The caller passes only the places the user may open; Enter opens the first match. | Searching data (use a screen search). |
+| `Card` | Bordered surface that groups content; layout classes come from the caller. | Page sections that need a heading only (use `PageHeader`). |
 | `AppShell` | Layout: sidebar column from md up, menu drawer on phones, skip link, `<main id="main">`. Presentational only; it never decides what the user may see. `embedded` is for the showcase. | Put role checks in it. |
 | `Logo` | `variant="full"` or `"mark"` (collapsed sidebar). **Placeholder artwork** in `src/assets/logo.svg` and `logo-mark.svg` (laptop outline, three pixel squares, wordmark "payless4laptop", tagline). The real logo file was not available; replace the two SVGs only. | |
 

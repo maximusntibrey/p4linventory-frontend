@@ -12,6 +12,7 @@ export * from './EmptyState';
 export * from './FormField';
 export * from './IconButton';
 export * from './Input';
+export * from './LinkButton';
 export * from './Logo';
 export * from './Modal';
 export * from './PageHeader';

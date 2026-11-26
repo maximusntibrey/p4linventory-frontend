@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PackageCheck } from 'lucide-react';
 import { api, rowsOf } from '../../api';
@@ -10,7 +9,7 @@ import { Select } from '../../components/Select';
 import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { unitsSent } from '../dispatches/labels';
-import { Card } from '../../components/ui';
+import { Card, LinkButton } from '../../components/ui';
 
 /**
  * What is waiting at a branch. The working branch comes from /me; when /me has none (the Super Admin),
@@ -41,8 +40,8 @@ export function WaitingPage() {
     (branches.data ? rowsOf(branches.data) : []).find((b) => String(b.id) === picked)?.name;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Receive</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Receive</h1>
       {!own && (
         <Select
           label="Branch"
@@ -85,14 +84,14 @@ export function WaitingPage() {
                           {unitsSent(d)} units in {d.lines.length} line
                           {d.lines.length === 1 ? '' : 's'} · sent {formatAccra(d.dispatched_at)}
                         </p>
-                        <Link
+                        <LinkButton
                           to={`/receive/${d.id}`}
+                          icon={PackageCheck}
                           aria-label={`Check delivery ${d.reference}`}
-                          className="mt-auto inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-lg border border-transparent bg-accent px-4 font-semibold text-white hover:bg-accent-hover"
+                          className="self-start"
                         >
-                          <PackageCheck aria-hidden="true" size={20} />
-                          <span>Check delivery</span>
-                        </Link>
+                          Check delivery
+                        </LinkButton>
                       </Card>
                     </li>
                   ))}

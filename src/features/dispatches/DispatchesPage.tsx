@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { api, rowsOf } from '../../api';
@@ -11,7 +10,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { dispatchStatusBadge, dispatchStatuses, unitsSent } from './labels';
 import type { components } from '../../api';
-import { Card } from '../../components/ui';
+import { Card, LinkButton } from '../../components/ui';
 
 type Status = components['schemas']['DispatchStatus'];
 
@@ -42,16 +41,12 @@ export function DispatchesPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Dispatch</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Dispatch</h1>
       {canCreate && (
-        <Link
-          to="/dispatches/new"
-          className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-lg border border-transparent bg-accent px-4 font-semibold text-white hover:bg-accent-hover"
-        >
-          <Plus aria-hidden="true" size={20} />
-          <span>New dispatch</span>
-        </Link>
+        <LinkButton to="/dispatches/new" icon={Plus} className="self-start">
+          New dispatch
+        </LinkButton>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         <Select

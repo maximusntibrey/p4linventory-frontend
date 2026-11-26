@@ -174,7 +174,7 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
       return (
         <div key={def.key} className="flex flex-col gap-1">
           <label className="flex min-h-11 items-center gap-3 font-semibold">
-            <input type="checkbox" className="size-5 accent-accent" {...reg} />
+            <input type="checkbox" className="size-5 accent-primary-solid" {...reg} />
             <span>{def.label}</span>
           </label>
           {hint && <p className="text-sm text-muted">{hint}</p>}

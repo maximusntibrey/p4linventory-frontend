@@ -94,8 +94,8 @@ export function ShortfallsPage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Shortfalls</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Shortfalls</h1>
       <Select
         label="Status"
         value={status}
@@ -121,7 +121,7 @@ export function ShortfallsPage() {
                   <li key={s.id}>
                     <Card className="flex flex-col gap-2">
                       <div className="flex flex-wrap items-start justify-between gap-2">
-                        <h2 className="text-2xl">{s.item_name}</h2>
+                        <h2 className="text-title">{s.item_name}</h2>
                         {s.status === 'open' ? (
                           <StatusBadge status="low" label="Open" />
                         ) : (

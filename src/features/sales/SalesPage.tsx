@@ -76,9 +76,9 @@ export function SalesPage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-4xl text-ink">Sales</h1>
+        <h1 className="text-display">Sales</h1>
         <Link to="/sell" className={linkButton}>
           <ShoppingCart aria-hidden="true" size={20} />
           <span>New sale</span>
@@ -126,7 +126,7 @@ export function SalesPage() {
                   <li key={s.id}>
                     <Card className="flex flex-col gap-2">
                       <div className="flex flex-wrap items-start justify-between gap-2">
-                        <h2 className="text-2xl">{s.reference}</h2>
+                        <h2 className="text-title">{s.reference}</h2>
                         <StatusOf status={s.status} />
                       </div>
                       <p className="m-0 text-sm text-muted">

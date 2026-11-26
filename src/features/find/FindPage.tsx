@@ -56,8 +56,8 @@ export function FindPage() {
     });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Find</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Find</h1>
       <form
         role="search"
         className="flex flex-col gap-3"

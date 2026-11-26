@@ -68,13 +68,13 @@ export function ItemsPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-4xl text-ink">Items</h1>
+        <h1 className="text-display">Items</h1>
         {canImport && (
           <Link
             to="/items/import"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-control bg-white px-4 font-semibold text-ink no-underline hover:bg-surface"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-control bg-canvas px-4 font-semibold text-ink no-underline hover:bg-surface"
           >
             <Upload aria-hidden="true" size={20} />
             <span>Import from CSV</span>
@@ -83,7 +83,7 @@ export function ItemsPage() {
         {canManage && (
           <Link
             to="/items/new"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-4 font-semibold text-white no-underline hover:bg-accent-hover"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary-solid px-4 font-semibold text-on-primary no-underline hover:bg-primary-solid-hover"
           >
             <Plus aria-hidden="true" size={20} />
             <span>Add an item</span>

@@ -103,7 +103,7 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
               <input
                 type={canMulti ? 'checkbox' : 'radio'}
                 value={code}
-                className="size-5 accent-accent"
+                className="size-5 accent-primary-solid"
                 {...(canMulti
                   ? register('roles', {
                       validate: (v) => (v && v.length > 0) || 'Choose at least one role.',

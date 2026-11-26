@@ -100,8 +100,8 @@ export function ImportPage() {
 
   if (report?.committed) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Import from CSV</h1>
+      <div className="flex flex-col gap-4">
+        <h1 className="text-display">Import from CSV</h1>
         <ResultCard>
           <p className="m-0 text-lg font-semibold">Import {report.batch_reference} is done.</p>
           <Counts r={report} />
@@ -120,8 +120,8 @@ export function ImportPage() {
 
   const clean = report !== null && report.errors.length === 0;
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Import from CSV</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Import from CSV</h1>
       <Warning />
       <ApiProblem error={server} at={run.submittedAt} />
       <Card className="flex flex-col gap-4">

@@ -47,16 +47,16 @@ export function UsersPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <QueryGate query={list}>
         {(data) => (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h1 className="text-4xl text-ink">Users</h1>
+              <h1 className="text-display">Users</h1>
               {canManage && (
                 <Link
                   to="/users/new"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-4 font-semibold text-white no-underline hover:bg-accent-hover"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary-solid px-4 font-semibold text-on-primary no-underline hover:bg-primary-solid-hover"
                 >
                   <Plus aria-hidden="true" size={20} />
                   <span>Add a user</span>
@@ -101,7 +101,7 @@ export function UsersPage() {
                   <li key={u.id}>
                     <Card className="flex flex-col gap-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h2 className="text-2xl">
+                        <h2 className="text-title">
                           <Link
                             to={`/users/${u.id}`}
                             className="inline-flex min-h-11 items-center text-ink underline"

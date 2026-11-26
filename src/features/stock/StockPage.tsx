@@ -48,8 +48,8 @@ export function StockPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Stock</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Stock</h1>
       <form
         role="search"
         className="grid gap-3 sm:grid-cols-2"

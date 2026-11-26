@@ -23,7 +23,7 @@ const count = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text.trim())
 const backLink = (
   <Link
     to="/receive"
-    className="inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline"
+    className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
   >
     <ArrowLeft aria-hidden="true" size={20} />
     <span>Back to waiting list</span>
@@ -274,8 +274,8 @@ export function ReceiveDispatch() {
     queryFn: () => api('get', '/api/v1/dispatches/{id}/', { path: { id } }),
   });
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Check delivery</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-display">Check delivery</h1>
       <QueryGate query={one}>
         {(d) =>
           d.status === 'in_transit' && canReceive ? (
