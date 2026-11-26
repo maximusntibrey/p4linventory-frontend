@@ -1,0 +1,20 @@
+repos:
+  - repo: local
+    hooks:
+      - id: secret-check
+        name: block committed secrets
+        entry: bash scripts/secret-check.sh
+        language: system
+        types: [text]
+      - id: lint
+        name: eslint
+        entry: npm run lint
+        language: system
+        pass_filenames: false
+        types_or: [ts, tsx, javascript]
+      - id: format
+        name: prettier check
+        entry: npm run format:check
+        language: system
+        pass_filenames: false
+        types_or: [ts, tsx, javascript, json, css, markdown]
