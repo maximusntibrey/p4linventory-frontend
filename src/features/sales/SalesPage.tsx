@@ -7,8 +7,6 @@ import { useCurrentMe } from '../../auth/guards';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { SuccessNotice } from '../../components/focus';
 import { Field } from '../../components/Field';
@@ -19,6 +17,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { ghs } from '../items/labels';
 import { linkButton, paymentCodes, paymentLabel, saleStatusLabels } from './labels';
+import { Button, Card } from '../../components/ui';
 
 type S = components['schemas'];
 

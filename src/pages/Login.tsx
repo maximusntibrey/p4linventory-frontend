@@ -6,10 +6,10 @@ import { LogIn } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { fetchMe, meKey, useMe } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
-import { Button } from '../components/Button';
 import { describeError, ErrorSummary } from '../components/ErrorSummary';
 import type { ErrorParts } from '../components/ErrorSummary';
 import { Field } from '../components/Field';
+import { Button } from '../components/ui';
 
 type Values = { login_id: string; password: string };
 

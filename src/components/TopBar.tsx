@@ -1,6 +1,6 @@
 import { ArrowLeftRight, LogOut } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { Button } from './Button';
+import { Button } from './ui';
 
 type Props = {
   branchName: string;

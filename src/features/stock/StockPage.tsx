@@ -4,13 +4,12 @@ import { Search } from 'lucide-react';
 import { api, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { Field } from '../../components/Field';
 import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
 import { Select } from '../../components/Select';
 import { StatusBadge } from '../../components/StatusBadge';
+import { Button, Card } from '../../components/ui';
 
 type Row = components['schemas']['StockBalance'];
 

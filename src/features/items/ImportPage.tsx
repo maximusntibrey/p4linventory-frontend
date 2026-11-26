@@ -7,13 +7,12 @@ import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { Field } from '../../components/Field';
 import { ResultCard } from '../../components/focus';
 import { Select } from '../../components/Select';
 import { linkButton } from '../sales/labels';
+import { Button, Card } from '../../components/ui';
 
 type S = components['schemas'];
 

@@ -4,10 +4,10 @@ import { Save } from 'lucide-react';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Button } from '../../components/Button';
 import { Field } from '../../components/Field';
 import { Select } from '../../components/Select';
 import { roleCodes, roleLabels } from './labels';
+import { Button } from '../../components/ui';
 
 type S = components['schemas'];
 type Values = {

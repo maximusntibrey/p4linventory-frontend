@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Search } from 'lucide-react';
 import { api, rowsOf } from '../../api';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { Field } from '../../components/Field';
 import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
 import { StatusBadge } from '../../components/StatusBadge';
+import { Button, Card } from '../../components/ui';
 
 /** Other branches for one item: branch name and available quantity only (the API sends nothing more). */
 function OtherBranches({ itemId }: { itemId: number }) {

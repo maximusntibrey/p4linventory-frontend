@@ -4,13 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { PackageCheck } from 'lucide-react';
 import { api, rowsOf } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Card } from '../../components/Card';
 import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
 import { Select } from '../../components/Select';
 import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { unitsSent } from '../dispatches/labels';
+import { Card } from '../../components/ui';
 
 /**
  * What is waiting at a branch. The working branch comes from /me; when /me has none (the Super Admin),

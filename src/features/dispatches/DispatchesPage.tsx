@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { api, rowsOf } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Card } from '../../components/Card';
 import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
 import { Select } from '../../components/Select';
@@ -12,6 +11,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { dispatchStatusBadge, dispatchStatuses, unitsSent } from './labels';
 import type { components } from '../../api';
+import { Card } from '../../components/ui';
 
 type Status = components['schemas']['DispatchStatus'];
 

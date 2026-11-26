@@ -5,12 +5,12 @@ import { Save } from 'lucide-react';
 import { api, ApiError } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import type { components } from '../../api';
-import { Button } from '../../components/Button';
 import { Field } from '../../components/Field';
 import { QueryGate } from '../../components/QueryGate';
 import { Select } from '../../components/Select';
 import { twoDecimals } from '../../lib/money';
 import { conditionCodes, conditionLabels } from './labels';
+import { Button } from '../../components/ui';
 
 type S = components['schemas'];
 type Def = S['ItemFieldDefinition'];

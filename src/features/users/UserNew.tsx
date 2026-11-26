@@ -6,9 +6,9 @@ import { api } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Card } from '../../components/Card';
 import { OneTimePassword } from './OneTimePassword';
 import { UserForm } from './UserForm';
+import { Card } from '../../components/ui';
 
 type Created = components['schemas']['UserWithOneTimePassword'];
 

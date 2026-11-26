@@ -7,8 +7,6 @@ import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { SuccessNotice } from '../../components/focus';
 import { Field } from '../../components/Field';
@@ -17,6 +15,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { permissionCodes, permissionLabels, roleLabels, statusBadge } from './labels';
 import { OneTimePassword } from './OneTimePassword';
 import { UserForm } from './UserForm';
+import { Button, Card } from '../../components/ui';
 
 type S = components['schemas'];
 type Target = 'active' | 'suspended' | 'deactivated';

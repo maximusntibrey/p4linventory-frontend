@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
-import { Button } from './Button';
 import { Field } from './Field';
 import { QueryGate } from './QueryGate';
+import { Button } from './ui';
 
 export type Candidate = {
   item_id: number;

@@ -549,7 +549,9 @@ describe('branch type and audit log mocks (contract 0.6.0)', () => {
   it('lists branch_type and filters on it', async () => {
     signIn();
     const all = await (await api('GET', '/api/v1/branches/')).json();
-    expect(all.results.every((b: { branch_type: string }) => b.branch_type === b.kind)).toBe(true);
+    expect(
+      all.results.every((b: { branch_type: string; kind: string }) => b.branch_type === b.kind),
+    ).toBe(true);
     const wh = await (await api('GET', '/api/v1/branches/?branch_type=warehouse')).json();
     expect(wh.results.map((b: { code: string }) => b.code)).toEqual(['WH']);
   });

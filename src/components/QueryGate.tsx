@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { ApiError } from '../api';
 import { Forbidden } from '../pages/Forbidden';
-import { Button } from './Button';
 import { describeError } from './ErrorSummary';
+import { Button } from './ui';
 
 type Props<T> = {
   query: UseQueryResult<T>;

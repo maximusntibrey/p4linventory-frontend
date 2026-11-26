@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Card } from './Card';
+import { Card } from './ui';
 
 /** Plain centred page for screens shown before the app shell (sign-in, forced password change). */
 export function AuthLayout({ title, children }: { title: string; children: ReactNode }) {

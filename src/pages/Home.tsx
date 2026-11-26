@@ -2,12 +2,12 @@ import { Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api';
 import { useCurrentMe } from '../auth/guards';
-import { Card } from '../components/Card';
 import { iconForMenuKey } from '../components/menuIcons';
 import { QueryGate } from '../components/QueryGate';
 import { ActivityList } from '../features/activity/ActivityList';
 import { StatusBadge } from '../components/StatusBadge';
 import { useBranchFilter } from '../features/workingBranch/BranchFilter';
+import { Card } from '../components/ui';
 
 function Tile({ label, value }: { label: string; value: number }) {
   return (

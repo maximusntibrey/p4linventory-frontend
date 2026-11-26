@@ -3,13 +3,12 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { axe } from 'vitest-axe';
 import { Home } from 'lucide-react';
-import { Button } from './Button';
-import { Card } from './Card';
 import { Field } from './Field';
 import { Nav } from './Nav';
 import { StatusBadge } from './StatusBadge';
 import type { Status } from './StatusBadge';
 import { TopBar } from './TopBar';
+import { Button, Card } from './ui';
 
 describe('Button', () => {
   it('shows a visible label, icon hidden from assistive tech, 44 px target class, click works', async () => {

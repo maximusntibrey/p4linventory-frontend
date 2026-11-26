@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from './Button';
+import { Button } from './ui';
 
 type Props = {
   page: { page: number; next: string | null; previous: string | null };

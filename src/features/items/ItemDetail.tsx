@@ -7,8 +7,6 @@ import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { SuccessNotice } from '../../components/focus';
 import { QueryGate } from '../../components/QueryGate';
@@ -23,6 +21,7 @@ import {
   itemStatusBadge,
   withoutCost,
 } from './labels';
+import { Button, Card } from '../../components/ui';
 
 type S = components['schemas'];
 type Warning = S['ItemWithCostAndWarnings']['warnings'][number];

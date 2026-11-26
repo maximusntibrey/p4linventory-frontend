@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Copy } from 'lucide-react';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { useReturnFocus } from '../../components/focus';
 import { formatAccra } from '../../lib/time';
+import { Button, Card } from '../../components/ui';
 
 type Props = {
   loginId: string;

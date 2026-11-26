@@ -5,8 +5,8 @@ import { api } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
 import { SuccessNotice } from '../../components/focus';
+import { Button } from '../../components/ui';
 
 type Item = components['schemas']['Item'];
 

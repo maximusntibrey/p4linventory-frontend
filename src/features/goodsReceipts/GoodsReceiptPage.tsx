@@ -5,8 +5,6 @@ import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { Field } from '../../components/Field';
 import { ResultCard } from '../../components/focus';
@@ -15,6 +13,7 @@ import type { Candidate } from '../../components/ItemPicker';
 import { amountPattern, twoDecimals } from '../../lib/money';
 import { formatAccra } from '../../lib/time';
 import { ghs } from '../items/labels';
+import { Button, Card } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string; cost: string };

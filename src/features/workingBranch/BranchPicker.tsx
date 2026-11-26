@@ -5,8 +5,8 @@ import { useIdempotencyKey } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { dropBranchScoped, meKey } from '../../auth/session';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
 import { QueryGate } from '../../components/QueryGate';
+import { Button } from '../../components/ui';
 
 type Props = {
   /** Switching from a branch already chosen: Cancel is offered. When it is the required first pick there is none. */

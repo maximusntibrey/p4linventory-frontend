@@ -5,12 +5,12 @@ import { Filter } from 'lucide-react';
 import { api, ApiError, rowsOf } from '../../api';
 import { ApiProblem } from '../../components/ApiProblem';
 import { useCurrentMe } from '../../auth/guards';
-import { Button } from '../../components/Button';
 import { Field } from '../../components/Field';
 import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
 import { Select } from '../../components/Select';
 import { ActivityList } from './ActivityList';
+import { Button } from '../../components/ui';
 
 const none = { user_id: '', branch_id: '', action: '', date_from: '', date_to: '' };
 

@@ -5,8 +5,8 @@ import { api } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Card } from '../../components/Card';
 import { ItemForm } from './ItemForm';
+import { Card } from '../../components/ui';
 
 /** Add an item. It is always saved as a Draft; the item page then offers Activate. */
 export function ItemNew() {

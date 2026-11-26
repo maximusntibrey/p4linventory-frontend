@@ -6,11 +6,10 @@ import { CheckCircle2, KeyRound, LogOut } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { meKey, useLogout } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
-import { Button } from '../components/Button';
-import { Card } from '../components/Card';
 import { describeError, ErrorSummary } from '../components/ErrorSummary';
 import type { ErrorParts } from '../components/ErrorSummary';
 import { Field } from '../components/Field';
+import { Button, Card } from '../components/ui';
 
 type Values = { current_password: string; new_password: string; confirm: string };
 
