@@ -55,6 +55,7 @@ Tick a box only when the step is done, tested, reviewed and pushed to git.
 - Timestamps are timezone-aware and shown in Africa/Accra time (storing in UTC is proposed, see `SKILLS.md`). Currency is GHS.
 - Frontend: 360 px width with no sideways scroll, tap targets at least 44 px, every icon has a text label, status never shown by colour alone, keyboard navigation works.
 - Do not mark a step done on partial work. If blocked, leave it unticked and note the blocker under "Open questions".
+- Design rule (frontend): All UI must use the design-system tokens and components. No ad-hoc styles. Any new component is added to the library first.
 
 ### 0.4 Honesty and safety rules
 
