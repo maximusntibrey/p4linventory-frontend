@@ -324,7 +324,7 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 
 ### DevOps, Sprint 1
 
-- [ ] O1.1 Owner chooses the hosting provider, database host, object storage and domain names (record in `RUNBOOK.md` and remove from Open questions)
+- [x] O1.1 Owner decision recorded: Railway project `test-production`, existing PostgreSQL service `Postgres`, Django `FileSystemStorage` on a Railway Volume intended at `/data`, and generated backend/frontend domains; see `docs/RAILWAY.md`. Verify the volume mount in the dashboard before release.
 - [x] O1.2 Local environment: Dockerfile and Docker Compose for the backend and PostgreSQL; `.env.example` for both repos
 - [x] O1.3 Backend CI pipeline (3.3) with a PostgreSQL service — verified backend `.github/workflows/ci.yml` and green manual CI runs
 - [x] O1.4 Frontend CI pipeline (3.3) — verified `.github/workflows/ci.yml` and green manual CI runs
@@ -367,10 +367,10 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [ ] B8.3 Bug fixes from testing
 - [x] B9.1 Performance check (search and product list within about 2 seconds) — backend verified in `tests/test_b9.py`
 - [x] B9.2 Security check of the MVP endpoints — backend contract and permission suites verified
-- [ ] B9.3 Automated backups and a tested restore — local restore verified; automated hosting backups remain blocked by O1.1
+- [ ] B9.3 Automated backups and a tested restore — local restore verified; Railway Trial cannot create hosted backups, and no alternative verified method is approved.
 - [x] B9.4 Fixes from the checks — no backend fix required
-- [ ] B10.1 Production deployment (after the owner's go-ahead)
-- [ ] B10.2 Load real data and create real users
+- [ ] B10.1 Production deployment — owner go-ahead received; blocked by O2.6 until a verified backup is available. No production deploy or migration has run.
+- [ ] B10.2 Load real data and create real users — blocked until B10.1; no production users or business data have been created.
 - [ ] B10.3 Short admin notes
 - [ ] B10.4 MVP release (v1.0.0)
 
@@ -391,18 +391,18 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [x] F9.2 Accessibility check (360 px, 44 px targets, labels on every icon, keyboard-only flows) — verified by `e2e/f9.spec.ts`, component axe tests and Playwright 360 px suites
 - [x] F9.3 List performance check and fixes — verified `e2e/f9.spec.ts`; no fix was required
 - [ ] F10.1 Short user guide and walkthrough (use the `docx` or `pdf` skill) — `docs/USER_GUIDE.md` exists; DOCX/PDF export skill unavailable
-- [ ] F10.2 Checks on the live frontend — blocked by O1.1 staging/production hosting
-- [ ] F10.3 MVP release (v1.0.0) — blocked by staging, owner go-ahead and production release gates
+- [ ] F10.2 Checks on the live frontend — blocked until O2.6 passes and the frontend is deployed.
+- [ ] F10.3 MVP release (v1.0.0) — blocked by the verified-backup gate; owner go-ahead is already recorded.
 
 ### DevOps, Sprint 2
 
-- [ ] O2.1 Production environment created (managed PostgreSQL, object storage, HTTPS, domains, CORS and CSRF settings, secure cookies)
-- [ ] O2.2 Automated daily backups for the database and the image storage
-- [ ] O2.3 Restore test on staging, result recorded in the deployment log
-- [ ] O2.4 Rollback rehearsed on staging, written into `RUNBOOK.md`
-- [ ] O2.5 Monitoring and uptime checks on production
-- [ ] O2.6 Owner go-ahead, verified backup, then production deployment of `v1.0.0` with smoke tests (matches B10.1)
-- [ ] O2.7 Deployment log entry written for `v1.0.0`
+- [ ] O2.1 Railway services and generated domains are identified; verify production variables, reference variables, and the `/data` volume mount before deployment.
+- [ ] O2.2 Automated daily backups for PostgreSQL and the image volume — blocked: Railway Trial cannot create backups; no alternative verified method is approved.
+- [ ] O2.3 Restore test on hosted staging — blocked because no hosted staging service exists.
+- [ ] O2.4 Rollback rehearsed on hosted staging — blocked because no hosted staging service exists.
+- [ ] O2.5 Monitoring and uptime checks on production — blocked until a production deployment is approved and completed.
+- [ ] O2.6 Owner go-ahead received; production deployment remains blocked until a verified database and image-storage backup is available. No migration or deployment has run.
+- [ ] O2.7 Deployment log entry written for `v1.0.0` — deferred until O2.6 passes.
 
 ## SPRINT 3 (Days 11 to 15): Fixes from real use, laptop, parts and accessory specifications, warranty terms, product and variant split, several images and spec sheets. Release: `v1.1.0`.
 
@@ -705,6 +705,7 @@ Branches: `sprint/9-phase2-complete` in both repos. Tag at end: `v2.4.0` on `mai
 | 2026-11-24 | OQ-25 (backend) decided: Warehouse Admin and Branch Admin open the Activity log from a Home tile (home_links), showing only their own location's activity (OQ-5). | Owner |
 | 2026-11-24 | FIX-34 kept: Sentry uses sentry-sdk 3.0.0 `data_collection` (user_info false, stack_frame_variables false, cookies off, http_bodies []) because include_local_variables/send_default_pii do not exist in 3.0.0. | Owner |
 | 2026-11-24 | Approved for the next contract version: /me `all_branches` (true when the user works across all branches, e.g. Super Admin), so the frontend stops inferring it. | Owner |
+| 2026-11-26 | OQ-2/O1.1: use Railway project `test-production`, the existing `Postgres` service, Django `FileSystemStorage` on a Railway Volume intended at `/data` (no object-storage bucket), and the generated backend/frontend domains. Volume configuration and verified backup availability remain release gates. | Owner |
 
 ## DEFERRALS
 
@@ -717,7 +718,7 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | Ref | Question | Raised by | Answer | Answered by |
 |---|---|---|---|---|
 | OQ-1 | Development gate (rule 0.7): has the owner authorised development? | Doc sync 2026-11-18 | Yes, from Sprint 1 | Owner, 2026-11-18 |
-| OQ-2 | Hosting provider, database host, object storage and domain names (O1.1) | DevOps doc | Open | |
+| OQ-2 | Hosting provider, database host, storage and domain names (O1.1) | DevOps doc | Resolved 2026-11-26: Railway `test-production`; existing `Postgres` service via `${{Postgres.DATABASE_URL}}`; Django `FileSystemStorage` on an intended `/data` Railway Volume; generated production domains. Verify the mount before release. | Owner, 2026-11-26 |
 | OQ-3 | Backup and log retention periods | DevOps doc | Decided (owner, 2026-11-23): local zips kept for whole project; DB retention set with hosting | |
 | OQ-4 to OQ-19 | Proposed answers (question wording kept in the backend docs, not copied here) | Decision log | Answered: approved as written. | Owner, 2026-11-23 |
 | OQ-20 | Brands, image limits, Discontinued, dashboard shell | Decision log | Answered: Super Admin and Warehouse Admin can add, rename and deactivate brands (seeded list; endpoints in v0.1.1); image limit 5 MB, JPEG/PNG/WebP; Discontinued is final (no re-activation); dashboard shell fields as in the contract. | Owner, 2026-11-23 |
@@ -796,6 +797,7 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FIX-49 | Activity filters sent a From date after the To date. Apply now blocks it with an error on To date and makes no request. | frontend | n/a (no git during the day) | src/day7-fixes.test.tsx (failed first) | no | not yet |
 | FIX-50 | The low-stock list is cut at 10 rows without saying so. Home now shows "Showing 10 of N" when the count is above the rows. | frontend | n/a (no git during the day) | src/day7-fixes.test.tsx (failed first) | no | not yet |
 | FIX-51 | Activity User and Branch filters list only the first 100 users and branches. Added a `shortcut:` comment (upgrade to a search box when there are more). | frontend | n/a (no git during the day) | n/a (comment only) | no | not yet |
+| FIX-52 | The login throttling message could not read the cross-origin `Retry-After` header, and the keyboard E2E could race the initial render. Model the exposed header and wait for the sign-in form before tabbing. | frontend | sprint/2-mvp-release | e2e/login.spec.ts, e2e/stub.ts | no | not yet |
 
 ## DEPLOYMENT LOG
 

@@ -4,9 +4,9 @@
 
 Open decisions and gaps found across the project documents. Abbreviations (OVR, FE, BE, DEVOPS, DET, SPEC) are listed in `SKILLS.md`, Appendix C. Each gap shows a **recommended answer**; nothing is decided until the owner confirms it and it is recorded in the decision log at the bottom.
 
-Last review: 2026-11-18 (all documents converted to Markdown and cross-checked; owner decisions applied).
+Last review: 2026-11-26 (Railway hosting and volume decision recorded; verified-backup gate remains open).
 
-**All critical gaps are decided and development is authorised (TASKS rule 0.7).** Still open, but not blocking: GAP-H01 hosting choice (needed for O1.1 in Sprint 1), GAP-H07 tax on receipts (before Sprint 6), GAP-M10 backup and log retention (before Sprint 2), and the recommendations in GAP-M07, M08 and M11.
+**All critical gaps are decided and development is authorised (TASKS rule 0.7).** GAP-H01 is resolved. GAP-M10 backup retention and a verified production backup remain open and block O2.2/O2.6. GAP-H07 tax on receipts and the recommendations in GAP-M07, M08 and M11 remain open for their later sprints.
 
 ## Critical gaps (all decided 2026-11-18)
 
@@ -25,7 +25,7 @@ Last review: 2026-11-18 (all documents converted to Markdown and cross-checked; 
 
 | Gap | Issue | Needed by | Recommended answer |
 |---|---|---|---|
-| GAP-H01 | Hosting provider, database host, object storage and domain names are not chosen. | Sprint 1, step O1.1 | Owner decides. |
+| GAP-H01 | ~~Hosting provider, database host, storage and domain names are not chosen.~~ | Sprint 1, step O1.1 | **Decided 2026-11-26:** Railway `test-production`, existing PostgreSQL service `Postgres`, Django `FileSystemStorage` on a Railway Volume intended at `/data`, and generated production domains. Confirm the mount path before release. |
 | GAP-H02 | ~~Super Admin menu~~ | | **Decided 2026-11-18:** Home, Items, Warehouse, Branches, Users. Activity, Sell, Find and Receive are opened from Home. |
 | GAP-H03 | ~~Warranty timing~~ | | **Decided 2026-11-18:** all warranty work moves to Sprint 3 (item field and warranty end date on sales, B14.2, F14.2). The receipt shows it from Sprint 6 (B29.1). Sprint 9 Day 43 keeps inspection and grading only. |
 | GAP-H04 | ~~Several images and spec sheets not scheduled~~ | | **Decided 2026-11-18:** Sprint 3 Day 15 (B15.2, F15.2). |
