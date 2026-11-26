@@ -1,16 +1,20 @@
 import { expect, test } from '@playwright/test';
+import { openNav } from './mock-helpers';
 import { sideways, stubAuth } from './stub';
 
 test('shell loads, has labelled nav, and does not scroll sideways', async ({ page }, info) => {
   await stubAuth(page, { signedIn: true });
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
+  await openNav(page);
   const nav = page.getByRole('navigation', { name: 'Main' });
   for (const label of ['Home', 'Items', 'Warehouse', 'Branches', 'Users']) {
     await expect(nav.getByText(label)).toBeVisible();
   }
   await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
-  await expect(page.getByRole('banner').getByText('SA-0001')).toBeVisible();
+  await expect(page.getByRole('button', { name: /SA-0001/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'No notifications yet' })).toBeVisible();
+  await page.keyboard.press('Escape');
   expect(await sideways(page)).toBeLessThanOrEqual(0);
   await page.screenshot({ path: `test-results/shell-${info.project.name}.png` });
 });
@@ -24,7 +28,7 @@ test('unknown route shows the 404 page', async ({ page }) => {
 test('keyboard focus is visible', async ({ page }) => {
   await stubAuth(page, { signedIn: true });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Log out' }).waitFor();
+  await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
   await page.keyboard.press('Tab');
   const outline = await page.evaluate(() => getComputedStyle(document.activeElement!).outlineStyle);
   expect(outline).not.toBe('none');
@@ -40,6 +44,8 @@ test('a page the user may not open shows the 403 page', async ({ page }) => {
 test('log out returns to the sign-in screen', async ({ page }) => {
   await stubAuth(page, { signedIn: true });
   await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
+  await openNav(page);
   await page.getByRole('button', { name: 'Log out' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
   await page.goto('/items');

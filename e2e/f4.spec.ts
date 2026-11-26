@@ -138,7 +138,7 @@ test('item list: cards, cost from the API, labelled actions, no sideways scroll'
   await expect(page.getByText('Average cost: GHS 900.00')).toBeVisible();
   await expect(page.getByRole('listitem').getByText('Active', { exact: true })).toBeVisible();
   await tall(page.getByRole('link', { name: 'Add an item' }));
-  await tall(page.getByRole('button', { name: 'Search' }));
+  await tall(page.getByRole('button', { name: 'Search', exact: true }));
   await tall(page.getByRole('link', { name: 'HP 250 G9' }));
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });
@@ -215,7 +215,7 @@ test('stock screen: grouped by location, stock words with icons, no sideways scr
   await expect(page.getByRole('heading', { level: 2, name: 'Central Warehouse' })).toBeVisible();
   await expect(page.getByText('Low', { exact: true })).toBeVisible();
   await expect(page.getByText('Out of stock')).toBeVisible();
-  await tall(page.getByRole('button', { name: 'Search' }));
+  await tall(page.getByRole('button', { name: 'Search', exact: true }));
   await tall(page.getByLabel('Location'));
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });

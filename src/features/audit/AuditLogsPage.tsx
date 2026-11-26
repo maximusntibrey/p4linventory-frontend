@@ -145,7 +145,7 @@ export function AuditLogsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Audit Logs"
-        subtitle="Who did what, where and when. Metadata only: no values and no cost."
+        subtitle="Who did what, where and when. Metadata only."
         actions={
           <Button
             variant="secondary"

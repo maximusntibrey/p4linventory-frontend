@@ -157,16 +157,16 @@ test('shortfalls: resolve with a confirm step by keyboard; 360 px, 44 px targets
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });
 
-test('activity: filters and events, no sideways scroll at 360 px', async ({ page }) => {
+test('audit logs: filters and events, no sideways scroll at 360 px', async ({ page }) => {
   await setup(page, ['activity.view', 'branches.view']);
   await page.route('**/api/v1/activity-log/**', (route) =>
     route.fulfill({ json: page1([event(3), event(2), event(1)]) }),
   );
-  await page.goto('/activity');
-  await expect(page.getByRole('heading', { level: 1, name: 'Activity' })).toBeVisible();
+  await page.goto('/audit-logs');
+  await expect(page.getByRole('heading', { level: 1, name: 'Audit Logs' })).toBeVisible();
   await expect(page.getByText('TRF-000003')).toBeVisible();
   await expect(page.getByText('Self-approved')).toBeVisible();
-  for (const l of ['Branch', 'Action', 'From date', 'To date']) {
+  for (const l of ['Action', 'Module', 'From date', 'To date']) {
     const box = await page.getByLabel(l, { exact: true }).boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(44);
   }
@@ -176,9 +176,7 @@ test('activity: filters and events, no sideways scroll at 360 px', async ({ page
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });
 
-test('home: low stock and recent activity lists, no sideways scroll at 360 px', async ({
-  page,
-}) => {
+test('home: low stock list, no audit list, no sideways scroll at 360 px', async ({ page }) => {
   await setup(page, ['dashboard.view', 'activity.view', 'shortfalls.resolve']);
   await page.route('**/api/v1/dashboard/', (route) =>
     route.fulfill({
@@ -207,8 +205,9 @@ test('home: low stock and recent activity lists, no sideways scroll at 360 px', 
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 2, name: 'Low stock' })).toBeVisible();
   await expect(page.getByText('1 to reorder')).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Recent activity' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Shortfalls' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Activity' }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Recent activity' })).toHaveCount(0);
+  const main = page.getByRole('main');
+  await expect(main.getByRole('link', { name: 'Shortfalls' })).toBeVisible();
+  await expect(main.getByRole('link', { name: 'Audit Logs' })).toBeVisible();
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });
