@@ -5,7 +5,7 @@ const css = readFileSync('src/styles/tokens.css', 'utf8');
 
 /** Resolve `--name` to a #rrggbb value, following var() aliases. */
 function colour(name: string): string {
-  const m = css.match(new RegExp(`--${name}:\s*([^;]+);`));
+  const m = css.match(new RegExp(`--${name}:\\s*([^;]+);`));
   if (!m) throw new Error(`token --${name} not found`);
   const v = m[1].replace(/\/\*.*?\*\//g, '').trim();
   const ref = v.match(/^var\(--([\w-]+)\)$/);
