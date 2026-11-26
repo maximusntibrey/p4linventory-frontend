@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 76" role="img" aria-labelledby="t">
+  <title id="t">payless4laptop</title>
+  <!-- PLACEHOLDER compact mark for the collapsed sidebar. Real logo file was not available. -->
+  <rect x="8" y="4" width="64" height="44" rx="6" fill="none" stroke="#1E293B" stroke-width="5"/>
+  <path d="M2 56h76l-6 10H8z" fill="#1E293B"/>
+  <rect x="20" y="16" width="10" height="10" fill="#FF6B00"/>
+  <rect x="34" y="16" width="10" height="10" fill="#FF8C00"/>
+  <rect x="48" y="16" width="10" height="10" fill="#FFA31A"/>
+</svg>

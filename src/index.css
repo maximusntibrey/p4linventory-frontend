@@ -2,34 +2,11 @@
 @import '@fontsource/inter/latin-400.css';
 @import '@fontsource/inter/latin-600.css';
 @import 'tailwindcss';
-
-/* Design tokens (Frontend s2). Accent = orange; green/amber/red are for status only. */
-@theme {
-  --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
-  --font-sans: 'Inter', system-ui, sans-serif;
-
-  --color-accent: #c2410c; /* AA fill, white text: 5.2:1 */
-  --color-accent-hover: #9a3412;
-  --color-accent-tint: #fff7ed;
-  --color-accent-mid: #ea580c; /* borders and focus ring: 3.6:1 on white */
-
-  --color-ink: #111827;
-  --color-muted: #4b5563; /* 7.5:1 on white */
-  --color-line: #d1d5db; /* decorative dividers */
-  --color-control: #6b7280; /* input borders, 4.8:1 */
-  --color-surface: #f3f4f6;
-
-  --color-ok: #166534;
-  --color-ok-bg: #f0fdf4;
-  --color-warn: #92400e;
-  --color-warn-bg: #fffbeb;
-  --color-bad: #b91c1c;
-  --color-bad-bg: #fef2f2;
-}
+@import './styles/tokens.css';
 
 @layer base {
   html {
-    background: #fff;
+    background: var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-sans);
   }
@@ -46,7 +23,7 @@
     margin: 0;
   }
   :focus-visible {
-    outline: 3px solid var(--color-accent-mid);
-    outline-offset: 2px;
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
   }
 }
