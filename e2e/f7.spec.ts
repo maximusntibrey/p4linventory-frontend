@@ -8,6 +8,7 @@ type S = components['schemas'];
 const accra = {
   id: 2,
   kind: 'branch',
+  branch_type: 'branch',
   code: 'ACC',
   name: 'Accra Branch With A Rather Long Name',
   is_active: true,
@@ -15,6 +16,7 @@ const accra = {
 const warehouse = {
   id: 1,
   kind: 'warehouse',
+  branch_type: 'warehouse',
   code: 'WH',
   name: 'Central Warehouse',
   is_active: true,

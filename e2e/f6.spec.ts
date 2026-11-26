@@ -8,6 +8,7 @@ type S = components['schemas'];
 const stockBranch = {
   id: 2,
   kind: 'branch',
+  branch_type: 'branch',
   code: 'ACC',
   name: 'Accra Branch',
   is_active: true,

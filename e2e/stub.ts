@@ -37,9 +37,30 @@ const fsMenu = [
 ] satisfies S['Me']['menu'];
 const t = '2026-11-23T14:05:00Z';
 export const branches = [
-  { id: 1, kind: 'warehouse', code: 'WH', name: 'Central Warehouse', is_active: true },
-  { id: 2, kind: 'branch', code: 'ACC', name: 'Accra Branch', is_active: true },
-  { id: 3, kind: 'branch', code: 'KUM', name: 'Kumasi Branch', is_active: true },
+  {
+    id: 1,
+    kind: 'warehouse',
+    branch_type: 'warehouse',
+    code: 'WH',
+    name: 'Central Warehouse',
+    is_active: true,
+  },
+  {
+    id: 2,
+    kind: 'branch',
+    branch_type: 'branch',
+    code: 'ACC',
+    name: 'Accra Branch',
+    is_active: true,
+  },
+  {
+    id: 3,
+    kind: 'branch',
+    branch_type: 'branch',
+    code: 'KUM',
+    name: 'Kumasi Branch',
+    is_active: true,
+  },
 ] satisfies S['Branch'][];
 
 type Opts = {

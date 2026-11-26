@@ -528,3 +528,81 @@ describe('FIX-30 selling_price needs prices.manage (403 permission_denied)', () 
     expect((await call('POST', '/api/v1/items/', body)).status).toBe(201);
   });
 });
+
+describe('branch type and audit log mocks (contract 0.6.0)', () => {
+  let n = 0;
+  const api = (method: string, path: string, body?: object) =>
+    fetch(new URL(path, globalThis.location.origin), {
+      method,
+      headers: {
+        'X-CSRFToken': 't',
+        'Idempotency-Key': 'bt-' + ++n,
+        'Content-Type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  const signIn = (role: typeof mockSession.role = 'super_admin') => {
+    mockSession.loggedIn = true;
+    mockSession.role = role;
+  };
+
+  it('lists branch_type and filters on it', async () => {
+    signIn();
+    const all = await (await api('GET', '/api/v1/branches/')).json();
+    expect(all.results.every((b: { branch_type: string }) => b.branch_type === b.kind)).toBe(true);
+    const wh = await (await api('GET', '/api/v1/branches/?branch_type=warehouse')).json();
+    expect(wh.results.map((b: { code: string }) => b.code)).toEqual(['WH']);
+  });
+
+  it('creates a branch (default type) and refuses a second warehouse with 400 on branch_type', async () => {
+    signIn();
+    const made = await api('POST', '/api/v1/branches/', { code: 'TMA', name: 'Tema' });
+    expect(made.status).toBe(201);
+    expect((await made.json()).branch_type).toBe('branch');
+    const second = await api('POST', '/api/v1/branches/', {
+      code: 'W2',
+      name: 'Second',
+      branch_type: 'warehouse',
+    });
+    expect(second.status).toBe(400);
+    expect((await second.json()).errors[0]).toEqual({
+      field: 'branch_type',
+      message: 'A warehouse already exists.',
+    });
+  });
+
+  it('refuses a type change on edit and accepts the current type', async () => {
+    signIn();
+    expect((await api('PATCH', '/api/v1/branches/2/', { branch_type: 'warehouse' })).status).toBe(
+      400,
+    );
+    expect((await api('PATCH', '/api/v1/branches/1/', { branch_type: 'branch' })).status).toBe(400);
+    expect((await api('PATCH', '/api/v1/branches/2/', { branch_type: 'branch' })).status).toBe(200);
+  });
+
+  it('activity log: search, target_type, ordering and paging', async () => {
+    signIn();
+    const get = async (q: string) => (await api('GET', `/api/v1/activity-log/${q}`)).json();
+    const first = await get('?page_size=2');
+    expect(first.count).toBe(6);
+    expect(first.results).toHaveLength(2);
+    expect(first.next).not.toBeNull();
+    expect((await get('?search=trf-000001')).count).toBe(1);
+    expect((await get('?target_type=sale')).count).toBe(1);
+    const asc = await get('?ordering=action');
+    expect(asc.results[0].action).toBe('dispatch_created');
+    expect((await api('GET', '/api/v1/activity-log/?ordering=bogus')).status).toBe(400);
+  });
+
+  it('activity export is CSV, honours filters, is scoped, and is 403 for Front Staff', async () => {
+    signIn();
+    const res = await api('GET', '/api/v1/activity-log/export/?target_type=dispatch');
+    expect(res.headers.get('Content-Type')).toContain('text/csv');
+    expect(res.headers.get('X-Export-Truncated')).toBe('false');
+    const lines = (await res.text()).split('\n');
+    expect(lines[0]).toMatch(/^occurred_at,user_login_id/);
+    expect(lines).toHaveLength(4);
+    signIn('front_staff');
+    expect((await api('GET', '/api/v1/activity-log/export/')).status).toBe(403);
+  });
+});
