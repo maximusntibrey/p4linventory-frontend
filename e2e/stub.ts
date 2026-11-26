@@ -134,7 +134,10 @@ export async function stubAuth(page: Page, opts: Opts = {}) {
       if (password === 'locked') {
         return route.fulfill({
           status: 429,
-          headers: { 'Retry-After': '900' },
+          headers: {
+            'Retry-After': '900',
+            'Access-Control-Expose-Headers': 'Retry-After',
+          },
           json: error('rate_limited', 'Too many failed attempts.'),
         });
       }
