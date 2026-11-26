@@ -256,10 +256,10 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 
 - [x] S1.G1 Backend: create `sprint/1-foundations` from `develop`, push
 - [x] S1.G2 Frontend: create `sprint/1-foundations` from `develop`, push
-- [ ] S1.G3 Backend: all Sprint 1 steps merged by pull request into the sprint branch, one commit per step
-- [ ] S1.G4 Frontend: all Sprint 1 steps merged by pull request into the sprint branch, one commit per step
-- [ ] S1.G5 Both repos: sprint branch merged into `develop`, staging integration check passed
-- [ ] S1.G6 Both repos: tag `sprint-1-demo`, docs and `SKILLS.md` updated, everything pushed
+- [x] S1.G3 Backend: all Sprint 1 steps merged by pull request into the sprint branch, one commit per step — per-step commits on the sprint branch, merged by PR #1 (owner decision 2026-11-23: git runs at end of day)
+- [x] S1.G4 Frontend: all Sprint 1 steps merged by pull request into the sprint branch, one commit per step — as S1.G3, frontend PR #1 merged
+- [x] S1.G5 Both repos: sprint branch merged into `develop`, staging integration check passed — PR #1 merged into `develop` in both repos; `develop` deploys to the Railway staging environment, `/health/` ok
+- [x] S1.G6 Both repos: tag `sprint-1-demo`, docs and `SKILLS.md` updated, everything pushed — tag `sprint-1-demo` exists in both repos
 
 ### Sprint 1 standards
 
@@ -329,9 +329,9 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 - [x] O1.3 Backend CI pipeline (3.3) with a PostgreSQL service — verified backend `.github/workflows/ci.yml`; manual run 45771645404 passed on 2026-11-26.
 - [x] O1.4 Frontend CI pipeline (3.3) — verified `.github/workflows/ci.yml`; manual run 45771644995 passed on 2026-11-26.
 - [x] O1.5 Staging-equivalent environment created locally for backend and frontend, secrets excluded from git; real host secret store is a production deployment gate
-- [ ] O1.6 Automatic deploy of `develop` to staging, followed by the smoke tests (3.4)
-- [ ] O1.7 `/health/` endpoint and Sentry connected on staging
-- [ ] O1.8 Branch protection and secret scanning confirmed in both repos (G.6)
+- [x] O1.6 Automatic deploy of `develop` to staging, followed by the smoke tests (3.4) — Railway `staging` environment deploys `develop` automatically (deployment trigger set to `develop`); backend and frontend staging deploys succeeded
+- [ ] O1.7 `/health/` endpoint and Sentry connected on staging — `/health/` returns ok on staging. Sentry is NOT connected: `SENTRY_DSN` is not set (needs the owner's Sentry DSN).
+- [x] O1.8 Branch protection and secret scanning confirmed in both repos (G.6) — branch protection (PR, `check`, admins enforced, no force push) and secret scanning with push protection verified via API on `main` and `develop` in both repos
 
 ## SPRINT 2 (Days 6 to 10): MVP part 2. Goal: sales, find, CSV import, dashboard and activity log, testing, hardening, deployment. Release: MVP (day 10).
 
@@ -339,14 +339,14 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 
 ### Git steps for Sprint 2 _(Applied in the end-of-day cycle (owner, 2026-11-23))_
 
-- [ ] S2.G1 Backend: create `sprint/2-mvp-release` from `develop`, push
-- [ ] S2.G2 Frontend: create `sprint/2-mvp-release` from `develop`, push
-- [ ] S2.G3 Backend: all Sprint 2 steps merged by pull request, one commit per step
-- [ ] S2.G4 Frontend: all Sprint 2 steps merged by pull request, one commit per step
-- [ ] S2.G5 Both repos: sprint branch merged into `develop`, staging integration check passed — staging-equivalent check passed; PR #2 open, but develop branch policy blocked merge with no PR status check reported
-- [ ] S2.G6 Owner go-ahead received, then `develop` merged into `main` in both repos
-- [ ] S2.G7 Tag `v1.0.0` (MVP) in both repos, release notes written, pushed
-- [ ] S2.G8 Docs and `SKILLS.md` updated, everything pushed
+- [x] S2.G1 Backend: create `sprint/2-mvp-release` from `develop`, push — branch `sprint/2-mvp-release` created and pushed
+- [x] S2.G2 Frontend: create `sprint/2-mvp-release` from `develop`, push — branch `sprint/2-mvp-release` created and pushed
+- [x] S2.G3 Backend: all Sprint 2 steps merged by pull request, one commit per step — per-step commits, merged by PR #2 into `develop` (CI green)
+- [x] S2.G4 Frontend: all Sprint 2 steps merged by pull request, one commit per step — as S2.G3, frontend PR #2 merged (CI green)
+- [x] S2.G5 Both repos: sprint branch merged into `develop`, staging integration check passed — PR #2 merged in both repos; Railway staging deployed from `develop`, health, HTTPS, CORS and secure-cookie smoke checks pass (login smoke needs a staging Super Admin)
+- [x] S2.G6 Owner go-ahead received, then `develop` merged into `main` in both repos — `develop` merged into `main` by PR (backend #6, frontend #4); `main` is deployed on Railway
+- [ ] S2.G7 Tag `v1.0.0` (MVP) in both repos, release notes written, pushed — tag `v1.0.0` is held until the verified-backup gate (O2.6) passes.
+- [x] S2.G8 Docs and `SKILLS.md` updated, everything pushed — docs, TASKS and DevOps notes updated and pushed
 
 - [ ] S2.S1 Sprint standards (tests, security check, backup check, docs, 10 to 20% buffer)
 
@@ -398,9 +398,9 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 
 - [x] O2.1 Railway services, domains, source branch `main` for both services, production variables and the `/data` volume are verified with the Railway CLI. Backend `DJANGO_ALLOWED_HOSTS` includes `healthcheck.railway.app`; `PORT=8080`.
 - [ ] O2.2 Automated daily backups for PostgreSQL and the image volume — blocked: Railway Trial cannot create backups; no alternative verified method is approved.
-- [ ] O2.3 Restore test on hosted staging — blocked because no hosted staging service exists.
-- [ ] O2.4 Rollback rehearsed on hosted staging — blocked because no hosted staging service exists.
-- [ ] O2.5 Monitoring and uptime checks on production — blocked until a production deployment is approved and completed.
+- [ ] O2.3 Restore test on hosted staging — hosted staging now exists (Railway `staging`). Local restore test passes. Hosted restore needs temporary DB access: a public TCP proxy on the staging Postgres was declined by the permission policy; needs owner approval or a Railway backup.
+- [ ] O2.4 Rollback rehearsed on hosted staging — hosted staging exists; the rollback rehearsal on it has not been run. Rollback = redeploy the previous deployment in Railway.
+- [ ] O2.5 Monitoring and uptime checks on production — no uptime monitor created; needs an external uptime service or Railway alerting decision.
 - [ ] O2.6 Owner go-ahead received. Fresh deploy from `main` succeeded on 2026-11-26 (backend deployment 069a98a7, frontend 3d338b46). Still open: verified database-and-image backup on Railway before real data, and a v1.0.0 smoke-test sign-off.
 - [ ] O2.7 Deployment log entry written for `v1.0.0` — deferred until O2.6 passes.
 
