@@ -74,18 +74,30 @@ describe('route guards', () => {
 
 describe('menu comes from the me response', () => {
   it.each([
-    ['super_admin', ['Home', 'Items', 'Warehouse', 'Branches', 'Users']],
-    ['warehouse_admin', ['Home', 'Items', 'Receive stock', 'Dispatch', 'Find']],
-    ['branch_admin', ['Home', 'Sell', 'Find', 'Stock', 'Receive']],
-    ['front_staff', ['Sell', 'Find', 'Stock', 'Receive', 'Sales']],
-  ] as [MockRole, string[]][])('%s mock session', async (role, labels) => {
-    const { container } = renderApp(role === 'front_staff' ? '/stock' : '/', { as: role });
-    await screen.findByRole('navigation', { name: 'Main' });
-    expect(menuLabels()).toEqual(labels);
-    expect(menuLabels().length).toBeLessThanOrEqual(5);
-    expect(meByRole[role].menu.map((m) => m.label)).toEqual(labels);
-    expect(await axe(container)).toHaveNoViolations();
-  });
+    [
+      'super_admin',
+      ['Home', 'Items', 'Warehouse', 'Branches', 'Users'],
+      ['Shortfalls', 'Sell', 'Find', 'Receive', 'Sales'],
+      true,
+    ],
+    [
+      'warehouse_admin',
+      ['Home', 'Items', 'Receive stock', 'Dispatch', 'Find'],
+      ['Shortfalls'],
+      true,
+    ],
+    ['branch_admin', ['Home', 'Sell', 'Find', 'Stock', 'Receive'], ['Shortfalls', 'Sales'], true],
+    ['front_staff', ['Sell', 'Find', 'Stock', 'Receive', 'Sales'], [], false],
+  ] as [MockRole, string[], string[], boolean][])(
+    '%s mock session',
+    async (role, menu, more, audit) => {
+      const { container } = renderApp(role === 'front_staff' ? '/stock' : '/', { as: role });
+      await screen.findByRole('navigation', { name: 'Main' });
+      expect(menuLabels()).toEqual([...menu, ...more, ...(audit ? ['Audit Logs'] : [])]);
+      expect(meByRole[role].menu.map((m) => m.label)).toEqual(menu);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
 
   it('draws exactly what the server sends, whatever the role says', async () => {
     server.use(
@@ -93,6 +105,7 @@ describe('menu comes from the me response', () => {
         HttpResponse.json({
           ...meByRole.super_admin,
           menu: [{ key: 'home', label: 'Home', path: '/' }],
+          home_links: [],
         }),
       ),
     );
@@ -101,18 +114,21 @@ describe('menu comes from the me response', () => {
     expect(menuLabels()).toEqual(['Home']);
   });
 
-  it('never draws more than 5 entries', async () => {
+  it('draws every menu entry the server sends (no cap) and labels the groups', async () => {
     const menu = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((k) => ({
       key: k,
       label: `Entry ${k}`,
       path: `/${k}`,
     }));
     server.use(
-      http.get('/api/v1/auth/me/', () => HttpResponse.json({ ...meByRole.super_admin, menu })),
+      http.get('/api/v1/auth/me/', () =>
+        HttpResponse.json({ ...meByRole.super_admin, menu, home_links: [] }),
+      ),
     );
     renderApp('/', { as: 'super_admin' });
     await screen.findByRole('navigation', { name: 'Main' });
-    expect(menuLabels()).toHaveLength(5);
+    expect(menuLabels()).toHaveLength(7);
+    expect(screen.getByText('Menu', { selector: 'p' })).toBeInTheDocument();
   });
 
   it('every nav entry shows its text label next to the icon', async () => {

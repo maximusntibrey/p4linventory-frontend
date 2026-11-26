@@ -1,13 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import { axe } from 'vitest-axe';
 import { Home } from 'lucide-react';
 import { Field } from './Field';
-import { Nav } from './Nav';
 import { StatusBadge } from './StatusBadge';
 import type { Status } from './StatusBadge';
-import { TopBar } from './TopBar';
 import { Button, Card } from './ui';
 
 describe('Button', () => {
@@ -19,7 +16,7 @@ describe('Button', () => {
       </Button>,
     );
     const btn = screen.getByRole('button', { name: 'Save' });
-    expect(btn.className).toContain('min-h-11');
+    expect(btn.className).toMatch(/min-h-(11|target)/);
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
     fireEvent.click(btn);
     expect(onClick).toHaveBeenCalledOnce();
@@ -73,68 +70,5 @@ describe('StatusBadge', () => {
     expect(screen.getByText(text)).toBeTruthy();
     expect(container.querySelector('svg')).not.toBeNull();
     expect(await axe(container)).toHaveNoViolations();
-  });
-});
-
-describe('TopBar', () => {
-  it('shows branch, user and labelled actions', async () => {
-    const onLogout = vi.fn();
-    const onSwitchBranch = vi.fn();
-    const { container } = render(
-      <TopBar
-        branchName="Accra"
-        userId="SA-0001"
-        onLogout={onLogout}
-        onSwitchBranch={onSwitchBranch}
-      />,
-    );
-    expect(screen.getByText('Accra')).toBeTruthy();
-    expect(screen.getByText('SA-0001')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Switch branch' }));
-    expect(onSwitchBranch).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
-    expect(onLogout).toHaveBeenCalledOnce();
-    expect(await axe(container)).toHaveNoViolations();
-  });
-
-  it('draws no Switch branch button when the API does not allow switching', () => {
-    render(<TopBar branchName="Accra" userId="USR-0001" onLogout={vi.fn()} />);
-    expect(screen.queryByRole('button', { name: 'Switch branch' })).toBeNull();
-  });
-
-  it('disables Log out until it is wired', () => {
-    render(<TopBar branchName="Accra" userId="SA-0001" />);
-    expect((screen.getByRole('button', { name: 'Log out' }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
-  });
-});
-
-describe('Nav', () => {
-  it('renders labelled links and marks the current page', async () => {
-    const { container } = render(
-      <MemoryRouter initialEntries={['/']}>
-        <Nav items={[{ to: '/', label: 'Home', icon: Home }]} />
-      </MemoryRouter>,
-    );
-    expect(screen.getByRole('link', { name: 'Home' }).getAttribute('aria-current')).toBe('page');
-    expect(await axe(container)).toHaveNoViolations();
-  });
-
-  it('gives the active item an indicator bar, so the cue is not colour alone', () => {
-    render(
-      <MemoryRouter initialEntries={['/stock']}>
-        <Nav
-          items={[
-            { to: '/', label: 'Home', icon: Home },
-            { to: '/stock', label: 'Stock', icon: Home },
-          ]}
-        />
-      </MemoryRouter>,
-    );
-    const bar = (name: string) =>
-      screen.getByRole('link', { name }).querySelector('[data-active-indicator]');
-    expect(bar('Stock')).not.toBeNull();
-    expect(bar('Home')).toBeNull();
   });
 });

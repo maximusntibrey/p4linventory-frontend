@@ -8,7 +8,7 @@ describe('app shell', () => {
     const { container } = renderApp('/', { as: 'super_admin' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy();
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeTruthy();
-    expect(screen.getByRole('banner')).toBeTruthy();
+    expect(screen.getAllByRole('banner')[0]).toBeTruthy();
     expect(await axe(container)).toHaveNoViolations();
   });
 

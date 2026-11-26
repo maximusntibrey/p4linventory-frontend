@@ -33,8 +33,8 @@ describe('waiting at a branch (F5.3, F5.4)', () => {
     // To Kumasi, and one already received: neither is waiting at Accra.
     expect(screen.queryByText('TRF-000002')).toBeNull();
     expect(screen.queryByText('TRF-000003')).toBeNull();
-    expect(screen.getByRole('link', { name: 'Check delivery TRF-000001' }).className).toContain(
-      'min-h-11',
+    expect(screen.getByRole('link', { name: 'Check delivery TRF-000001' }).className).toMatch(
+      /min-h-(11|target)/,
     );
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -76,8 +76,8 @@ describe('receiving a delivery (F5.3)', () => {
     expect(value('Received: HP 250 G9')).toBe('2');
     expect(value('Received: Dell 65W charger')).toBe('5');
     expect(screen.getByText('Sent: 5')).toBeTruthy();
-    expect((screen.getByLabelText('Received: HP 250 G9') as HTMLInputElement).className).toContain(
-      'min-h-11',
+    expect((screen.getByLabelText('Received: HP 250 G9') as HTMLInputElement).className).toMatch(
+      /min-h-(11|target)/,
     );
     expect(screen.queryByLabelText('Note about the shortfall')).toBeNull();
     expect(await axe(container)).toHaveNoViolations();

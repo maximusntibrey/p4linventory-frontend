@@ -46,7 +46,7 @@ describe('Button', () => {
   });
   it('has a 44 px touch target class', () => {
     render(<Button>Go</Button>);
-    expect(screen.getByRole('button').className).toContain('min-h-11');
+    expect(screen.getByRole('button').className).toMatch(/min-h-(11|target)/);
   });
 });
 

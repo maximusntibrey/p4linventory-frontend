@@ -525,7 +525,7 @@ describe('item picture', () => {
     await h1('Dell 65W charger');
     const input = screen.getByLabelText('Add a picture') as HTMLInputElement;
     expect(input.tabIndex).toBeGreaterThanOrEqual(0);
-    expect(input.className).toContain('min-h-11');
+    expect(input.className).toMatch(/min-h-(11|target)/);
   });
 });
 

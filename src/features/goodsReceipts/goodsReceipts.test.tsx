@@ -28,8 +28,12 @@ describe('receive stock screen (F5.1)', () => {
   it('shows the form with labelled, 44 px controls and no axe violations', async () => {
     const { container } = renderApp('/goods-receipts', { as: 'warehouse_admin' });
     await h1();
-    expect((screen.getByLabelText('Supplier') as HTMLInputElement).className).toContain('min-h-11');
-    expect(screen.getByRole('button', { name: 'Review receipt' }).className).toContain('min-h-11');
+    expect((screen.getByLabelText('Supplier') as HTMLInputElement).className).toMatch(
+      /min-h-(11|target)/,
+    );
+    expect(screen.getByRole('button', { name: 'Review receipt' }).className).toMatch(
+      /min-h-(11|target)/,
+    );
     expect(await axe(container)).toHaveNoViolations();
   });
 

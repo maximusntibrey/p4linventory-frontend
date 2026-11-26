@@ -50,7 +50,9 @@ describe('dispatch status list (F5.2)', () => {
   it('offers New dispatch only with dispatches.create (route is guarded by it as well)', async () => {
     renderApp('/dispatches', { as: 'warehouse_admin' });
     await h1('Dispatch');
-    expect(screen.getByRole('link', { name: 'New dispatch' }).className).toContain('min-h-11');
+    expect(screen.getByRole('link', { name: 'New dispatch' }).className).toMatch(
+      /min-h-(11|target)/,
+    );
   });
 
   it('is not offered to Front Staff', async () => {
@@ -99,8 +101,8 @@ describe('new dispatch (F5.2)', () => {
     ).toBeTruthy();
     const row = mockStore.stock.find((r) => r.location_id === 1 && r.item_id === 1)!;
     expect([row.reserved, row.available]).toEqual([6, 6]);
-    expect(screen.getByRole('link', { name: 'Back to dispatches' }).className).toContain(
-      'min-h-11',
+    expect(screen.getByRole('link', { name: 'Back to dispatches' }).className).toMatch(
+      /min-h-(11|target)/,
     );
   });
 
