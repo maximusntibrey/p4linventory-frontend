@@ -4,6 +4,7 @@ import * as matchers from 'vitest-axe/matchers';
 import { server } from '../mocks/server';
 import { mockSession, resetMockStore } from '../mocks/handlers';
 import { resetCsrfCache } from '../api/client';
+import './domMatchers';
 
 expect.extend(matchers);
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
