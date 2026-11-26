@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Payless4Laptops Inventory API
-  version: 0.5.2
+  version: 0.6.0
   description: |
     Contract-first API for Sprint 1 (B1.3). Published before the code; from B2 onward the
     drf-spectacular generated schema must match this file. Changes need owner approval.
@@ -244,6 +244,7 @@ paths:
         - {$ref: '#/components/parameters/Page'}
         - {$ref: '#/components/parameters/PageSize'}
         - {name: kind, in: query, schema: {type: string, enum: [branch, warehouse]}}
+        - {name: branch_type, in: query, description: 'Same filter as `kind`; when both are given, both apply.', schema: {type: string, enum: [branch, warehouse]}}
         - {name: is_active, in: query, schema: {type: boolean}}
         - {$ref: '#/components/parameters/BranchFilter'}
       responses:
@@ -264,7 +265,9 @@ paths:
       tags: [branches]
       operationId: branchesCreate
       summary: Create a branch
-      description: Always creates `kind` = branch. There is exactly one warehouse, created by seed.
+      description: |
+        `branch_type` is optional and defaults to `branch`. There is exactly one warehouse, created by seed: sending
+        `branch_type` = `warehouse` while one exists is 400 on `branch_type` ("A warehouse already exists.").
       x-permission: SA (table row 11)
       parameters:
         - {$ref: '#/components/parameters/IdempotencyKey'}
@@ -1284,11 +1287,14 @@ paths:
     get:
       tags: [activity]
       operationId: activityLogList
-      summary: Activity log (audit events), newest first
+      summary: Activity log (audit events), newest first by default
       description: |
         SA sees every event; WA those of the warehouse; BA those of its own branch (a different `branch_id` is 403
         `wrong_branch`). FS gets 403. `date_from` and `date_to` are calendar days in Africa/Accra, both inclusive; `date_from` after `date_to` is 400 on `date_to`.
-        Metadata only: no before/after values and never cost.
+        `target_type` is the module / entity type (exact match). `search` is a case-insensitive contains match on
+        action, target type, target ref and user login id only (never on stored values). `ordering` is one of
+        `timestamp`, `user`, `action`, each with an optional leading `-` for descending; default `-timestamp`.
+        Page size is at most 100. Metadata only: no before/after values and never cost.
       x-permission: SA all, WA warehouse, BA own branch (table row 41)
       parameters:
         - {$ref: '#/components/parameters/Page'}
@@ -1296,6 +1302,9 @@ paths:
         - {name: user_id, in: query, schema: {type: integer, minimum: 1}}
         - {name: branch_id, in: query, schema: {type: integer, minimum: 1}}
         - {name: action, in: query, schema: {type: string, maxLength: 60}}
+        - {name: target_type, in: query, schema: {type: string, maxLength: 40}}
+        - {name: search, in: query, schema: {type: string, maxLength: 100}}
+        - {name: ordering, in: query, schema: {type: string, enum: [timestamp, -timestamp, user, -user, action, -action]}}
         - {name: date_from, in: query, schema: {type: string, format: date}}
         - {name: date_to, in: query, schema: {type: string, format: date}}
       responses:
@@ -1311,6 +1320,39 @@ paths:
                       results:
                         type: array
                         items: {$ref: '#/components/schemas/ActivityEvent'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
+  /api/v1/activity-log/export/:
+    get:
+      tags: [activity]
+      operationId: activityLogExport
+      summary: Export the activity log as CSV
+      description: |
+        Same filters, ordering, scope and permissions as the list (`page` and `page_size` are ignored). At most 5000
+        rows; when more match, the first 5000 are returned and the header `X-Export-Truncated: true` is set
+        (narrow the filters). Columns: occurred_at (ISO 8601, Africa/Accra), user_login_id, user_role, branch_name,
+        action, target_type, target_ref, is_self_approval. Cells starting with `=`, `+`, `-`, `@`, tab or CR are
+        prefixed with an apostrophe. Metadata only, never cost. Exporting writes no audit row.
+      x-permission: SA all, WA warehouse, BA own branch (table row 41)
+      parameters:
+        - {name: user_id, in: query, schema: {type: integer, minimum: 1}}
+        - {name: branch_id, in: query, schema: {type: integer, minimum: 1}}
+        - {name: action, in: query, schema: {type: string, maxLength: 60}}
+        - {name: target_type, in: query, schema: {type: string, maxLength: 40}}
+        - {name: search, in: query, schema: {type: string, maxLength: 100}}
+        - {name: ordering, in: query, schema: {type: string, enum: [timestamp, -timestamp, user, -user, action, -action]}}
+        - {name: date_from, in: query, schema: {type: string, format: date}}
+        - {name: date_to, in: query, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: CSV file.
+          headers:
+            X-Export-Truncated: {schema: {type: string, enum: ['true', 'false']}}
+          content:
+            text/csv:
+              schema: {type: string}
         '400': {$ref: '#/components/responses/ValidationError'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -1691,10 +1733,11 @@ components:
       enum: [in_transit, completed, partially_received, rejected]
     Branch:
       type: object
-      required: [id, kind, code, name, is_active]
+      required: [id, kind, branch_type, code, name, is_active]
       properties:
         id: {type: integer}
-        kind: {type: string, enum: [branch, warehouse]}
+        kind: {type: string, enum: [branch, warehouse], description: Kept for compatibility; same value as `branch_type`.}
+        branch_type: {type: string, enum: [branch, warehouse], description: "branch = Normal Branch, warehouse = Warehouse."}
         code: {type: string}
         name: {type: string}
         is_active: {type: boolean}
@@ -1702,10 +1745,14 @@ components:
         updated_at: {type: string, format: date-time}
     BranchWrite:
       type: object
-      description: Both fields required on create. Code and name are unique.
+      description: |
+        Code and name required on create and unique. `branch_type` optional on create (default `branch`).
+        On edit a type change is refused with 400 on `branch_type`: a second warehouse cannot exist and the
+        warehouse cannot become a branch; sending the current type is accepted.
       properties:
         code: {type: string, maxLength: 20}
         name: {type: string, maxLength: 100}
+        branch_type: {type: string, enum: [branch, warehouse]}
     User:
       type: object
       required: [id, login_id, full_name, status, roles, permanent_location_id, must_change_password, permissions]

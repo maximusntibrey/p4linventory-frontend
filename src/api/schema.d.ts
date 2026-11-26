@@ -157,7 +157,8 @@ export interface paths {
         put?: never;
         /**
          * Create a branch
-         * @description Always creates `kind` = branch. There is exactly one warehouse, created by seed.
+         * @description `branch_type` is optional and defaults to `branch`. There is exactly one warehouse, created by seed: sending
+         *     `branch_type` = `warehouse` while one exists is 400 on `branch_type` ("A warehouse already exists.").
          */
         post: operations["branchesCreate"];
         delete?: never;
@@ -848,12 +849,39 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Activity log (audit events), newest first
+         * Activity log (audit events), newest first by default
          * @description SA sees every event; WA those of the warehouse; BA those of its own branch (a different `branch_id` is 403
          *     `wrong_branch`). FS gets 403. `date_from` and `date_to` are calendar days in Africa/Accra, both inclusive; `date_from` after `date_to` is 400 on `date_to`.
-         *     Metadata only: no before/after values and never cost.
+         *     `target_type` is the module / entity type (exact match). `search` is a case-insensitive contains match on
+         *     action, target type, target ref and user login id only (never on stored values). `ordering` is one of
+         *     `timestamp`, `user`, `action`, each with an optional leading `-` for descending; default `-timestamp`.
+         *     Page size is at most 100. Metadata only: no before/after values and never cost.
          */
         get: operations["activityLogList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activity-log/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the activity log as CSV
+         * @description Same filters, ordering, scope and permissions as the list (`page` and `page_size` are ignored). At most 5000
+         *     rows; when more match, the first 5000 are returned and the header `X-Export-Truncated: true` is set
+         *     (narrow the filters). Columns: occurred_at (ISO 8601, Africa/Accra), user_login_id, user_role, branch_name,
+         *     action, target_type, target_ref, is_self_approval. Cells starting with `=`, `+`, `-`, `@`, tab or CR are
+         *     prefixed with an apostrophe. Metadata only, never cost. Exporting writes no audit row.
+         */
+        get: operations["activityLogExport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1072,8 +1100,16 @@ export interface components {
         DispatchStatus: "in_transit" | "completed" | "partially_received" | "rejected";
         Branch: {
             id: number;
-            /** @enum {string} */
+            /**
+             * @description Kept for compatibility; same value as `branch_type`.
+             * @enum {string}
+             */
             kind: "branch" | "warehouse";
+            /**
+             * @description branch = Normal Branch, warehouse = Warehouse.
+             * @enum {string}
+             */
+            branch_type: "branch" | "warehouse";
             code: string;
             name: string;
             is_active: boolean;
@@ -1082,10 +1118,16 @@ export interface components {
             /** Format: date-time */
             updated_at?: string;
         };
-        /** @description Both fields required on create. Code and name are unique. */
+        /**
+         * @description Code and name required on create and unique. `branch_type` optional on create (default `branch`).
+         *     On edit a type change is refused with 400 on `branch_type`: a second warehouse cannot exist and the
+         *     warehouse cannot become a branch; sending the current type is accepted.
+         */
         BranchWrite: {
             code?: string;
             name?: string;
+            /** @enum {string} */
+            branch_type?: "branch" | "warehouse";
         };
         User: {
             id: number;
@@ -1891,6 +1933,8 @@ export interface operations {
                 page?: components["parameters"]["Page"];
                 page_size?: components["parameters"]["PageSize"];
                 kind?: "branch" | "warehouse";
+                /** @description Same filter as `kind`; when both are given, both apply. */
+                branch_type?: "branch" | "warehouse";
                 is_active?: boolean;
                 /**
                  * @description Optional view filter for the Super Admin, who works across all branches and sees all of them by
@@ -3164,6 +3208,9 @@ export interface operations {
                 user_id?: number;
                 branch_id?: number;
                 action?: string;
+                target_type?: string;
+                search?: string;
+                ordering?: "timestamp" | "-timestamp" | "user" | "-user" | "action" | "-action";
                 date_from?: string;
                 date_to?: string;
             };
@@ -3182,6 +3229,39 @@ export interface operations {
                     "application/json": components["schemas"]["Page"] & {
                         results?: components["schemas"]["ActivityEvent"][];
                     };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    activityLogExport: {
+        parameters: {
+            query?: {
+                user_id?: number;
+                branch_id?: number;
+                action?: string;
+                target_type?: string;
+                search?: string;
+                ordering?: "timestamp" | "-timestamp" | "user" | "-user" | "action" | "-action";
+                date_from?: string;
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV file. */
+            200: {
+                headers: {
+                    "X-Export-Truncated"?: "true" | "false";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
                 };
             };
             400: components["responses"]["ValidationError"];
