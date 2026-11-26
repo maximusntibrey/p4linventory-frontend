@@ -22,7 +22,8 @@ export type Status =
   | 'in-transit'
   | 'completed'
   | 'partial'
-  | 'rejected';
+  | 'rejected'
+  | 'cancelled';
 
 const config: Record<Status, { label: string; icon: LucideIcon; cls: string }> = {
   'in-stock': { label: 'In stock', icon: CheckCircle2, cls: 'bg-ok-bg text-ok border-ok' },
@@ -41,6 +42,7 @@ const config: Record<Status, { label: string; icon: LucideIcon; cls: string }> =
     cls: 'bg-warn-bg text-warn border-warn',
   },
   rejected: { label: 'Rejected', icon: XCircle, cls: 'bg-bad-bg text-bad border-bad' },
+  cancelled: { label: 'Cancelled', icon: XCircle, cls: 'bg-bad-bg text-bad border-bad' },
 };
 
 /** Status is always icon + text, never colour alone. `label` overrides the default wording. */

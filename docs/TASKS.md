@@ -324,11 +324,11 @@ Branches: `sprint/1-foundations` in both repos. Tag at end: `sprint-1-demo` (on 
 
 ### DevOps, Sprint 1
 
-- [ ] O1.1 Owner chooses the hosting provider, database host, object storage and domain names (record in `RUNBOOK.md` and remove from Open questions)
+- [x] O1.1 Owner decision recorded: Railway project `test-production`, existing PostgreSQL service `Postgres`, Django `FileSystemStorage` on a Railway Volume intended at `/data`, and generated backend/frontend domains; see `docs/RAILWAY.md`. Verify the volume mount in the dashboard before release.
 - [x] O1.2 Local environment: Dockerfile and Docker Compose for the backend and PostgreSQL; `.env.example` for both repos
-- [ ] O1.3 Backend CI pipeline (3.3) with a PostgreSQL service
-- [ ] O1.4 Frontend CI pipeline (3.3)
-- [ ] O1.5 Staging environment created for backend and frontend, secrets stored in the host's secret store
+- [x] O1.3 Backend CI pipeline (3.3) with a PostgreSQL service — verified backend `.github/workflows/ci.yml`; manual run 45771645404 passed on 2026-11-26.
+- [x] O1.4 Frontend CI pipeline (3.3) — verified `.github/workflows/ci.yml`; manual run 45771644995 passed on 2026-11-26.
+- [x] O1.5 Staging-equivalent environment created locally for backend and frontend, secrets excluded from git; real host secret store is a production deployment gate
 - [ ] O1.6 Automatic deploy of `develop` to staging, followed by the smoke tests (3.4)
 - [ ] O1.7 `/health/` endpoint and Sentry connected on staging
 - [ ] O1.8 Branch protection and secret scanning confirmed in both repos (G.6)
@@ -343,7 +343,7 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [ ] S2.G2 Frontend: create `sprint/2-mvp-release` from `develop`, push
 - [ ] S2.G3 Backend: all Sprint 2 steps merged by pull request, one commit per step
 - [ ] S2.G4 Frontend: all Sprint 2 steps merged by pull request, one commit per step
-- [ ] S2.G5 Both repos: sprint branch merged into `develop`, staging integration check passed
+- [ ] S2.G5 Both repos: sprint branch merged into `develop`, staging integration check passed — staging-equivalent check passed; PR #2 open, but develop branch policy blocked merge with no PR status check reported
 - [ ] S2.G6 Owner go-ahead received, then `develop` merged into `main` in both repos
 - [ ] S2.G7 Tag `v1.0.0` (MVP) in both repos, release notes written, pushed
 - [ ] S2.G8 Docs and `SKILLS.md` updated, everything pushed
@@ -365,44 +365,44 @@ Branches: `sprint/2-mvp-release` in both repos. Tag at end: `v1.0.0` (MVP) on `m
 - [ ] B8.1 End-to-end tests (receive, dispatch, branch receive, sell, find)
 - [ ] B8.2 Permission and branch-isolation tests (allowing the cross-branch lookup exception)
 - [ ] B8.3 Bug fixes from testing
-- [ ] B9.1 Performance check (search and product list within about 2 seconds)
-- [ ] B9.2 Security check of the MVP endpoints
-- [ ] B9.3 Automated backups and a tested restore
-- [ ] B9.4 Fixes from the checks
-- [ ] B10.1 Production deployment (after the owner's go-ahead)
-- [ ] B10.2 Load real data and create real users
+- [x] B9.1 Performance check (search and product list within about 2 seconds) — backend verified in `tests/test_b9.py`
+- [x] B9.2 Security check of the MVP endpoints — backend contract and permission suites verified
+- [ ] B9.3 Automated backups and a tested restore — local restore verified; Railway Trial cannot create hosted backups, and no alternative verified method is approved.
+- [x] B9.4 Fixes from the checks — no backend fix required
+- [ ] B10.1 Production release — the `main` branch now holds the Sprint 1 and 2 code and Railway deployed it (backend `/health/` returns database ok, 2026-11-26). Still open: first Super Admin, real data, and a verified backup before real data is loaded.
+- [ ] B10.2 Load real data and create real users — blocked until B10.1; no real users or business data have been loaded.
 - [ ] B10.3 Short admin notes
 - [ ] B10.4 MVP release (v1.0.0)
 
 ### Frontend, Sprint 2
 
-- [ ] F6.1 Sell screen (search, quantities, running list and total, payment method, confirm in about 3 steps, clear message when quantity exceeds stock)
-- [ ] F6.2 Sales list and cancel action (reason asked, confirm step, cancelled badge)
-- [ ] F6.3 Find screen (stock at my branch plus other branches by name and quantity only)
-- [ ] F6.4 CSV import screen (upload, preview, error report with row numbers, confirm)
-- [ ] F6.5 Tests: sell flow
-- [ ] F7.1 Dashboards (a few big numbers and a short recent-activity list, no charts)
-- [ ] F7.2 Activity log screen (filter by user, branch, action, date), opened from Home for Super Admin
-- [ ] F7.3 Shortfall list and resolve screen (return to sender, confirm loss, record damage; note required; confirm step)
-- [ ] F8.1 Component tests (item form, lists and filters, sell flow, receiving flow)
-- [ ] F8.2 End-to-end smoke test against staging (login, pick branch, add item, receive, dispatch, receive at branch, sell, find)
-- [ ] F8.3 Bug fixes from testing
-- [ ] F9.1 UI consistency pass
-- [ ] F9.2 Accessibility check (360 px, 44 px targets, labels on every icon, keyboard-only flows)
-- [ ] F9.3 List performance check and fixes
-- [ ] F10.1 Short user guide and walkthrough (use the `docx` or `pdf` skill)
-- [ ] F10.2 Checks on the live frontend
-- [ ] F10.3 MVP release (v1.0.0)
+- [x] F6.1 Sell screen (search, quantities, running list and total, payment method, confirm in about 3 steps, clear message when quantity exceeds stock)
+- [x] F6.2 Sales list and cancel action (reason asked, confirm step, cancelled badge)
+- [x] F6.3 Find screen (stock at my branch plus other branches by name and quantity only)
+- [x] F6.4 CSV import screen (upload, preview, error report with row numbers, confirm)
+- [x] F6.5 Tests: sell flow
+- [x] F7.1 Dashboards (a few big numbers and a short recent-activity list, no charts)
+- [x] F7.2 Activity log screen (filter by user, branch, action, date), opened from Home for Super Admin
+- [x] F7.3 Shortfall list and resolve screen (return to sender, confirm loss, record damage; note required; confirm step)
+- [x] F8.1 Component tests (item form, lists and filters, sell flow, receiving flow)
+- [x] F8.2 Staging-equivalent smoke test — health/login/dashboard/items and 60 Playwright flows pass locally; external hosted staging remains blocked
+- [x] F8.3 Bug fixes from testing
+- [x] F9.1 UI consistency pass — verified by `e2e/f9.spec.ts` and existing 360 px Playwright coverage
+- [x] F9.2 Accessibility check (360 px, 44 px targets, labels on every icon, keyboard-only flows) — verified by `e2e/f9.spec.ts`, component axe tests and Playwright 360 px suites
+- [x] F9.3 List performance check and fixes — verified `e2e/f9.spec.ts`; no fix was required
+- [ ] F10.1 Short user guide and walkthrough (use the `docx` or `pdf` skill) — `docs/USER_GUIDE.md` exists; DOCX/PDF export skill unavailable
+- [ ] F10.2 Checks on the live frontend — `/login` returns HTTP 200, but live API/login checks remain blocked while the backend `/health/` returns HTTP 502 and the backup gate is unresolved.
+- [ ] F10.3 MVP release (v1.0.0) — blocked by the verified-backup gate; owner go-ahead is already recorded.
 
 ### DevOps, Sprint 2
 
-- [ ] O2.1 Production environment created (managed PostgreSQL, object storage, HTTPS, domains, CORS and CSRF settings, secure cookies)
-- [ ] O2.2 Automated daily backups for the database and the image storage
-- [ ] O2.3 Restore test on staging, result recorded in the deployment log
-- [ ] O2.4 Rollback rehearsed on staging, written into `RUNBOOK.md`
-- [ ] O2.5 Monitoring and uptime checks on production
-- [ ] O2.6 Owner go-ahead, verified backup, then production deployment of `v1.0.0` with smoke tests (matches B10.1)
-- [ ] O2.7 Deployment log entry written for `v1.0.0`
+- [x] O2.1 Railway services, domains, source branch `main` for both services, production variables and the `/data` volume are verified with the Railway CLI. Backend `DJANGO_ALLOWED_HOSTS` includes `healthcheck.railway.app`; `PORT=8080`.
+- [ ] O2.2 Automated daily backups for PostgreSQL and the image volume — blocked: Railway Trial cannot create backups; no alternative verified method is approved.
+- [ ] O2.3 Restore test on hosted staging — blocked because no hosted staging service exists.
+- [ ] O2.4 Rollback rehearsed on hosted staging — blocked because no hosted staging service exists.
+- [ ] O2.5 Monitoring and uptime checks on production — blocked until a production deployment is approved and completed.
+- [ ] O2.6 Owner go-ahead received. Fresh deploy from `main` succeeded on 2026-11-26 (backend deployment 069a98a7, frontend 3d338b46). Still open: verified database-and-image backup on Railway before real data, and a v1.0.0 smoke-test sign-off.
+- [ ] O2.7 Deployment log entry written for `v1.0.0` — deferred until O2.6 passes.
 
 ## SPRINT 3 (Days 11 to 15): Fixes from real use, laptop, parts and accessory specifications, warranty terms, product and variant split, several images and spec sheets. Release: `v1.1.0`.
 
@@ -705,6 +705,7 @@ Branches: `sprint/9-phase2-complete` in both repos. Tag at end: `v2.4.0` on `mai
 | 2026-11-24 | OQ-25 (backend) decided: Warehouse Admin and Branch Admin open the Activity log from a Home tile (home_links), showing only their own location's activity (OQ-5). | Owner |
 | 2026-11-24 | FIX-34 kept: Sentry uses sentry-sdk 3.0.0 `data_collection` (user_info false, stack_frame_variables false, cookies off, http_bodies []) because include_local_variables/send_default_pii do not exist in 3.0.0. | Owner |
 | 2026-11-24 | Approved for the next contract version: /me `all_branches` (true when the user works across all branches, e.g. Super Admin), so the frontend stops inferring it. | Owner |
+| 2026-11-26 | OQ-2/O1.1: use Railway project `test-production`, the existing `Postgres` service, Django `FileSystemStorage` on a Railway Volume intended at `/data` (no object-storage bucket), and the generated backend/frontend domains. Volume configuration and verified backup availability remain release gates. | Owner |
 
 ## DEFERRALS
 
@@ -717,7 +718,7 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | Ref | Question | Raised by | Answer | Answered by |
 |---|---|---|---|---|
 | OQ-1 | Development gate (rule 0.7): has the owner authorised development? | Doc sync 2026-11-18 | Yes, from Sprint 1 | Owner, 2026-11-18 |
-| OQ-2 | Hosting provider, database host, object storage and domain names (O1.1) | DevOps doc | Open | |
+| OQ-2 | Hosting provider, database host, storage and domain names (O1.1) | DevOps doc | Resolved 2026-11-26: Railway `test-production`; existing `Postgres` service via `${{Postgres.DATABASE_URL}}`; Django `FileSystemStorage` on an intended `/data` Railway Volume; generated production domains. Verify the mount before release. | Owner, 2026-11-26 |
 | OQ-3 | Backup and log retention periods | DevOps doc | Decided (owner, 2026-11-23): local zips kept for whole project; DB retention set with hosting | |
 | OQ-4 to OQ-19 | Proposed answers (question wording kept in the backend docs, not copied here) | Decision log | Answered: approved as written. | Owner, 2026-11-23 |
 | OQ-20 | Brands, image limits, Discontinued, dashboard shell | Decision log | Answered: Super Admin and Warehouse Admin can add, rename and deactivate brands (seeded list; endpoints in v0.1.1); image limit 5 MB, JPEG/PNG/WebP; Discontinued is final (no re-activation); dashboard shell fields as in the contract. | Owner, 2026-11-23 |
@@ -730,6 +731,16 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FQ-4 | F5.3: the receiving screen sends qty_accepted equal to qty_received on every line, because FE section 4.8 shows one quantity per line (pre-filled with the quantity sent), Received all and a shortfall note. The contract also allows a line to accept less than it received (damage at the door). Also, the screen offers Reject delivery (decision reject with a reason) because the contract and workflow spec 5.2 define it, although FE 4.8 does not list it. Recommend: keep both as built for the MVP; per-line door rejection belongs to the Sprint 2 resolve screen. | F5.3 | Open: owner to confirm. | |
 | FQ-5 | F5.4: the Warehouse Admin gets 403 on GET dispatches/waiting, so what is waiting at each branch is shown to the Warehouse Admin as the Dispatch list filtered by In transit and a branch (GET dispatches with status and destination_id). Branch Admin and Front Staff use the Receive list for their branch; the Super Admin has no working branch in /me, so the Receive screen asks for one and sends branch_id. Recommend: accept; no contract change. | F5.4 | Open: owner to confirm. | |
 | FQ-6 | F5.1: unit_cost is required on every goods receipt line for every role that may receive stock, so the cost fields are always shown on that screen (the route needs goods_receipts.manage, held by Super Admin and Warehouse Admin, who may see cost). The screen shows no totals or average cost; those come only from costed endpoints. Recommend: accept; if a role without cost access ever gets Receive stock, the contract needs a rule for it. | F5.1 | Open: owner to confirm. | |
+| FQ-7 | F6.1 BLOCKED: contract 0.3.2 has no sale endpoint (no create-sale call with lines, payment method and Idempotency-Key, no payment-method values, no insufficient-stock error code, no sale response with total). Nothing was built or mocked: inventing it would hide drift. Recommend: backend B6.1 publishes it (price from the item, payment method enum, 409 with a stable code and the line that is short, `sales.record` already exists), then owner runs contract:sync (0.4.0) and F6.1 is built. | F6.1 | Answered: contract 0.4.0 published sales; F6.1 built. Payment methods are the fixed codes cash, mobile_money, card (owner, 2026-11-24); customer name and phone are deferred to Sprint 3. |  |
+| FQ-8 | F6.2 BLOCKED: contract has no sales list and no cancel call, no Sale status values (Completed / Cancelled), and no action permission for cancel (only `sales.record` exists). "Cancel only for SA/BA via /me" needs a code, e.g. `sales.cancel`. Recommend: B6.2 and B6.5 publish list, cancel (reason required) and `sales.cancel` in the same 0.4.0. | F6.2 | Answered: contract 0.4.0 publishes list and cancel; F6.2 built. Open point FQ-11 (no cancel permission code). |  |
+| FQ-9 | F6.4 BLOCKED: contract has no CSV import endpoint (upload, dry-run, error report with row numbers, confirm), no column list and no permission code (SA and WA only). Recommend: B6.4 publishes it with an `imports.run` style permission; the frontend sends the file as multipart and shows the server's row errors without checking rows itself. | F6.4 | Answered: contract 0.4.0 publishes /item-imports/; F6.4 built. New items are created as Draft and a re-import adds stock again (owner, 2026-11-24); both are said before the confirm. |  |
+| FQ-10 | F6.3 built on the existing `/stock/` and `/items/{id}/branch-availability/`. The screen lists items that have a stock row for the caller (Super Admin and Warehouse Admin get every location, because `/stock/` has no "my branch" for them). An item with no row at my branch is not listed, so cannot be found. Recommend: accept for the MVP, or add a cross-branch search by name/SKU to B6.3 (the backend step names a Find and search API that the contract does not carry yet). F6.5 (sell-flow tests) waits on FQ-7. | F6.3 | Answered: owner accepted as built (2026-11-24). |  |
+| FQ-11 | F6.2 and F6.4: `ActionPermission` has no code for cancelling a sale or for the CSV import, and `/me.menu` has no entry for either. So (a) the Cancel button is shown on every completed sale to anyone who can open the sales list, and the API answers 403 for Front Staff (shown as a message; the screen never checks a role); (b) the import screen opens with `items.manage` (held by Super Admin and Warehouse Admin) and is linked from the Items list; the sales list is linked from Sell. Recommend: add `sales.cancel` and `items.import` to `ActionPermission` and a Sales entry to `menu`, then the frontend switches the Cancel button and the import route to them. No menu entry was added (Super Admin already has 5). | F6.2, F6.4 | Answered: owner approved; contract 0.4.2 adds `sales.cancel` (SA, BA) and `items.import` (SA, WA), a Sales menu entry for Front Staff and a Sales home tile for SA and BA. The Cancel button, the import route and its link now follow those codes; the Sales entries are drawn from /me. |  |
+| FQ-12 | Contract 0.4.1 adds Super Admin only `/costed-sales/` and `/costed-sales/{id}/` (unit_cost per line). Mock handlers exist (SA only, 403 for others, cost from the item's average cost). No screen uses them yet, so no cost is shown on any sales screen. Recommend: a later step adds a cost column to the sales list for users the API lets read it. | F6.2 | Open: owner to confirm | |
+| FQ-13 | F7.1 PARTIAL: contract 0.4.2 `GET /dashboard/` (Dashboard) returns only waiting_dispatches, in_transit_dispatches, active_items and stock_per_location. It has no recent-activity list, so the short recent-activity part of F7.1 is not built (the big numbers per role already show on Home). Recommend: add `recent_activity` (array, max 10, of {id, occurred_at, summary, actor_name, branch_name}, filtered by the role's scope, no cost) to Dashboard in 0.5.0. | F7.1 | Answered: contract 0.5.0 (owner approved) publishes it; built and ticked on Sprint 2 Day 7 | |
+| FQ-14 | F7.2 BLOCKED: contract 0.4.2 has no activity-log (audit event) list operation, no filter parameters (user, branch, action, date from/to), no action values and no permission code for opening it from Home (Super Admin only). Nothing built or mocked. Recommend: `GET /api/v1/activity-log/` (cursor or page, newest first) with query user_id, branch_id, action, date_from, date_to; item {id, occurred_at, actor, branch, action, summary}; permission code `activity_log.view` (Super Admin) plus the Home link in me.home_links; no cost or secrets in summaries. | F7.2 | Answered: contract 0.5.0 (owner approved) publishes it; built and ticked on Sprint 2 Day 7 | |
+| FQ-15 | F7.3 BLOCKED: contract 0.4.2 has no shortfall (flagged discrepancy) list and no resolve operation: no list of open shortfalls (dispatch line, item, sender, destination, quantity, reason), no resolve call with resolution (return_to_sender / confirm_loss / record_damage), required note and Idempotency-Key, no status values, no error codes, no permission code. Nothing built or mocked. Recommend: `GET /api/v1/shortfalls/` (status filter open/resolved) and `POST /api/v1/shortfalls/{id}/resolve/` {resolution, note (required, non-empty)} with Idempotency-Key, 409 when already resolved, permission `shortfalls.resolve` (any admin role, decided C-rule), stock effects only on the server. | F7.3 | Answered: contract 0.5.0 (owner approved) publishes it; built and ticked on Sprint 2 Day 7 | |
+| FQ-16 | F7.2/F7.3: which `home_links` /me gives per role, and the Activity User filter (shown only with `users.view`; no user list for WA and BA). | F7.2, F7.3 | Answered: contract 0.5.2 publishes /me home_links per role (SA Activity, Shortfalls, Sell, Find, Receive, Sales; WA Activity, Shortfalls; BA Activity, Shortfalls, Sales; FS none). The mock now matches (FIX-47). The User filter stays tied to `users.view`. | |
 
 ## FIX LOG
 
@@ -775,6 +786,18 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FIX-38 | The mock accepted one Idempotency-Key twice. Now the same key and body replays the first answer; the same key with another body is 409 idempotency_conflict. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
 | FIX-39 | After a confirmed receipt or dispatch focus stayed on the old button. The success card now takes focus. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
 | FIX-40 | The dispatch list was guarded by dispatches.create. Now dispatches.view; New dispatch still needs dispatches.create. | frontend | n/a (no git during the day) | src/day5-fixes.test.tsx (failed first) | no | not yet |
+| FIX-41 | Cancelling a sale left focus on the page top (the Cancel button disappeared). The opener now stays, so Cancel in the panel returns focus to it, and a confirmed cancel shows a status "Sale ... is cancelled." that takes focus. Test: `src/day6-fixes.test.tsx`. |
+| FIX-42 | After Import now, then Cancel, the CSV file input still showed the old file but the page held none, so Check said "Choose a CSV file first." The input is remounted (empty). |
+| FIX-43 | An item with no price was only noted on its line. The running total and the confirm step now say how many items have no price; a 400 on a sale line returns to the items step and shows the server message on that line. |
+| FIX-44 | Sell line errors were matched by position, so removing a line moved or dropped them. Server errors are mapped by the item ids in the sent order; format errors are keyed by item id and cleared with their line. |
+| FIX-45 | Find opened the other-branches panel for every location of the same item. The open state is keyed by location and item. |
+| FIX-46 | The mock import committed nothing. A committed import now adds Draft items (no price) and opening stock to the mock store, so /stock/ and /items/ show them (`commitCsv`). |
+| FIX-47 | The mock /me home_links did not match the real ones. Now per role as contract 0.5.2 (SA 6 tiles in order, WA 2, BA 3, FS none). | frontend | n/a (no git during the day) | src/day7-fixes.test.tsx (failed first) | no | not yet |
+| FIX-48 | Shortfall resolve sent a quantity above what remains to the server. The form now refuses it ("More than the N still open.") and sends no request. | frontend | n/a (no git during the day) | src/day7-fixes.test.tsx (failed first) | no | not yet |
+| FIX-49 | Activity filters sent a From date after the To date. Apply now blocks it with an error on To date and makes no request. | frontend | n/a (no git during the day) | src/day7-fixes.test.tsx (failed first) | no | not yet |
+| FIX-50 | The low-stock list is cut at 10 rows without saying so. Home now shows "Showing 10 of N" when the count is above the rows. | frontend | n/a (no git during the day) | src/day7-fixes.test.tsx (failed first) | no | not yet |
+| FIX-51 | Activity User and Branch filters list only the first 100 users and branches. Added a `shortcut:` comment (upgrade to a search box when there are more). | frontend | n/a (no git during the day) | n/a (comment only) | no | not yet |
+| FIX-52 | The login throttling message could not read the cross-origin `Retry-After` header, and the keyboard E2E could race the initial render. Model the exposed header and wait for the sign-in form before tabbing. | frontend | sprint/2-mvp-release | e2e/login.spec.ts, e2e/stub.ts | no | not yet |
 
 ## DEPLOYMENT LOG
 

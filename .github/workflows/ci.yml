@@ -16,3 +16,5 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci && npm run check
+
+# CI runs on push, pull_request and manual dispatch.

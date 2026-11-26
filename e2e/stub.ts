@@ -83,6 +83,7 @@ export async function stubAuth(page: Page, opts: Opts = {}) {
             'dashboard.view',
             'items.view',
             'items.manage',
+            'items.import',
             'items.view_cost',
             'prices.manage',
             'stock.view',
@@ -133,7 +134,10 @@ export async function stubAuth(page: Page, opts: Opts = {}) {
       if (password === 'locked') {
         return route.fulfill({
           status: 429,
-          headers: { 'Retry-After': '900' },
+          headers: {
+            'Retry-After': '900',
+            'Access-Control-Expose-Headers': 'Retry-After',
+          },
           json: error('rate_limited', 'Too many failed attempts.'),
         });
       }
@@ -163,6 +167,9 @@ export async function stubData(page: Page) {
     waiting_dispatches: 0,
     in_transit_dispatches: 0,
     active_items: 3,
+    low_stock_count: 0,
+    low_stock: [],
+    recent_activity: [],
   } satisfies S['Dashboard'];
   await page.route('**/api/v1/dashboard/', (route) => route.fulfill({ json: dashboard }));
   await page.route('**/api/v1/branches/**', (route) => {

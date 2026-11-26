@@ -88,14 +88,20 @@ describe('mock server behaviour', () => {
     const sa = await (await send('GET', '/api/v1/auth/me/')).json();
     expect(sa.home_links.map((l: { label: string }) => l.label)).toEqual([
       'Activity',
+      'Shortfalls',
       'Sell',
       'Find',
       'Receive',
+      'Sales',
     ]);
     expect(sa).toMatchObject({ can_assign_multiple_roles: true, must_pick_branch: false });
     mockSession.role = 'branch_admin';
     const ba = await (await send('GET', '/api/v1/auth/me/')).json();
-    expect(ba.home_links.map((l: { label: string }) => l.label)).toEqual(['Activity']);
+    expect(ba.home_links.map((l: { label: string }) => l.label)).toEqual([
+      'Activity',
+      'Shortfalls',
+      'Sales',
+    ]);
     expect(ba.can_assign_multiple_roles).toBe(false);
     mockSession.role = 'front_staff';
     mockSession.workingBranch = null;

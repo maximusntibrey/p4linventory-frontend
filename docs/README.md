@@ -13,7 +13,7 @@ Every project document is a Markdown file in this folder. **Order of precedence 
 | [1-Overview-and-Sprints.md](1-Overview-and-Sprints.md) | Shared decisions, roles, the API contract, the 9-sprint plan and release tags | Current |
 | [2-Frontend-Requirements.md](2-Frontend-Requirements.md) | Screens, look and feel, navigation, frontend tests and sprint plan (`p4linventory-frontend`) | Current |
 | [3-Backend-Requirements.md](3-Backend-Requirements.md) | Data, rules, item specifications, APIs, security, backend sprint plan (`eqp4l-backend`) | Current |
-| [4-DevOps-Requirements.md](4-DevOps-Requirements.md) | Environments, hosting, CI/CD, backups, monitoring, releases | Proposed, awaiting owner approval |
+| [4-DevOps-Requirements.md](4-DevOps-Requirements.md) | Environments, hosting, CI/CD, backups, monitoring, releases | Railway selected; verified production backup gate remains open |
 | [TASKS.md](TASKS.md) | Enforced rules, git workflow, and every step (`G`, `T`, `O`, `B`, `F`) for Sprints 1 to 9 | Current, derived from 1 to 4 |
 | [SKILLS.md](SKILLS.md) | Technical standards, coding rules, AI agent rules, install register, glossary | Current, derived from 1 to 4 |
 | [PROJECT_GAPS_AND_ACTIONS.md](PROJECT_GAPS_AND_ACTIONS.md) | Open decisions and gaps found across the documents, with recommended answers | Open items |

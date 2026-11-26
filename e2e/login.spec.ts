@@ -31,6 +31,7 @@ test('login screen fits 360 px, fields are labelled, targets are at least 44 px'
 test('keyboard only: tab through the fields, Enter signs in', async ({ page }) => {
   await stubAuth(page);
   await page.goto('/login');
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(page.getByLabel('Login ID')).toBeFocused();
   await page.keyboard.type('SA-0001');

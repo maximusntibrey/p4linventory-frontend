@@ -1,10 +1,12 @@
 import {
+  AlertTriangle,
   Boxes,
   Circle,
   Clock,
   House,
   Inbox,
   Search,
+  ListChecks,
   ShoppingCart,
   Store,
   Tag,
@@ -22,11 +24,13 @@ const byKey: Record<string, LucideIcon> = {
   branches: Store,
   users: Users,
   sell: ShoppingCart,
+  sales: ListChecks,
   find: Search,
   receive: Inbox,
   receive_stock: Inbox,
   dispatch: Truck,
   activity: Clock,
+  shortfalls: AlertTriangle,
 };
 
 /** Menu entries drawn in the nav bar; the server's further entries are opened from Home (FE doc s3, OQ-23). */

@@ -1,4 +1,5 @@
 import type { components, paths } from './schema';
+import { apiUrl } from '../config';
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
 type Json<T> = T extends { content: { 'application/json': infer B } } ? B : never;
@@ -72,6 +73,9 @@ export const newIdempotencyKey = (): string => crypto.randomUUID();
 
 const unsafe = new Set<Method>(['post', 'put', 'patch', 'delete']);
 let csrfFallback: string | undefined;
+const isMockMode =
+  import.meta.env.MODE === 'test' ||
+  (import.meta.env.VITE_API_MODE === 'mock' && !import.meta.env.PROD);
 
 function csrfFromCookie(): string | undefined {
   const m = /(?:^|;\s*)csrftoken=([^;]*)/.exec(document.cookie);
@@ -145,7 +149,10 @@ export async function api<P extends keyof paths, M extends Method & keyof paths[
 
   const send = async (token?: string): Promise<Response> => {
     try {
-      return await fetch(new URL(url, globalThis.location.origin), {
+      const requestUrl = isMockMode
+        ? new URL(url, globalThis.location.origin)
+        : new URL(url, apiUrl || globalThis.location.origin);
+      return await fetch(requestUrl, {
         method: method.toUpperCase(),
         headers: token ? { ...headers, 'X-CSRFToken': token } : headers,
         body,

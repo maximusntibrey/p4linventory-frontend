@@ -52,11 +52,13 @@ The hosting provider is chosen by the owner in step O1.1. Whatever is chosen mus
 | Backend app | Django served by Gunicorn | Behind the host's HTTPS reverse proxy |
 | Database | Managed PostgreSQL | Daily automated backups, same engine on staging |
 | Frontend | React production build (static files) | Served by a static host or CDN over HTTPS |
-| Images and documents | Object storage | Not the server disk. Included in backups |
+| Images and documents | Django `FileSystemStorage` on a persistent Railway Volume | Owner-approved project exception; mount at `/data` and include in the verified backup plan |
 | Scheduled jobs | Host scheduler or cron running Django management commands | Overdue transfer reminders, backups |
 | Error monitoring | Sentry on backend and frontend | One environment tag per environment |
 | Uptime check | External monitor on `/health/` and the frontend URL | Alerts the owner |
 | Secrets | Host secret store or environment variables | Never in git |
+
+Owner decision for this deployment: Railway hosts the apps and existing PostgreSQL service; uploads use a Railway Volume rather than an object-storage bucket. This does not waive the database/image backup and restore requirements.
 
 Settings that must hold in staging and production:
 

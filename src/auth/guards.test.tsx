@@ -77,7 +77,7 @@ describe('menu comes from the me response', () => {
     ['super_admin', ['Home', 'Items', 'Warehouse', 'Branches', 'Users']],
     ['warehouse_admin', ['Home', 'Items', 'Receive stock', 'Dispatch', 'Find']],
     ['branch_admin', ['Home', 'Sell', 'Find', 'Stock', 'Receive']],
-    ['front_staff', ['Sell', 'Find', 'Stock', 'Receive']],
+    ['front_staff', ['Sell', 'Find', 'Stock', 'Receive', 'Sales']],
   ] as [MockRole, string[]][])('%s mock session', async (role, labels) => {
     const { container } = renderApp(role === 'front_staff' ? '/stock' : '/', { as: role });
     await screen.findByRole('navigation', { name: 'Main' });

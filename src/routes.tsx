@@ -2,15 +2,21 @@ import { Route, Routes } from 'react-router-dom';
 import { RequireAuth, RequirePermission } from './auth/guards';
 import type { Me } from './auth/session';
 import { AppShell } from './components/AppShell';
+import { ActivityPage } from './features/activity/ActivityPage';
 import { BranchesPage } from './features/branches/BranchesPage';
 import { DispatchesPage } from './features/dispatches/DispatchesPage';
 import { DispatchNew } from './features/dispatches/DispatchNew';
+import { ImportPage } from './features/items/ImportPage';
+import { FindPage } from './features/find/FindPage';
 import { GoodsReceiptPage } from './features/goodsReceipts/GoodsReceiptPage';
 import { ItemDetail } from './features/items/ItemDetail';
 import { ItemNew } from './features/items/ItemNew';
 import { ItemsPage } from './features/items/ItemsPage';
 import { ReceiveDispatch } from './features/receiving/ReceiveDispatch';
 import { WaitingPage } from './features/receiving/WaitingPage';
+import { SalesPage } from './features/sales/SalesPage';
+import { SellPage } from './features/sales/SellPage';
+import { ShortfallsPage } from './features/shortfalls/ShortfallsPage';
 import { StockPage } from './features/stock/StockPage';
 import { UserDetail } from './features/users/UserDetail';
 import { UserNew } from './features/users/UserNew';
@@ -24,9 +30,6 @@ import { NotFound } from './pages/NotFound';
 /** Screens a later step builds. Each is opened by one permission from the me endpoint; the server still checks every request. */
 const guardedScreens: { path: string; title: string; permission: Me['permissions'][number] }[] = [
   { path: 'warehouse', title: 'Warehouse', permission: 'stock.view' },
-  { path: 'find', title: 'Find', permission: 'find.use' },
-  { path: 'activity', title: 'Activity', permission: 'activity.view' },
-  { path: 'sell', title: 'Sell', permission: 'sales.record' },
 ];
 
 export function AppRoutes() {
@@ -51,6 +54,54 @@ export function AppRoutes() {
               }
             />
           ))}
+          <Route
+            path="activity"
+            element={
+              <RequirePermission permission="activity.view">
+                <ActivityPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="shortfalls"
+            element={
+              <RequirePermission permission="shortfalls.resolve">
+                <ShortfallsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="sell"
+            element={
+              <RequirePermission permission="sales.record">
+                <SellPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="sell/sales"
+            element={
+              <RequirePermission permission="sales.record">
+                <SalesPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="items/import"
+            element={
+              <RequirePermission permission="items.import">
+                <ImportPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="find"
+            element={
+              <RequirePermission permission="find.use">
+                <FindPage />
+              </RequirePermission>
+            }
+          />
           <Route
             path="goods-receipts"
             element={
