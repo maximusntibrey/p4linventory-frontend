@@ -9,11 +9,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "design:check": "node scripts/check-design-tokens.mjs",
     "test": "vitest run --reporter=dot",
     "audit": "npm audit --audit-level=high",
     "contract:drift": "node scripts/contract-drift.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run contract:drift && npm run test && npm run audit && npm run build && npm run verify:dist",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run contract:drift && npm run design:check && npm run test && npm run audit && npm run build && npm run verify:dist",
     "e2e": "playwright test",
     "contract:sync": "node scripts/contract-sync.mjs",
     "contract:gen": "openapi-typescript contract/openapi.yaml -o src/api/schema.d.ts"
