@@ -41,7 +41,7 @@ describe('Audit Logs screen', () => {
     renderApp('/audit-logs', { as: 'super_admin' });
     await h1();
     expect(screen.getByRole('searchbox', { name: SEARCH })).toBeTruthy();
-    for (const l of ['User', 'Action', 'Module', 'From date', 'To date']) {
+    for (const l of ['User', 'Branch', 'Action', 'Module', 'From date', 'To date']) {
       expect(await screen.findByLabelText(l)).toBeTruthy();
     }
     expect(screen.getByRole('button', { name: 'Apply filters' })).toBeTruthy();
@@ -68,6 +68,7 @@ describe('Audit Logs screen', () => {
     await screen.findByText('User created');
     await screen.findByRole('option', { name: /USR-0003/ });
     type('User', '4');
+    type('Branch', '1');
     type('Action', ' dispatch_created ');
     type('Module', 'dispatch');
     type('From date', '2026-11-23');
@@ -79,6 +80,7 @@ describe('Audit Logs screen', () => {
       page: '1',
       page_size: '25',
       user_id: '4',
+      branch_id: '1',
       action: 'dispatch_created',
       target_type: 'dispatch',
       date_from: '2026-11-23',

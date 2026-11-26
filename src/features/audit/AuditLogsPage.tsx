@@ -27,7 +27,14 @@ type Ordering = NonNullable<
   NonNullable<paths['/api/v1/activity-log/']['get']['parameters']['query']>['ordering']
 >;
 
-const none = { user_id: '', action: '', target_type: '', date_from: '', date_to: '' };
+const none = {
+  user_id: '',
+  branch_id: '',
+  action: '',
+  target_type: '',
+  date_from: '',
+  date_to: '',
+};
 const PAGE_SIZES = [10, 25, 50, 100];
 
 /** Sort state of the table to the API's `ordering` value (default is newest first). */
@@ -92,6 +99,11 @@ export function AuditLogsPage() {
   const [pageSize, setPageSize] = useState(25);
   const [dateError, setDateError] = useState<string>();
   // shortcut: the User filter lists only the first 100 users (page_size 100), upgrade to a search box when there are more.
+  const places = useQuery({
+    enabled: perms.includes('branches.view'),
+    queryKey: ['branches', 'activity-filter'],
+    queryFn: () => api('get', '/api/v1/branches/', { query: { page_size: 100 } }),
+  });
   const people = useQuery({
     enabled: perms.includes('users.view'),
     queryKey: ['users', 'activity-filter'],
@@ -99,6 +111,7 @@ export function AuditLogsPage() {
   });
   const filters = {
     user_id: applied.user_id ? Number(applied.user_id) : undefined,
+    branch_id: applied.branch_id ? Number(applied.branch_id) : undefined,
     action: applied.action.trim() || undefined,
     target_type: applied.target_type.trim() || undefined,
     date_from: applied.date_from || undefined,
@@ -185,6 +198,16 @@ export function AuditLogsPage() {
             {rowsOf(people.data).map((u) => (
               <option key={u.id} value={u.id}>
                 {u.login_id} · {u.full_name}
+              </option>
+            ))}
+          </Select>
+        )}
+        {places.data && (
+          <Select label="Branch" value={draft.branch_id} onChange={set('branch_id')}>
+            <option value="">All branches</option>
+            {rowsOf(places.data).map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
               </option>
             ))}
           </Select>

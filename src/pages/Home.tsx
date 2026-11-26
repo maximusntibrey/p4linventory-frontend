@@ -52,7 +52,7 @@ export function Home() {
           {(d) => (
             <>
               {d.location && <p className="m-0 font-semibold">{d.location.name}</p>}
-              <StatsStrip label="Summary">
+              <StatsStrip label="Summary" columns={3}>
                 <StatCard label="Waiting to be received" value={d.waiting_dispatches} />
                 <StatCard label="In transit" value={d.in_transit_dispatches} />
                 <StatCard label="Active items" value={d.active_items} />

@@ -3,7 +3,15 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { Home, Tag } from 'lucide-react';
 import { MemoryRouter } from 'react-router-dom';
-import { Card, CommandPalette, LinkButton, SegmentedControl, Topbar } from '.';
+import {
+  Card,
+  CommandPalette,
+  LinkButton,
+  SegmentedControl,
+  StatCard,
+  StatsStrip,
+  Topbar,
+} from '.';
 
 const items = [
   { id: '/', label: 'Home', icon: Home },
@@ -115,5 +123,20 @@ describe('LinkButton', () => {
     const link = screen.getByRole('link', { name: 'New item' });
     expect(link).toHaveAttribute('href', '/items/new');
     expect(link.className).toMatch(/min-h-11/);
+  });
+});
+
+describe('StatsStrip columns', () => {
+  it('a 3-cell strip has no 4-column layout, so no empty cell', () => {
+    render(
+      <StatsStrip label="Three" columns={3}>
+        <StatCard label="A" value={1} />
+        <StatCard label="B" value={2} />
+        <StatCard label="C" value={3} />
+      </StatsStrip>,
+    );
+    const strip = screen.getByLabelText('Three');
+    expect(strip.className).toContain('sm:grid-cols-3');
+    expect(strip.className).not.toContain('md:grid-cols-4');
   });
 });
