@@ -293,6 +293,7 @@ describe('logout', () => {
   it('Switch branch is drawn only for a user whose /me allows it (F3.1)', async () => {
     renderApp('/', { as: 'branch_admin' });
     await screen.findByRole('navigation', { name: 'Main' });
-    expect(screen.queryByRole('button', { name: 'Switch branch' })).toBeNull();
+    await openProfile();
+    expect(screen.queryByRole('button', { name: 'Switch working branch' })).toBeNull();
   });
 });

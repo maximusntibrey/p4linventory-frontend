@@ -1,4 +1,4 @@
-import { Store, Warehouse } from 'lucide-react';
+import { Store, Warehouse } from 'components/icons';
 import type { components } from '../../api';
 import { StatusBadge } from '../../components/ui';
 import type { SegmentOption } from '../../components/ui';
@@ -30,7 +30,7 @@ export const BRANCH_TYPE_OPTIONS: SegmentOption<BranchType>[] = [
 export function BranchTypeBadge({ type }: { type: BranchType }) {
   return (
     <StatusBadge
-      tone={type === 'warehouse' ? 'info' : 'brand'}
+      tone={type === 'warehouse' ? 'info' : 'neutral'}
       icon={type === 'warehouse' ? Warehouse : Store}
       variant="outline"
     >

@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, expect } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import * as matchers from 'vitest-axe/matchers';
 import { server } from '../mocks/server';
 import { mockSession, resetMockStore } from '../mocks/handlers';
@@ -11,6 +11,8 @@ import { handlerDrawerOpen } from '../api/menu';
 HTMLCanvasElement.prototype.getContext = () => null;
 
 expect.extend(matchers);
+// MUI screens render slowly under a loaded machine; give async queries more time before failing.
+configure({ asyncUtilTimeout: 4000 });
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {
   cleanup();

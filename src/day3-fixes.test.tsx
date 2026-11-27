@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { users } from './mocks/data';
 import { server } from './mocks/server';
-import { apiError, capture, click, type } from './test/helpers';
+import { apiError, capture, click, type, openProfile } from './test/helpers';
 import { renderApp } from './test/renderApp';
 
 const emptyPage = { count: 0, page: 1, page_size: 25, next: null, previous: null, results: [] };
@@ -12,9 +12,10 @@ const active = () => document.activeElement as HTMLElement;
 describe('FIX-21 branch scope: nothing cached from the old branch survives', () => {
   it('a working-branch switch removes every non-/me query', async () => {
     const { client } = renderApp('/', { as: 'front_staff' });
-    await screen.findByRole('button', { name: 'Switch branch' });
+    await openProfile();
+    await screen.findByRole('button', { name: 'Switch working branch' });
     client.setQueryData(['stock', 'list'], [{ id: 1 }]);
-    click('Switch branch');
+    click('Switch working branch');
     await screen.findByRole('heading', { level: 1, name: 'Switch branch' });
     fireEvent.click(await screen.findByRole('button', { name: 'Kumasi Branch' }));
     await waitFor(() => expect(client.getQueryData(['stock', 'list'])).toBeUndefined());
@@ -157,9 +158,10 @@ describe('FIX-24 the branch-list query only runs in the all-branches view', () =
       }),
     );
     renderApp('/', { as: 'front_staff' });
-    await screen.findByRole('button', { name: 'Switch branch' });
+    await openProfile();
+    await screen.findByRole('button', { name: 'Switch working branch' });
     expect(seen.filter((s) => s.includes('kind=branch'))).toHaveLength(0);
-    click('Switch branch');
+    click('Switch working branch');
     await screen.findByRole('button', { name: /Accra Branch/ });
     expect(seen.filter((s) => s.includes('kind=branch')).length).toBeGreaterThan(0);
   });

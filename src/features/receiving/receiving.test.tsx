@@ -33,9 +33,11 @@ describe('waiting at a branch (F5.3, F5.4)', () => {
     // To Kumasi, and one already received: neither is waiting at Accra.
     expect(screen.queryByText('TRF-000002')).toBeNull();
     expect(screen.queryByText('TRF-000003')).toBeNull();
-    expect(screen.getByRole('link', { name: 'Check delivery TRF-000001' }).className).toMatch(
-      /min-h-(11|target)/,
-    );
+    expect(
+      parseFloat(
+        getComputedStyle(screen.getByRole('link', { name: 'Check delivery TRF-000001' })).minHeight,
+      ),
+    ).toBeGreaterThanOrEqual(44);
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -76,9 +78,13 @@ describe('receiving a delivery (F5.3)', () => {
     expect(value('Received: HP 250 G9')).toBe('2');
     expect(value('Received: Dell 65W charger')).toBe('5');
     expect(screen.getByText('Sent: 5')).toBeTruthy();
-    expect((screen.getByLabelText('Received: HP 250 G9') as HTMLInputElement).className).toMatch(
-      /min-h-(11|target)/,
-    );
+    expect(
+      parseFloat(
+        getComputedStyle(
+          screen.getByLabelText('Received: HP 250 G9').closest('.MuiInputBase-root')!,
+        ).minHeight,
+      ),
+    ).toBeGreaterThanOrEqual(44);
     expect(screen.queryByLabelText('Note about the shortfall')).toBeNull();
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -89,11 +95,11 @@ describe('receiving a delivery (F5.3)', () => {
     type('Received: Dell 65W charger', '3');
     const line = screen.getByLabelText('Received: Dell 65W charger').closest('li')!;
     expect(within(line).getByText('Short by 2')).toBeTruthy();
-    expect(line.className).toContain('border-warn');
+    expect(getComputedStyle(line).borderColor).toBe('rgb(135, 77, 0)');
     expect(line.querySelector('svg')).not.toBeNull();
-    expect(screen.getByLabelText('Received: HP 250 G9').closest('li')!.className).not.toContain(
-      'border-warn',
-    );
+    expect(
+      getComputedStyle(screen.getByLabelText('Received: HP 250 G9').closest('li')!).borderColor,
+    ).not.toBe('rgb(135, 77, 0)');
     click('Review delivery');
     expect(screen.getByText('Add a note about the shortfall.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Confirm receipt' })).toBeNull();
@@ -270,7 +276,9 @@ describe('receiving a delivery (F5.3)', () => {
     renderApp('/receive/3', { as: 'branch_admin' });
     expect(await screen.findByText('Partially received')).toBeTruthy();
     expect(screen.getByText(/Sent 5 · Received 3 · Accepted 3/)).toBeTruthy();
-    expect(screen.getByText('Short by 2').closest('li')!.className).toContain('border-warn');
+    expect(getComputedStyle(screen.getByText('Short by 2').closest('li')!).borderColor).toContain(
+      'rgb(135, 77, 0)',
+    );
     expect(screen.getByText('Note: Two boxes did not arrive.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Review delivery' })).toBeNull();
   });

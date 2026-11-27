@@ -6,10 +6,15 @@ import { meKey } from '../../auth/session';
 import { branchB, dashboard, meByRole } from '../../mocks/data';
 import { mockSession } from '../../mocks/handlers';
 import { server } from '../../mocks/server';
-import { apiError, capture, click } from '../../test/helpers';
+import { apiError, capture, click, openProfile } from '../../test/helpers';
 import { renderApp } from '../../test/renderApp';
 
 const banner = () => within(screen.getAllByRole('banner')[0]);
+/** The working branch is shown in one place: the profile menu. */
+const inProfile = async (text: string) => {
+  if (!screen.queryByRole('button', { name: 'Log out' })) await openProfile();
+  return banner().getAllByText(text)[0];
+};
 
 describe('working branch: first pick', () => {
   it('a user whose /me has no branch and allows picking gets the picker, with no way around it', async () => {
@@ -23,7 +28,7 @@ describe('working branch: first pick', () => {
     // The warehouse is a location, not a branch to work at.
     expect(screen.queryByRole('button', { name: 'Central Warehouse' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
-    expect(banner().getByText('No branch selected')).toBeTruthy();
+    expect(await inProfile('No branch selected')).toBeTruthy();
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -36,7 +41,7 @@ describe('working branch: first pick', () => {
     renderApp('/', { as: 'front_staff' });
     await screen.findByRole('heading', { name: 'Choose your branch' });
     fireEvent.click(await screen.findByRole('button', { name: 'Kumasi Branch' }));
-    await waitFor(() => expect(banner().getByText('Kumasi Branch')).toBeTruthy());
+    await waitFor(async () => expect(await inProfile('Kumasi Branch')).toBeTruthy());
     expect(screen.queryByRole('heading', { name: 'Choose your branch' })).toBeNull();
     expect(put.seen).toHaveLength(1);
     expect(put.seen[0].key).toMatch(/^[0-9a-f-]{36}$/);
@@ -48,7 +53,8 @@ describe('working branch: first pick', () => {
     renderApp('/', { as: 'branch_admin' });
     await screen.findByRole('navigation', { name: 'Main' });
     expect(screen.queryByRole('heading', { name: 'Choose your branch' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Switch branch' })).toBeNull();
+    await openProfile();
+    expect(screen.queryByRole('button', { name: 'Switch working branch' })).toBeNull();
   });
 
   it('shows what the API rejects and stays on the picker', async () => {
@@ -71,9 +77,10 @@ describe('working branch: first pick', () => {
 describe('working branch: switching', () => {
   it('Switch branch has a visible label, opens the picker with Cancel, and Cancel returns', async () => {
     renderApp('/', { as: 'front_staff' });
-    const open = await screen.findByRole('button', { name: 'Switch branch' });
-    expect(open.textContent).toBe('Switch branch');
-    click('Switch branch');
+    await openProfile();
+    const open = await screen.findByRole('button', { name: 'Switch working branch' });
+    expect(open.textContent).toBe('Switch working branch');
+    click('Switch working branch');
     expect(await screen.findByRole('heading', { level: 1, name: 'Switch branch' })).toBeTruthy();
     expect(await screen.findByRole('button', { name: /Accra Branch \(current\)/ })).toBeTruthy();
     click('Cancel');
@@ -82,12 +89,13 @@ describe('working branch: switching', () => {
 
   it('a switch replaces /me and drops the branch-scoped queries, not /me itself', async () => {
     const { client } = renderApp('/', { as: 'front_staff' });
-    await screen.findByRole('button', { name: 'Switch branch' });
+    await openProfile();
+    await screen.findByRole('button', { name: 'Switch working branch' });
     client.setQueryData(['stock', 'list'], [{ id: 1 }]);
-    click('Switch branch');
+    click('Switch working branch');
     await screen.findByRole('heading', { level: 1, name: 'Switch branch' });
     fireEvent.click(await screen.findByRole('button', { name: 'Kumasi Branch' }));
-    await waitFor(() => expect(banner().getByText('Kumasi Branch')).toBeTruthy());
+    await waitFor(async () => expect(await inProfile('Kumasi Branch')).toBeTruthy());
     expect(client.getQueryData(['stock', 'list'])).toBeUndefined();
     expect(client.getQueryState(meKey)?.isInvalidated).toBe(false);
   });
@@ -99,23 +107,25 @@ describe('working branch: switching', () => {
       ).handler,
     );
     renderApp('/', { as: 'front_staff' });
-    await screen.findByRole('button', { name: 'Switch branch' });
-    click('Switch branch');
+    await openProfile();
+    await screen.findByRole('button', { name: 'Switch working branch' });
+    click('Switch working branch');
     await screen.findByRole('heading', { level: 1, name: 'Switch branch' });
     fireEvent.click(await screen.findByRole('button', { name: 'Kumasi Branch' }));
     expect((await screen.findByRole('alert')).textContent).toContain('You cannot change branch.');
-    expect(banner().getByText('Accra Branch')).toBeTruthy();
+    expect(await inProfile('Accra Branch')).toBeTruthy();
   });
 
   it('works with the keyboard: native buttons in a list, no tabindex tricks', async () => {
     renderApp('/', { as: 'front_staff' });
-    fireEvent.click(await screen.findByRole('button', { name: 'Switch branch' }));
+    await openProfile();
+    fireEvent.click(await screen.findByRole('button', { name: 'Switch working branch' }));
     await screen.findByRole('heading', { level: 1, name: 'Switch branch' });
     await screen.findByRole('button', { name: /Accra Branch/ });
     const list = within(within(screen.getByRole('main')).getAllByRole('list').at(-1)!);
     for (const b of list.getAllByRole('button')) {
-      expect(b.getAttribute('tabindex')).toBeNull();
-      expect(b.className).toMatch(/min-h-(11|target)/);
+      expect(Number(b.getAttribute('tabindex') ?? 0)).toBeLessThanOrEqual(0);
+      expect(parseFloat(getComputedStyle(b).minHeight)).toBeGreaterThanOrEqual(44);
     }
   });
 });
@@ -126,10 +136,11 @@ describe('Super Admin works across all branches (v0.1.2)', () => {
     server.use(put.handler);
     const { container } = renderApp('/', { as: 'super_admin' });
     await screen.findByText('Low stock items');
-    expect(banner().getByText('All branches', { selector: 'span' })).toBeTruthy();
-    expect(banner().getByLabelText('Filter by branch')).toBeTruthy();
+    expect(await inProfile('All branches')).toBeTruthy();
+    expect(screen.getByLabelText('Filter by branch')).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Choose your branch' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Switch branch' })).toBeNull();
+    await openProfile();
+    expect(screen.queryByRole('button', { name: 'Switch working branch' })).toBeNull();
     expect(put.seen).toHaveLength(0);
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -159,7 +170,7 @@ describe('Super Admin works across all branches (v0.1.2)', () => {
     expect(seen.dashboard).toBeNull();
     fireEvent.change(filter, { target: { value: '3' } });
     await waitFor(() => expect(seen.dashboard).toBe('3'));
-    expect(banner().getAllByText('Kumasi Branch').length).toBeGreaterThan(0);
+    expect(filter.value).toBe('3');
     fireEvent.click(screen.getByRole('link', { name: 'Users' }));
     await waitFor(() => expect(seen.users).toBe('3'));
   });

@@ -1,11 +1,9 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext } from 'react';
 
 /** What the Mantis header needs from our app: the signed-in user, the working branch and the account actions. */
 export type ShellState = {
   user: { name: string; loginId: string; role: string; location: string };
   branchName: string;
-  /** Super Admin: all-branches view with an optional filter (rendered inside the profile menu). */
-  branchFilter?: ReactNode;
   /** Present only when the server lets this user switch the working branch. */
   onSwitchBranch?: () => void;
   onChangePassword: () => void;

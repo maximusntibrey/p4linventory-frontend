@@ -13,7 +13,6 @@ import { apiMode } from './config';
 import { ConfigProvider } from './contexts/ConfigContext';
 import ThemeCustomization from './themes';
 import { AppRoutes } from './routes';
-import './index.css';
 
 const queryClient = createQueryClient();
 

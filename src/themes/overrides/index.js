@@ -25,6 +25,8 @@ import TableRow from './TableRow';
 import Tabs from './Tabs';
 import Tooltip from './Tooltip';
 import Typography from './Typography';
+import TouchTargets from './TouchTargets';
+import CssBaseline from './CssBaseline';
 
 // ==============================|| OVERRIDES - MAIN ||============================== //
 
@@ -52,6 +54,8 @@ export default function ComponentsOverrides(theme) {
     TableRow(theme),
     Tabs(),
     Tooltip(theme),
-    Typography()
+    Typography(),
+    TouchTargets(),
+    CssBaseline()
   );
 }

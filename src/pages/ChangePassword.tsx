@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -146,9 +147,9 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
   return forced ? (
     <AuthLayout title="Choose a new password">{body}</AuthLayout>
   ) : (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Change password" />
       <MainCard sx={{ maxWidth: 480 }}>{body}</MainCard>
-    </div>
+    </Box>
   );
 }

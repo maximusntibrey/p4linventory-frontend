@@ -1,21 +1,23 @@
-import { cx } from './cx';
+import MuiSkeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
 
-/** Loading placeholder. Hidden from assistive tech: put aria-busy on the region that loads. Size it with classes. */
-export function Skeleton({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cx('block animate-pulse rounded-md bg-neutral-200', className ?? 'h-4 w-full')}
-    />
-  );
+/** Loading placeholder, hidden from assistive tech: put aria-busy on the region that loads. */
+export function Skeleton({
+  width = '100%',
+  height = 16,
+}: {
+  width?: number | string;
+  height?: number | string;
+}) {
+  return <MuiSkeleton aria-hidden="true" variant="rounded" width={width} height={height} />;
 }
 
 export function SkeletonText({ lines = 3 }: { lines?: number }) {
   return (
-    <div aria-hidden="true" className="flex flex-col gap-2">
+    <Stack aria-hidden="true" sx={{ gap: 1 }}>
       {Array.from({ length: lines }, (_, i) => (
-        <Skeleton key={i} className={i === lines - 1 ? 'h-4 w-2/3' : 'h-4 w-full'} />
+        <Skeleton key={i} width={i === lines - 1 ? '66%' : '100%'} />
       ))}
-    </div>
+    </Stack>
   );
 }

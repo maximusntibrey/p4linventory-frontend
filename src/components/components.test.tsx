@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
+import { render } from '../test/renderUi';
 import { axe } from 'vitest-axe';
-import { Home } from 'lucide-react';
+import { Home } from 'components/icons';
 import { Button, Card, StatusWord, TextField } from './ui';
 import type { Status } from './ui';
 
@@ -14,7 +15,7 @@ describe('Button', () => {
       </Button>,
     );
     const btn = screen.getByRole('button', { name: 'Save' });
-    expect(btn.className).toMatch(/min-h-(11|target)/);
+    expect(parseFloat(getComputedStyle(btn).minHeight)).toBeGreaterThanOrEqual(44);
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
     fireEvent.click(btn);
     expect(onClick).toHaveBeenCalledOnce();

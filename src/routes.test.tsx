@@ -20,12 +20,9 @@ describe('app shell', () => {
   });
 });
 
-describe('design-system showcase gate (design_system.view)', () => {
-  it('opens for the Super Admin only', async () => {
-    const sa = renderApp('/design-system', { as: 'super_admin' });
-    expect(await screen.findByRole('heading', { level: 1, name: 'Design system' })).toBeTruthy();
-    sa.unmount();
-    renderApp('/design-system', { as: 'warehouse_admin' });
-    expect(await screen.findByRole('heading', { level: 1, name: '403: Not allowed' })).toBeTruthy();
+describe('the old design-system showcase is gone (the theme and DESIGN-SYSTEM.md replace it)', () => {
+  it('its address is an ordinary 404', async () => {
+    renderApp('/design-system', { as: 'super_admin' });
+    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeTruthy();
   });
 });

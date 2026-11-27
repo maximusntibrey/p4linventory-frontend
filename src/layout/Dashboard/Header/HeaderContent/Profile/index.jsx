@@ -39,7 +39,7 @@ const initials = (name) =>
 // The user menu: who is signed in, the working branch (with switch), change password, log out.
 
 export default function Profile() {
-  const { user, branchName, branchFilter, onSwitchBranch, onChangePassword, onLogout, loggingOut, onProfileOpenChange } = useShell();
+  const { user, branchName, onSwitchBranch, onChangePassword, onLogout, loggingOut, onProfileOpenChange } = useShell();
 
   const anchorRef = useRef(null);
   const [open, setOpenState] = useState(false);
@@ -120,7 +120,6 @@ export default function Profile() {
                         Working branch: <strong>{branchName}</strong>
                       </Typography>
                     </Stack>
-                    {branchFilter && <Box sx={{ mt: 1.5 }}>{branchFilter}</Box>}
                   </CardContent>
                   <Divider />
                   <List component="nav" aria-label="Account" sx={{ p: 0, '& .MuiListItemIcon-root': { minWidth: 32 } }}>

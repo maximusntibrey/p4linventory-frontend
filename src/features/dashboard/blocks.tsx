@@ -118,7 +118,7 @@ export function StatCard({ title, value, caption, to, linkLabel, ...body }: Stat
             component={RouterLink}
             to={to}
             size="small"
-            sx={{ alignSelf: 'flex-start', ml: -1, minHeight: 32 }}
+            sx={{ alignSelf: 'flex-start', ml: -1 }}
           >
             {linkLabel ?? 'View'}
           </Button>

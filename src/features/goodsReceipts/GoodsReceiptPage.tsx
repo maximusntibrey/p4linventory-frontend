@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ClipboardCheck, Trash2 } from 'lucide-react';
+import { ClipboardCheck, Trash2 } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
@@ -109,53 +110,69 @@ export function GoodsReceiptPage() {
 
   if (done) {
     return (
-      <div className="flex flex-col gap-4">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <PageHeader title="Receive stock" />
         <ResultCard>
-          <p className="m-0 text-lg font-semibold">
+          <Box component="p" sx={{ m: 0, fontSize: '1.125rem', fontWeight: 600 }}>
             Receipt {done.reference} is confirmed. The stock is in the warehouse.
-          </p>
-          <p className="m-0 text-sm text-muted">
+          </Box>
+          <Box component="p" sx={{ m: 0, fontSize: '0.875rem', color: 'text.secondary' }}>
             {done.supplier_name} · {formatAccra(done.received_at)} · {done.received_by}
-          </p>
-          <ul className="m-0 list-none p-0">
+          </Box>
+          <Box component="ul" sx={{ m: 0, listStyle: 'none', p: 0 }}>
             {done.lines.map((l) => (
               <li key={l.id}>
                 {l.quantity} × {l.item_name} ({l.sku}) at {ghs(l.unit_cost)}
               </li>
             ))}
-          </ul>
+          </Box>
         </ResultCard>
-        <Button icon={ClipboardCheck} onClick={reset} className="w-full sm:w-auto">
+        <Button icon={ClipboardCheck} onClick={reset} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           Receive another delivery
         </Button>
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Receive stock" />
       <ApiProblem error={create.error} at={create.submittedAt} />
       {reviewing ? (
-        <Card className="flex flex-col gap-3">
-          <h2 className="text-3xl">Review</h2>
+        <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+            Review
+          </Box>
           {warehouses.choose && (
-            <p className="m-0">
+            <Box component="p" sx={{ m: 0 }}>
               Warehouse: <strong>{warehouseName}</strong>
-            </p>
+            </Box>
           )}
-          <p className="m-0">
+          <Box component="p" sx={{ m: 0 }}>
             Supplier: <strong>{supplier.trim()}</strong>
-          </p>
-          {notes.trim() && <p className="m-0">Notes: {notes.trim()}</p>}
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+          </Box>
+          {notes.trim() && (
+            <Box component="p" sx={{ m: 0 }}>
+              Notes: {notes.trim()}
+            </Box>
+          )}
+          <Box
+            component="ul"
+            sx={{
+              m: 0,
+              display: 'flex',
+              listStyle: 'none',
+              flexDirection: 'column',
+              gap: 0.5,
+              p: 0,
+            }}
+          >
             {lines.map((l) => (
               <li key={l.item_id}>
                 {Number(l.quantity)} × {l.name} ({l.sku}) at {ghs(twoDecimals(l.cost))} each
               </li>
             ))}
-          </ul>
+          </Box>
           <ConfirmPanel
             danger={false}
             title="Confirm this receipt? A confirmed receipt cannot be edited."
@@ -167,7 +184,7 @@ export function GoodsReceiptPage() {
         </Card>
       ) : (
         <>
-          <Card className="flex flex-col gap-4">
+          <Card sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {warehouses.choose && (
               <SelectField
                 label="Warehouse"
@@ -200,8 +217,10 @@ export function GoodsReceiptPage() {
               error={server?.fieldError('notes')}
             />
           </Card>
-          <Card className="flex flex-col gap-3">
-            <h2 className="text-3xl">Items</h2>
+          <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+              Items
+            </Box>
             <ItemPicker
               label="Find an item to receive"
               queryKey={['receipt', 'find']}
@@ -210,20 +229,51 @@ export function GoodsReceiptPage() {
               onAdd={(c) => setLines((ls) => [...ls, { ...c, quantity: '', cost: '' }])}
             />
             {problems?.lines && (
-              <p role="alert" className="m-0 font-semibold text-bad">
+              <Box component="p" role="alert" sx={{ m: 0, fontWeight: 600, color: 'error.main' }}>
                 {problems.lines}
-              </p>
+              </Box>
             )}
-            <ul className="m-0 flex list-none flex-col gap-3 p-0">
+            <Box
+              component="ul"
+              sx={{
+                m: 0,
+                display: 'flex',
+                listStyle: 'none',
+                flexDirection: 'column',
+                gap: 1.5,
+                p: 0,
+              }}
+            >
               {lines.map((l, i) => (
-                <li
+                <Box
+                  component="li"
                   key={l.item_id}
-                  className="flex flex-col gap-2 rounded-lg border border-line p-3"
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    p: 1.5,
+                  }}
                 >
-                  <p className="m-0 break-words font-semibold">
-                    {l.name} <span className="text-sm font-normal text-muted">{l.sku}</span>
-                  </p>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <Box component="p" sx={{ m: 0, overflowWrap: 'anywhere', fontWeight: 600 }}>
+                    {l.name}{' '}
+                    <Box
+                      component="span"
+                      sx={{ fontSize: '0.875rem', fontWeight: 400, color: 'text.secondary' }}
+                    >
+                      {l.sku}
+                    </Box>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gap: 1.5,
+                      gridTemplateColumns: { sm: 'repeat(2, minmax(0, 1fr))' },
+                    }}
+                  >
                     <TextField
                       label={`Quantity: ${l.name}`}
                       inputMode="numeric"
@@ -242,23 +292,23 @@ export function GoodsReceiptPage() {
                       onChange={(e) => setLine(l.item_id, { cost: e.target.value })}
                       error={problems?.rows[i]?.cost ?? server?.fieldError(`lines.${i}.unit_cost`)}
                     />
-                  </div>
+                  </Box>
                   <Button
                     variant="secondary"
                     icon={Trash2}
                     aria-label={`Remove ${l.name}`}
-                    className="self-start"
+                    sx={{ alignSelf: 'flex-start' }}
                     onClick={() => setLines((ls) => ls.filter((x) => x.item_id !== l.item_id))}
                   >
                     Remove
                   </Button>
-                </li>
+                </Box>
               ))}
-            </ul>
+            </Box>
           </Card>
           <Button
             icon={ClipboardCheck}
-            className="w-full sm:w-auto sm:self-start"
+            sx={{ width: { xs: '100%', sm: 'auto' }, alignSelf: { sm: 'flex-start' } }}
             onClick={() => {
               const p = check(supplier, lines, warehouses.choose, warehouse);
               setProblems(p);
@@ -269,6 +319,6 @@ export function GoodsReceiptPage() {
           </Button>
         </>
       )}
-    </div>
+    </Box>
   );
 }

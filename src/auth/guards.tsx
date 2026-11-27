@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -27,18 +28,23 @@ export function RequireAuth({ pending = false }: { pending?: boolean }) {
   const qc = useQueryClient();
   if (isPending) {
     return (
-      <p role="status" className="p-4 text-muted">
+      <Box component="p" role="status" sx={{ p: 2, color: 'text.secondary' }}>
         Loading…
-      </p>
+      </Box>
     );
   }
   // A failed refresh keeps the cached user: the screen and what was typed stay.
   if (isError && !me) {
     return (
-      <div role="alert" className="flex flex-col items-start gap-3 p-4">
-        <p className="m-0 font-semibold text-bad">Could not reach the server.</p>
+      <Box
+        role="alert"
+        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1.5, p: 2 }}
+      >
+        <Box component="p" sx={{ m: 0, fontWeight: 600, color: 'error.main' }}>
+          Could not reach the server.
+        </Box>
         <Button onClick={() => void refetch()}>Try again</Button>
-      </div>
+      </Box>
     );
   }
   if (!me) {

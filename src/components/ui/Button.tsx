@@ -1,44 +1,35 @@
-import { Loader2 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
-import { cx } from './cx';
+import type { SxProps } from '@mui/material/styles';
+import MuiButton from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import type { IconType } from '../icons';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
-const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-primary-solid text-on-primary hover:bg-primary-solid-hover border-transparent',
-  secondary: 'bg-canvas text-ink border-control hover:bg-surface',
-  ghost: 'bg-transparent text-ink border-transparent hover:bg-surface',
-  danger: 'bg-canvas text-bad border-bad hover:bg-bad-bg',
-};
-// min-h-target = 44 px, the token (never min-h-11: that scales with the phone density). Every size keeps it on touch; sm only tightens padding and type.
-const sizes: Record<ButtonSize, string> = {
-  sm: 'min-h-target px-3 text-sm',
-  md: 'min-h-target px-4 text-base',
-  lg: 'min-h-[3rem] px-6 text-lg',
-};
+/** The MUI look of each library variant: primary is the filled orange, secondary the navy outline. */
+const looks = {
+  primary: { variant: 'contained', color: 'primary' },
+  secondary: { variant: 'outlined', color: 'secondary' },
+  ghost: { variant: 'text', color: 'secondary' },
+  danger: { variant: 'outlined', color: 'error' },
+} as const satisfies Record<
+  ButtonVariant,
+  { variant: 'contained' | 'outlined' | 'text'; color: 'primary' | 'secondary' | 'error' }
+>;
+export const muiLook = (variant: ButtonVariant) => looks[variant];
 
-/** The look of a button, so a link that navigates can wear it (LinkButton). */
-export const buttonClass = (
-  variant: ButtonVariant = 'primary',
-  size: ButtonSize = 'md',
-  extra?: string,
-) =>
-  cx(
-    'inline-flex min-w-target items-center justify-center gap-2 rounded-md border font-semibold no-underline disabled:opacity-50',
-    variants[variant],
-    sizes[size],
-    extra,
-  );
+export const muiSize = (size: ButtonSize) =>
+  ({ sm: 'small', md: 'medium', lg: 'large' })[size] as 'small' | 'medium' | 'large';
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'color'> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
   /** Leading icon. Children stay the visible label; an icon never stands alone. */
-  icon?: LucideIcon;
+  icon?: IconType;
   /** Disables the button, shows a spinner and sets aria-busy. The label stays. */
   loading?: boolean;
+  sx?: SxProps;
 };
 
 export function Button({
@@ -48,23 +39,25 @@ export function Button({
   loading = false,
   disabled,
   children,
-  className,
   ...rest
 }: ButtonProps) {
   return (
-    <button
+    <MuiButton
       type="button"
+      {...muiLook(variant)}
+      size={muiSize(size)}
       {...rest}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={buttonClass(variant, size, className)}
+      startIcon={
+        loading ? (
+          <CircularProgress aria-hidden="true" size={18} color="inherit" />
+        ) : (
+          Icon && <Icon size={18} />
+        )
+      }
     >
-      {loading ? (
-        <Loader2 aria-hidden="true" size={20} className="animate-spin" />
-      ) : (
-        Icon && <Icon aria-hidden="true" size={20} />
-      )}
-      <span>{children}</span>
-    </button>
+      {children}
+    </MuiButton>
   );
 }

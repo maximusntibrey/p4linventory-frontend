@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Users } from 'lucide-react';
+import { Plus, Search, Users } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import { useBranchFilter } from '../workingBranch/BranchFilter';
+import { BranchScope } from '../workingBranch/BranchScope';
 import { describeError } from '../../components/ErrorSummary';
 import { Forbidden } from '../../pages/Forbidden';
 import { roleLabels, statusBadge } from './labels';
@@ -61,12 +63,20 @@ export function UsersPage() {
       id: 'name',
       header: 'Name',
       cell: (u) => (
-        <Link
+        <Box
+          component={Link}
           to={`/users/${u.id}`}
-          className="inline-flex min-h-target items-center font-semibold text-ink underline"
+          sx={{
+            display: 'inline-flex',
+            minHeight: 44,
+            alignItems: 'center',
+            fontWeight: 600,
+            color: 'text.primary',
+            textDecoration: 'underline',
+          }}
         >
           {u.full_name}
-        </Link>
+        </Box>
       ),
     },
     { id: 'login', header: 'Login ID', cell: (u) => u.login_id },
@@ -74,7 +84,7 @@ export function UsersPage() {
     { id: 'status', header: 'Status', cell: (u) => <StatusWord status={statusBadge[u.status]} /> },
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader
         title="Users"
         actions={
@@ -85,9 +95,11 @@ export function UsersPage() {
           )
         }
       />
-      <form
+      <BranchScope />
+      <Box
+        component="form"
         role="search"
-        className="grid gap-3 sm:grid-cols-3"
+        sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { sm: 'repeat(3, minmax(0, 1fr))' } }}
         onSubmit={(e) => {
           e.preventDefault();
           setFilters(draft);
@@ -111,12 +123,12 @@ export function UsersPage() {
             </option>
           ))}
         </SelectField>
-        <div className="flex items-end">
+        <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
           <Button type="submit" variant="secondary" icon={Search}>
             Search
           </Button>
-        </div>
-      </form>
+        </Box>
+      </Box>
       <DataTable
         caption="Users"
         columns={columns}
@@ -136,6 +148,6 @@ export function UsersPage() {
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 }

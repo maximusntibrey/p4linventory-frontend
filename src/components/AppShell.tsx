@@ -2,15 +2,10 @@ import { useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Typography from '@mui/material/Typography';
-import { api, rowsOf } from '../api';
+import { api } from '../api';
 import { useCurrentMe } from '../auth/guards';
 import { dropBranchScoped, useLogout } from '../auth/session';
-import {
-  BranchFilter,
-  BranchFilterContext,
-  BranchSwitchContext,
-  useFilterBranches,
-} from '../features/workingBranch/BranchFilter';
+import { BranchFilterContext, BranchSwitchContext } from '../features/workingBranch/BranchFilter';
 import { BranchPicker } from '../features/workingBranch/BranchPicker';
 import { roleLabels } from '../features/users/labels';
 import DashboardLayout from '../layout/Dashboard';
@@ -31,18 +26,15 @@ export function AppShell() {
   const allBranches = me.all_branches;
   const canSwitch = me.permissions.includes('working_branch.select') && !allBranches;
   const mustPick = me.must_pick_branch;
-  const filterList = useFilterBranches(allBranches);
   const changeFilter = (id?: number) => {
     dropBranchScoped(qc);
     setFilter(id);
   };
-  const filterName = (filterList.data ? rowsOf(filterList.data) : []).find(
-    (b) => b.id === filter,
-  )?.name;
   const menu = useMemo(() => buildMenu(me), [me]);
   setMenu(menu); // the drawer, the breadcrumbs and the header search read the shared menu object
+  // Super Admin works across all branches: the page filters scope a view, they never change the working branch.
   const branchName = allBranches
-    ? (filterName ?? 'All branches')
+    ? 'All branches'
     : (me.working_branch?.name ?? 'No branch selected');
   const role = roleLabels[me.active_role];
   const homeId = me.user.permanent_location_id;
@@ -71,7 +63,6 @@ export function AppShell() {
               location: location ?? 'None',
             },
             branchName,
-            branchFilter: allBranches ? <BranchFilter /> : undefined,
             onSwitchBranch: canSwitch ? () => setSwitching(true) : undefined,
             onChangePassword: () => navigate('/account/password'),
             onLogout: out.logout,

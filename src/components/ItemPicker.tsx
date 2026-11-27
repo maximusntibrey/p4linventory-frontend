@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search } from 'components/icons';
 import { QueryGate } from './QueryGate';
 import { Button, TextField } from './ui';
 
@@ -33,7 +34,7 @@ export function ItemPicker({ label, queryKey, find, added, onAdd }: Props) {
   });
   const run = () => setQ(draft.trim());
   return (
-    <div role="search" className="flex flex-col gap-3">
+    <Box role="search" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       <TextField
         label={label}
         value={draft}
@@ -45,30 +46,65 @@ export function ItemPicker({ label, queryKey, find, added, onAdd }: Props) {
           }
         }}
       />
-      <Button variant="secondary" icon={Search} onClick={run} className="w-full sm:w-auto">
+      <Button
+        variant="secondary"
+        icon={Search}
+        onClick={run}
+        sx={{ width: { xs: '100%', sm: 'auto' } }}
+      >
         Search
       </Button>
       {q !== null && (
         <QueryGate query={results} inline>
           {(rows) =>
             rows.length === 0 ? (
-              <p className="m-0 text-muted">No matching items.</p>
+              <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+                No matching items.
+              </Box>
             ) : (
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+              <Box
+                component="ul"
+                sx={{
+                  m: 0,
+                  display: 'flex',
+                  listStyle: 'none',
+                  flexDirection: 'column',
+                  gap: 1,
+                  p: 0,
+                }}
+              >
                 {rows.map((c) => (
-                  <li
+                  <Box
+                    component="li"
                     key={c.item_id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line p-3"
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 1,
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      p: 1.5,
+                    }}
                   >
-                    <div className="min-w-0">
-                      <p className="m-0 break-words font-semibold">{c.name}</p>
-                      <p className="m-0 text-sm text-muted">
+                    <Box sx={{ minWidth: 0 }}>
+                      <Box component="p" sx={{ m: 0, overflowWrap: 'anywhere', fontWeight: 600 }}>
+                        {c.name}
+                      </Box>
+                      <Box
+                        component="p"
+                        sx={{ m: 0, fontSize: '0.875rem', color: 'text.secondary' }}
+                      >
                         {c.sku}
                         {c.note ? ` · ${c.note}` : ''}
-                      </p>
-                    </div>
+                      </Box>
+                    </Box>
                     {added.includes(c.item_id) ? (
-                      <span className="font-semibold text-muted">Added</span>
+                      <Box component="span" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                        Added
+                      </Box>
                     ) : (
                       <Button
                         variant="secondary"
@@ -79,13 +115,13 @@ export function ItemPicker({ label, queryKey, find, added, onAdd }: Props) {
                         Add
                       </Button>
                     )}
-                  </li>
+                  </Box>
                 ))}
-              </ul>
+              </Box>
             )
           }
         </QueryGate>
       )}
-    </div>
+    </Box>
   );
 }

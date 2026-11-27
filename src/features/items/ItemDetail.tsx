@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ArrowLeft, CheckCircle2, Ban } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, Ban } from 'components/icons';
 import { api } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
@@ -29,22 +30,39 @@ type Shown = S['Item'] | S['ItemWithCost'];
 function Warnings({ list }: { list: Warning[] }) {
   if (list.length === 0) return null;
   return (
-    <div role="status" className="rounded-lg border border-warn bg-warn-bg p-3 text-warn">
-      <p className="m-0 flex items-center gap-2 font-semibold">
+    <Box
+      role="status"
+      sx={{
+        borderRadius: 1,
+        border: '1px solid',
+        borderColor: 'warning.main',
+        bgcolor: 'warning.lighter',
+        p: 1.5,
+        color: 'warning.main',
+      }}
+    >
+      <Box
+        component="p"
+        sx={{ m: 0, display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}
+      >
         <AlertTriangle aria-hidden="true" size={20} />
         <span>This item may already exist. It was still saved.</span>
-      </p>
-      <ul className="m-0 mt-1 list-disc pl-10 text-sm">
+      </Box>
+      <Box component="ul" sx={{ m: 0, mt: 0.5, listStyle: 'disc', pl: 5, fontSize: '0.875rem' }}>
         {list.map((w, i) => (
           <li key={i}>
             {w.message}{' '}
-            <Link to={`/items/${w.item_id}`} className="font-semibold underline">
+            <Box
+              component={Link}
+              to={`/items/${w.item_id}`}
+              sx={{ fontWeight: 600, textDecoration: 'underline' }}
+            >
               Open that item
-            </Link>
+            </Box>
           </li>
         ))}
-      </ul>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -101,38 +119,56 @@ function Detail({
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         <PageHeader title={item.name} />
-        <p className="m-0 flex flex-wrap items-center gap-2 text-muted">
+        <Box
+          component="p"
+          sx={{
+            m: 0,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+            color: 'text.secondary',
+          }}
+        >
           <span>{item.sku}</span>
           <span aria-hidden="true">·</span>
           <span>{item.brand_name ?? 'No brand'}</span>
           <StatusWord status={badge.status} label={badge.label} />
-        </p>
-      </div>
+        </Box>
+      </Box>
       {notice && <SuccessNotice>{notice}</SuccessNotice>}
       <Warnings list={warnings} />
-      <Card className="flex flex-col gap-1">
-        <h2 className="text-title">Summary</h2>
-        <p className="m-0">
+      <Card sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Box component="h2" sx={{ typography: 'h4' }}>
+          Summary
+        </Box>
+        <Box component="p" sx={{ m: 0 }}>
           {item.model_name} · {item.mpn} · {conditionLabels[item.condition]}
           {item.grade ? ` · Grade ${item.grade}` : ''}
-        </p>
-        <p className="m-0 font-semibold">
+        </Box>
+        <Box component="p" sx={{ m: 0, fontWeight: 600 }}>
           {item.selling_price ? ghs(item.selling_price) : 'No selling price yet'}
-        </p>
+        </Box>
         {withCost && averageCost(item) !== undefined && (
-          <p className="m-0 text-muted">Average cost: {costText(averageCost(item) ?? null)}</p>
+          <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+            Average cost: {costText(averageCost(item) ?? null)}
+          </Box>
         )}
       </Card>
-      <Card className="flex flex-col gap-3">
-        <h2 className="text-title">Picture</h2>
+      <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box component="h2" sx={{ typography: 'h4' }}>
+          Picture
+        </Box>
         <ImageUpload item={item} canManage={canManage} onUploaded={remember} />
       </Card>
       {canManage && (
         <>
-          <Card className="flex flex-col gap-3">
-            <h2 className="text-title">Details</h2>
+          <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box component="h2" sx={{ typography: 'h4' }}>
+              Details
+            </Box>
             <ApiProblem error={edit.error} at={edit.submittedAt} />
             <ItemForm
               key={`${item.id}|${item.updated_at}`}
@@ -146,8 +182,10 @@ function Detail({
               }}
             />
           </Card>
-          <Card className="flex flex-col gap-3">
-            <h2 className="text-title">Status</h2>
+          <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box component="h2" sx={{ typography: 'h4' }}>
+              Status
+            </Box>
             <ApiProblem error={move.error} at={move.submittedAt} />
             {confirm ? (
               <ConfirmPanel
@@ -161,7 +199,7 @@ function Detail({
                 }}
               />
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {item.status === 'draft' && (
                   <Button
                     icon={CheckCircle2}
@@ -187,7 +225,7 @@ function Detail({
                     Discontinue item
                   </Button>
                 )}
-              </div>
+              </Box>
             )}
           </Card>
         </>
@@ -208,7 +246,7 @@ export function ItemDetail() {
         : api('get', '/api/v1/items/{id}/', { path: { id } }),
   });
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <QueryGate query={detail}>
         {(item) => (
           <Detail
@@ -218,13 +256,22 @@ export function ItemDetail() {
           />
         )}
       </QueryGate>
-      <Link
+      <Box
+        component={Link}
         to="/items"
-        className="inline-flex min-h-target items-center gap-2 font-semibold text-primary-solid underline"
+        sx={{
+          display: 'inline-flex',
+          minHeight: 44,
+          alignItems: 'center',
+          gap: 1,
+          fontWeight: 600,
+          color: 'primary.main',
+          textDecoration: 'underline',
+        }}
       >
         <ArrowLeft aria-hidden="true" size={20} />
         <span>Back to items</span>
-      </Link>
-    </div>
+      </Box>
+    </Box>
   );
 }

@@ -206,11 +206,12 @@ test('home: low stock list, no audit list, no sideways scroll at 360 px', async 
     }),
   );
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 2, name: 'Low stock' })).toBeVisible();
-  await expect(page.getByText('1 to reorder')).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Recent activity' })).toHaveCount(0);
+  await expect(page.getByText('Low stock items')).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Low stock items' })).toContainText('HP 250 G9');
+  await expect(page.getByText('Recent activity')).toHaveCount(0);
   const main = page.getByRole('main');
-  await expect(main.getByRole('link', { name: 'Shortfalls' })).toBeVisible();
-  await expect(main.getByRole('link', { name: 'Audit Logs' })).toBeVisible();
+  await expect(main.getByText('Open shortfalls')).toBeVisible();
+  // Audit logs stay off the dashboard; they are one drawer link away.
+  await expect(main.getByRole('link', { name: 'Audit Logs' })).toHaveCount(0);
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });

@@ -6,8 +6,8 @@ import {
   PauseCircle,
   Truck,
   XCircle,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+} from '../icons';
+import type { IconType } from '../icons';
 import { StatusBadge as Badge } from './StatusBadge';
 import type { Tone } from './StatusBadge';
 
@@ -27,7 +27,7 @@ export type Status =
   | 'rejected'
   | 'cancelled';
 
-const config: Record<Status, { label: string; icon: LucideIcon; tone: Tone }> = {
+const config: Record<Status, { label: string; icon: IconType; tone: Tone }> = {
   'in-stock': { label: 'In stock', icon: CheckCircle2, tone: 'success' },
   low: { label: 'Low', icon: AlertTriangle, tone: 'warning' },
   out: { label: 'Out of stock', icon: XCircle, tone: 'danger' },

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
@@ -20,6 +21,7 @@ import { formatAccra } from '../../lib/time';
 import { dispatchStatusBadge, unitsSent } from '../dispatches/labels';
 import { saleStatusLabels } from '../sales/labels';
 import { useBranchFilter } from '../workingBranch/BranchFilter';
+import { BranchScope } from '../workingBranch/BranchScope';
 import { PanelCard, StatCard, stateOf } from './blocks';
 import { accraDay, cedis, toCents, useDashboardData } from './data';
 
@@ -223,15 +225,27 @@ export function Dashboard() {
     addChart(
       'sales7',
       <PanelCard title="Sales last 7 days" state={salesState} query={q.sales} need={SALES_NEED}>
-        <LineChart
-          height={chartHeight}
-          hideLegend
-          series={[
-            { data: perDay, area: true, color: vars.palette.primary[400], label: 'Sales (GHS)' },
-          ]}
-          xAxis={[{ scaleType: 'point', data: days.map((x) => x.slice(5)) }]}
-          margin={{ left: 8, right: 16 }}
-        />
+        <Box
+          role="img"
+          aria-label={`Sales last 7 days in GHS: ${days.map((d, i) => `${d} ${perDay[i]}`).join(', ')}`}
+        >
+          <Box aria-hidden="true">
+            <LineChart
+              height={chartHeight}
+              hideLegend
+              series={[
+                {
+                  data: perDay,
+                  area: true,
+                  color: vars.palette.primary[400],
+                  label: 'Sales (GHS)',
+                },
+              ]}
+              xAxis={[{ scaleType: 'point', data: days.map((x) => x.slice(5)) }]}
+              margin={{ left: 8, right: 16 }}
+            />
+          </Box>
+        </Box>
       </PanelCard>,
     );
   if (locations)
@@ -242,25 +256,32 @@ export function Dashboard() {
         state="ready"
         empty={locations.length === 0 ? 'No stock yet.' : undefined}
       >
-        <BarChart
-          height={chartHeight}
-          hideLegend
-          series={[
-            {
-              data: locations.map((l) => l.on_hand),
-              label: 'On hand',
-              color: vars.palette.navy.main,
-            },
-          ]}
-          xAxis={[
-            {
-              scaleType: 'band',
-              data: locations.map((l) => l.location_name),
-              categoryGapRatio: 0.4,
-            },
-          ]}
-          slotProps={{ bar: { rx: 4, ry: 4 } }}
-        />
+        <Box
+          role="img"
+          aria-label={`Units on hand by location: ${locations.map((l) => `${l.location_name} ${l.on_hand}`).join(', ')}`}
+        >
+          <Box aria-hidden="true">
+            <BarChart
+              height={chartHeight}
+              hideLegend
+              series={[
+                {
+                  data: locations.map((l) => l.on_hand),
+                  label: 'On hand',
+                  color: vars.palette.navy.main,
+                },
+              ]}
+              xAxis={[
+                {
+                  scaleType: 'band',
+                  data: locations.map((l) => l.location_name),
+                  categoryGapRatio: 0.4,
+                },
+              ]}
+              slotProps={{ bar: { rx: 4, ry: 4 } }}
+            />
+          </Box>
+        </Box>
       </PanelCard>,
     );
   if (locations)
@@ -272,23 +293,35 @@ export function Dashboard() {
         query={q.warehouses}
         empty={units === 0 ? 'No stock yet.' : undefined}
       >
-        <PieChart
-          height={chartHeight}
-          series={[
-            {
-              innerRadius: 50,
-              data: [
-                { id: 'wh', value: inWarehouse, label: 'Warehouse', color: vars.palette.navy.main },
+        <Box
+          role="img"
+          aria-label={`Units on hand: warehouse ${inWarehouse}, branches ${(units ?? 0) - inWarehouse}`}
+        >
+          <Box aria-hidden="true">
+            <PieChart
+              height={chartHeight}
+              series={[
                 {
-                  id: 'br',
-                  value: (units ?? 0) - inWarehouse,
-                  label: 'Branches',
-                  color: vars.palette.primary[400],
+                  innerRadius: 50,
+                  data: [
+                    {
+                      id: 'wh',
+                      value: inWarehouse,
+                      label: 'Warehouse',
+                      color: vars.palette.navy.main,
+                    },
+                    {
+                      id: 'br',
+                      value: (units ?? 0) - inWarehouse,
+                      label: 'Branches',
+                      color: vars.palette.primary[400],
+                    },
+                  ],
                 },
-              ],
-            },
-          ]}
-        />
+              ]}
+            />
+          </Box>
+        </Box>
       </PanelCard>,
     );
   if (has('sales.record') || has('dashboard.view'))
@@ -445,10 +478,19 @@ export function Dashboard() {
 
   return (
     <Grid container rowSpacing={{ xs: 2.5, md: 4.5 }} columnSpacing={spacing.columnSpacing}>
-      <Grid size={12} sx={{ mb: -2.25 }}>
-        <Typography variant="h5" component="h1">
+      <Grid size={12}>
+        <Typography variant="h3" component="h1">
           Home
         </Typography>
+        {me.all_branches ? (
+          <Box sx={{ mt: 1.5, maxWidth: 320 }}>
+            <BranchScope />
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Working branch: {me.working_branch?.name ?? 'No branch selected'}
+          </Typography>
+        )}
       </Grid>
       {stats}
       {charts.length > 0 && (

@@ -1,6 +1,4 @@
-import type { SidebarSection } from './ui';
 import type { Me } from '../auth/session';
-import { iconForMenuKey } from './menuIcons';
 
 /** Where the audit log lives. The server's `activity` entry (menu or home link) opens this screen. */
 export const AUDIT_LOGS_PATH = '/audit-logs';
@@ -34,12 +32,4 @@ export function navGroups(me: Pick<Me, 'menu' | 'home_links'>): NavGroupModel[] 
       items: hasAudit ? [{ key: AUDIT_KEY, to: AUDIT_LOGS_PATH, label: 'Audit Logs' }] : [],
     },
   ].filter((s) => s.items.length > 0);
-}
-
-/** Legacy sidebar shape (removed with the Tailwind shell). */
-export function navSections(me: Pick<Me, 'menu' | 'home_links'>): SidebarSection[] {
-  return navGroups(me).map((g) => ({
-    label: g.label,
-    items: g.items.map((i) => ({ to: i.to, label: i.label, icon: iconForMenuKey(i.key) })),
-  }));
 }

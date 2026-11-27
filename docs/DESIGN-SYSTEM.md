@@ -92,6 +92,18 @@ Header: white with the Mantis border, navy text and icons. Cards: white with the
 - Header: search box (jumps to any menu screen), working-branch chip, notification bell (disabled: "No notifications yet"), profile menu (name, login id, role, home location, working branch, switch branch, change password, log out).
 - Page: `Grid container` with `rowSpacing` 4.5 and `columnSpacing` 2.75 as in the Mantis dashboard; cards are `MainCard`.
 
+## Branch element placement map
+
+One canonical element per purpose; nothing is duplicated.
+
+| Element | Lives in | Notes |
+|---|---|---|
+| Working branch (current location), read-only text | Profile menu ("Working branch: ...") and the Home page header (plain text, not a control) | Super Admin sees "All branches" |
+| Switch working branch (the only switcher) | Profile menu item "Switch working branch", opens the branch picker page | Shown only when `/me` allows it (`working_branch.select`, not Super Admin) |
+| Filter by branch (Super Admin scope) | Inside the pages whose API accepts `branch`: Home (dashboard), Users, Sales | `BranchScope`; never in the header, drawer or profile menu. Stock, Audit Logs and Dispatches have no `branch` parameter in the contract, so they have no filter |
+| Header | Hamburger, search, notification bell, profile button | No branch chip, no branch filter, no switch button. Checked per role at desktop and 360 px in `e2e/mock-branch-placement.spec.ts` |
+| Drawer and search | Menu entries only | No branch elements |
+
 ## Breakpoints (Mantis)
 
 xs 0, sm 768, md 1024, lg 1266, xl 1440. Drawer: temporary below lg, mini at lg, open at xl. Stat cards: 2 per row below md, 4 per row from md. Charts and lists: full width below md, 2 per row from md.
