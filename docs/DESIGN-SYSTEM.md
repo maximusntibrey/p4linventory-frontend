@@ -147,3 +147,21 @@ Audit logs stay off the dashboard. Every card has a loading skeleton, an empty s
 3. Put reusable pieces in `src/components` (TypeScript for ours) before using them in a screen.
 4. Register the route in `src/routes.tsx` with `RequirePermission`; the menu entry comes from `/me`.
 5. Test: component (RTL), axe, keyboard, 360 px, MSW-backed. Run `npm run check`.
+
+## Differences from Mantis (intentional)
+
+Compared side by side with `docs/ui-reference/` (login, dashboard, drawer expanded and collapsed, a table page, a form page) at 360 and 1280 px; screenshots of ours are in `docs/ui-verification/`.
+
+| Area | Mantis Free | Ours | Why |
+|---|---|---|---|
+| Colours | Blue palette, white drawer | Orange and navy brand palette, navy drawer with an orange active bar, AA-tested status colours one step darker | Brand (logo colours) and WCAG AA |
+| Fonts | Public Sans | Bebas Neue for headings, brand and big numbers; Inter for the rest | Owner decision |
+| Tap targets | About 40 px | At least 44 px (buttons, icon buttons, inputs, list rows, checkboxes) | Workspace rule |
+| Icon buttons | Icon only | Still icon only in the header (hamburger, bell, profile, more) with an aria-label and tooltip; every action button elsewhere has a visible text label | Mantis pattern kept for the header; open question in TASKS |
+| Header | GitHub link, "Ctrl + K" search, bell with a badge | Search box that jumps to any menu screen, disabled bell ("No notifications yet"), profile menu with the working branch and switcher | No invented data; one place for branch controls |
+| Drawer | Promo card, demo menu | Menu from `/me`, no promo card, Home always present | Server-driven menu |
+| Dashboard | Demo charts and tables | Role-aware stat, chart and list cards from our APIs; "Not available yet" for missing data; no trend chips | No fake numbers |
+| Tables | Horizontal table | Below 1024 px every row is a labelled card | Mobile layout without sideways scroll |
+| Filters | Inline | Bottom-sheet "Filters" drawer on phones | Mobile pattern |
+| Auth pages | Centred card on a pattern background | Navy brand panel with the stacked logo and a white form panel; navy strip on phones | Brand |
+| Dark mode | Available | Out of scope | Owner decision |

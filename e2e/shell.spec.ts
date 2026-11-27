@@ -28,10 +28,11 @@ test('phone: temporary drawer opens from the hamburger and closes after a choice
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
   test.skip(!(await isPhone(page)), 'phone layout only');
-  await expect(page.getByRole('link', { name: 'Items', exact: true })).toBeHidden();
+  const logo = page.getByRole('link', { name: 'Payless4Laptops home' });
+  await expect(logo).toBeHidden();
   const nav = await openNav(page);
   await nav.getByRole('link', { name: 'Items', exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Items', exact: true })).toBeHidden();
+  await expect(logo).toBeHidden();
   await expect(page).toHaveURL(/\/items$/);
 });
 

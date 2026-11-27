@@ -887,7 +887,7 @@ Rule: the app must look and behave like the Mantis Free dashboard (`reference/ma
 
 ### UI result (after run 1 and the migration batches)
 
-- `npm run check` green: 37 test files, 560 tests (the old custom-library tests were replaced by `src/components/ui/ui.test.tsx` and the screen tests; shell, command palette, toast and modal tests went with the components they covered). Bundle: main `index-*.js` 1,002 kB (307 kB gzip), `Home-*.js` 358 kB (106 kB gzip, charts), `index-*.css` 4 kB. Before: 514 kB (154 kB gzip) JS, 26 kB CSS.
+- `npm run check` green: 37 test files, 560 tests (the old custom-library tests were replaced by `src/components/ui/ui.test.tsx` and the screen tests; shell, command palette, toast and modal tests went with the components they covered). Bundle: before the migration one `index-*.js` of 514 kB (154 kB gzip) and 26 kB CSS. After the lazy-loading step the first load is `index` 335 kB (108 gzip) + `mui` 215 kB (62 gzip) + `app-vendor` 82 kB (26 gzip) + `icons` 81 kB (23 gzip), about 715 kB (220 kB gzip) in total; every page is its own chunk (2 to 13 kB) and `charts` (482 kB, 148 gzip) loads after the cards paint. Before the lazy step the single main file was 1,002 kB (307 kB gzip).
 
 - `npm run e2e` green: 100 passed, 3 skipped (project-specific skips). The profile-menu branch specs were occasionally flaky under load; the helpers now reopen the menu while polling.
 
@@ -1001,3 +1001,11 @@ Defects found by looking at the screenshots and by `scripts/ui-verification.mjs`
 - Header fits 360 px: hamburger, bell and the "more" menu (search and profile inside); no branch chip.
 - Dashboard: stat cards 2 per row, charts and lists full width, titles in the display face.
 - No sideways page scroll on any route at 360 or 390 px (script output: "no issues").
+
+### design_system.view
+
+The `design_system.view` permission (contract 0.7.0) is no longer used by the frontend: the `/design-system` showcase and its route gate are removed, and the mocks no longer grant it. The backend can drop it from the contract when convenient.
+
+- [x] UI.14 Front Staff Home from the endpoints they may call (sales list, dispatches waiting, quick actions); Home is in every menu and `/` is every role's landing page (`e2e/mock-landing.spec.ts`)
+- [x] UI.15 Dashboard card polish, branch filter behind Filters on phones and on the Home header right side, tablet table cards (no overflow at 768 px), one filter pattern on every list (Toolbar or FilterForm), MUI checkbox and radio fields
+- [x] UI.16 Bundle: every page lazy, vendor chunks (mui, icons, app-vendor), charts load after the cards paint

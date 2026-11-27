@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -7,13 +8,11 @@ import Grid from '@mui/material/Grid';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
+import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { BarChart } from '@mui/x-charts/BarChart';
-import { LineChart } from '@mui/x-charts/LineChart';
-import { PieChart } from '@mui/x-charts/PieChart';
 import { rowsOf } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import type { Me } from '../../auth/session';
@@ -24,6 +23,10 @@ import { useBranchFilter } from '../workingBranch/BranchFilter';
 import { BranchScope } from '../workingBranch/BranchScope';
 import { PanelCard, StatCard, stateOf } from './blocks';
 import { accraDay, cedis, toCents, useDashboardData } from './data';
+
+const SalesLine = lazy(() => import('./Charts').then((m) => ({ default: m.SalesLine })));
+const StockBars = lazy(() => import('./Charts').then((m) => ({ default: m.StockBars })));
+const StockSplit = lazy(() => import('./Charts').then((m) => ({ default: m.StockSplit })));
 
 type Perm = Me['permissions'][number];
 
@@ -231,20 +234,14 @@ export function Dashboard() {
           aria-label={`Sales last 7 days in GHS: ${days.map((d, i) => `${d} ${perDay[i]}`).join(', ')}`}
         >
           <Box aria-hidden="true">
-            <LineChart
-              height={chartHeight}
-              hideLegend
-              series={[
-                {
-                  data: perDay,
-                  area: true,
-                  color: vars.palette.primary[400],
-                  label: 'Sales (GHS)',
-                },
-              ]}
-              xAxis={[{ scaleType: 'point', data: days.map((x) => x.slice(5)) }]}
-              margin={{ left: 8, right: 16 }}
-            />
+            <Suspense fallback={<Skeleton variant="rounded" height={chartHeight} />}>
+              <SalesLine
+                height={chartHeight}
+                data={perDay}
+                labels={days.map((x) => x.slice(5))}
+                color={vars.palette.primary[400]}
+              />
+            </Suspense>
           </Box>
         </Box>
       </PanelCard>,
@@ -262,25 +259,14 @@ export function Dashboard() {
           aria-label={`Units on hand by location: ${locations.map((l) => `${l.location_name} ${l.on_hand}`).join(', ')}`}
         >
           <Box aria-hidden="true">
-            <BarChart
-              height={chartHeight}
-              hideLegend
-              series={[
-                {
-                  data: locations.map((l) => l.on_hand),
-                  label: 'On hand',
-                  color: vars.palette.navy.main,
-                },
-              ]}
-              xAxis={[
-                {
-                  scaleType: 'band',
-                  data: locations.map((l) => l.location_name),
-                  categoryGapRatio: 0.4,
-                },
-              ]}
-              slotProps={{ bar: { rx: 4, ry: 4 } }}
-            />
+            <Suspense fallback={<Skeleton variant="rounded" height={chartHeight} />}>
+              <StockBars
+                height={chartHeight}
+                values={locations.map((l) => l.on_hand)}
+                names={locations.map((l) => l.location_name)}
+                color={vars.palette.navy.main}
+              />
+            </Suspense>
           </Box>
         </Box>
       </PanelCard>,
@@ -299,28 +285,14 @@ export function Dashboard() {
           aria-label={`Units on hand: warehouse ${inWarehouse}, branches ${(units ?? 0) - inWarehouse}`}
         >
           <Box aria-hidden="true">
-            <PieChart
-              height={chartHeight}
-              series={[
-                {
-                  innerRadius: 50,
-                  data: [
-                    {
-                      id: 'wh',
-                      value: inWarehouse,
-                      label: 'Warehouse',
-                      color: vars.palette.navy.main,
-                    },
-                    {
-                      id: 'br',
-                      value: (units ?? 0) - inWarehouse,
-                      label: 'Branches',
-                      color: vars.palette.primary[400],
-                    },
-                  ],
-                },
-              ]}
-            />
+            <Suspense fallback={<Skeleton variant="rounded" height={chartHeight} />}>
+              <StockSplit
+                height={chartHeight}
+                warehouse={inWarehouse}
+                branches={(units ?? 0) - inWarehouse}
+                colors={[vars.palette.navy.main, vars.palette.primary[400]]}
+              />
+            </Suspense>
           </Box>
         </Box>
       </PanelCard>,

@@ -41,8 +41,12 @@ test('the Super Admin top bar has no Switch branch when /me does not allow it', 
   const menu = await openProfile(page);
   await expect(menu.getByText('All branches', { exact: true }).first()).toBeVisible();
   await expect(menu.getByLabel('Filter by branch')).toHaveCount(0);
-  await page.keyboard.press('Escape');
+  await page.mouse.click(5, (page.viewportSize()?.height ?? 740) - 5); // click away closes the menus
+  // On phones the Home branch filter sits behind a Filters button.
+  const filters = page.getByRole('button', { name: 'Filters', exact: true });
+  if (await filters.isVisible()) await filters.click();
   await expect(page.getByLabel('Filter by branch')).toBeVisible();
+  if (await filters.isVisible()) await page.keyboard.press('Escape');
   await expect(page.getByText('Low stock items')).toBeVisible();
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });

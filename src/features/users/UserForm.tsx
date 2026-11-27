@@ -107,6 +107,7 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
           </Box>
           {roleCodes.map((code) => (
             <CheckField
+              key={code}
               label={roleLabels[code]}
               type={canMulti ? 'checkbox' : 'radio'}
               value={code}

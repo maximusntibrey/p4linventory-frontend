@@ -102,6 +102,7 @@ function PermissionsForm({
         </Box>
         {permissionCodes.map((code) => (
           <CheckField
+            key={code}
             label={permissionLabels[code]}
             checked={chosen.has(code)}
             onChange={(e) => {

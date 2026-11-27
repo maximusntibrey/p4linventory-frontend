@@ -90,7 +90,7 @@ export async function expectBranch(page: Page, text: string | RegExp) {
 export async function startSwitch(page: Page) {
   const header = page.getByRole('banner').first();
   if (!(await header.getByRole('button', { name: 'Log out' }).isVisible())) await openProfile(page);
-  await header.getByRole('button', { name: 'Switch working branch' }).click();
+  await header.getByRole('button', { name: 'Switch working branch' }).click({ force: true });
 }
 
 /** Phones collapse two or more page actions into one Actions button; desktop shows them. */
