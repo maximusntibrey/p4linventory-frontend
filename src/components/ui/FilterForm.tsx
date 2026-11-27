@@ -34,21 +34,14 @@ export function FilterForm({
   if (compact) {
     return (
       <Stack component="form" role="search" onSubmit={submit} sx={{ gap: 1.5 }}>
-        {search}
-        <Stack direction="row" sx={{ gap: 1 }}>
+        {/* One compact row: the search field (Enter searches) and the Filters button beside it. */}
+        <Stack direction="row" sx={{ gap: 1, alignItems: 'flex-end' }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>{search}</Box>
           {children && (
-            <Button
-              variant="secondary"
-              icon={SlidersHorizontal}
-              onClick={() => setOpen(true)}
-              sx={{ flex: 1 }}
-            >
+            <Button variant="secondary" icon={SlidersHorizontal} onClick={() => setOpen(true)}>
               Filters
             </Button>
           )}
-          <Button type="submit" variant="secondary" icon={Search} sx={{ flex: 1 }}>
-            {submitLabel}
-          </Button>
         </Stack>
         <Drawer open={open} onClose={() => setOpen(false)} title="Filters">
           <Stack sx={{ gap: 1.5 }}>

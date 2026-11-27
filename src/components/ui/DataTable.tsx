@@ -60,6 +60,7 @@ const cardLabel = {
   fontWeight: 600,
   color: 'text.secondary',
   textAlign: 'left',
+  justifySelf: 'start',
 } as const;
 const ariaSort = { asc: 'ascending', desc: 'descending' } as const;
 
@@ -225,16 +226,29 @@ export function DataTable<Row>({
                 borderColor: 'divider',
                 py: 0.5,
               },
+              // Two fixed columns: the label at the same x in every row, the value right-aligned and wrapping.
               '& tbody td': {
-                display: 'flex',
-                flexDirection: 'row',
+                display: 'grid',
+                gridTemplateColumns: '38% minmax(0, 1fr)',
+                columnGap: 2,
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 2,
-                textAlign: 'right',
+                minHeight: 44,
+                py: 0.75,
+                px: 2,
                 border: 0,
+                textAlign: 'right',
+                overflowWrap: 'anywhere',
               },
-              '& tbody td[colspan]': { display: 'table-cell' },
+              // The theme pads the first and last cell of a row more: cards use one padding for every row.
+              '& tbody tr td.MuiTableCell-root:first-of-type, & tbody tr td.MuiTableCell-root:last-of-type':
+                {
+                  pl: 2,
+                  pr: 2,
+                },
+              '& tbody td > *': { margin: 0 }, // right-aligned cells push children with auto margins in the theme
+              '& tbody td.MuiTableCell-paddingCheckbox': { display: 'block', textAlign: 'left' },
+              '& tbody td > span:last-child': { justifySelf: 'end', textAlign: 'right' },
+              '& tbody td[colspan]': { display: 'table-cell', px: 2 },
             },
           })}
         >

@@ -72,7 +72,7 @@ export function Pagination({
         component="nav"
         aria-label="Pagination"
         direction="row"
-        sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1 }}
+        sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}
       >
         <Button
           variant="secondary"
@@ -82,7 +82,7 @@ export function Pagination({
         >
           Previous
         </Button>
-        <Typography aria-current="page" variant="subtitle1" component="span">
+        <Typography aria-current="page" variant="subtitle1" component="span" noWrap>
           Page {page} of {pageCount}
         </Typography>
         <Button
