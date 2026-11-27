@@ -69,8 +69,14 @@ export async function openProfile(page: Page) {
 /** The working branch is shown (and switched) in one place: the profile menu. */
 export async function expectBranch(page: Page, text: string | RegExp) {
   const header = page.getByRole('banner').first();
-  if (!(await header.getByRole('button', { name: 'Log out' }).isVisible())) await openProfile(page);
-  await expect(header.getByText(text, { exact: typeof text === 'string' }).first()).toBeVisible();
+  // The menu may close while /me refreshes after a switch: reopen it until the text shows.
+  await expect(async () => {
+    if (!(await header.getByRole('button', { name: 'Log out' }).isVisible()))
+      await openProfile(page);
+    await expect(header.getByText(text, { exact: typeof text === 'string' }).first()).toBeVisible({
+      timeout: 1500,
+    });
+  }).toPass();
   // Close it again (on phones the "more" menu may already have closed with it).
   const profile = header.getByRole('button', { name: 'Open profile menu' });
   if (await isPhone(page)) {

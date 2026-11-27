@@ -889,6 +889,8 @@ Rule: the app must look and behave like the Mantis Free dashboard (`reference/ma
 
 - `npm run check` green: 37 test files, 560 tests (the old custom-library tests were replaced by `src/components/ui/ui.test.tsx` and the screen tests; shell, command palette, toast and modal tests went with the components they covered). Bundle: main `index-*.js` 1,002 kB (307 kB gzip), `Home-*.js` 358 kB (106 kB gzip, charts), `index-*.css` 4 kB. Before: 514 kB (154 kB gzip) JS, 26 kB CSS.
 
+- `npm run e2e` green: 100 passed, 3 skipped (project-specific skips). The profile-menu branch specs were occasionally flaky under load; the helpers now reopen the menu while polling.
+
 ### Frontend inventory
 
 | Topic | Today |
