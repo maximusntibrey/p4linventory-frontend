@@ -7,16 +7,13 @@ import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { SuccessNotice } from '../../components/focus';
-import { Field } from '../../components/Field';
 import { QueryGate } from '../../components/QueryGate';
-import { StatusBadge } from '../../components/StatusBadge';
 import { permissionCodes, permissionLabels, roleLabels, statusBadge } from './labels';
 import { OneTimePassword } from './OneTimePassword';
 import { UserForm } from './UserForm';
+import { Button, Card, PageHeader, StatusWord, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Target = 'active' | 'suspended' | 'deactivated';
@@ -40,7 +37,7 @@ function PermissionsCard({ user }: { user: S['User'] }) {
   });
   return (
     <Card className="flex flex-col gap-3">
-      <h2 className="text-2xl">Permissions</h2>
+      <h2 className="text-title">Permissions</h2>
       <QueryGate query={current} inline>
         {(data) => (
           <PermissionsForm
@@ -98,7 +95,7 @@ function PermissionsForm({
           <label key={code} className="flex min-h-11 items-center gap-3">
             <input
               type="checkbox"
-              className="size-5 accent-accent"
+              className="size-5 accent-primary-solid"
               checked={chosen.has(code)}
               onChange={(e) => {
                 const next = new Set(chosen);
@@ -189,12 +186,12 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
   return (
     <>
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl text-ink">{user.full_name}</h1>
+        <PageHeader title={user.full_name} />
         <p className="m-0 flex flex-wrap items-center gap-2 text-muted">
           <span>{user.login_id}</span>
           <span aria-hidden="true">·</span>
           <span>{user.roles.map((r) => roleLabels[r]).join(', ')}</span>
-          <StatusBadge status={statusBadge[user.status]} />
+          <StatusWord status={statusBadge[user.status]} />
         </p>
       </div>
       {notice && <SuccessNotice>{notice}</SuccessNotice>}
@@ -209,7 +206,7 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
       {canManage && (
         <>
           <Card className="flex flex-col gap-3">
-            <h2 className="text-2xl">Details</h2>
+            <h2 className="text-title">Details</h2>
             <ApiProblem error={edit.error} at={edit.submittedAt} />
             <UserForm
               key={`${user.full_name}|${user.roles.join()}|${user.permanent_location_id}`}
@@ -224,7 +221,7 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
             />
           </Card>
           <Card className="flex flex-col gap-3">
-            <h2 className="text-2xl">Account</h2>
+            <h2 className="text-title">Account</h2>
             <div className="flex flex-wrap gap-2">
               {targets
                 .filter((t) => t.status !== user.status)
@@ -279,7 +276,7 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
                   onConfirm={() => status.mutate(confirm)}
                   onCancel={closeConfirm}
                 >
-                  <Field
+                  <TextField
                     label="Reason (optional)"
                     maxLength={500}
                     value={reason}
@@ -304,11 +301,11 @@ export function UserDetail() {
     queryFn: () => api('get', '/api/v1/users/{id}/', { path: { id } }),
   });
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <QueryGate query={query}>{(u) => <UserView user={u} canManage={canManage} />}</QueryGate>
       <Link
         to="/users"
-        className="inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline"
+        className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
       >
         <ArrowLeft aria-hidden="true" size={20} />
         <span>Back to users</span>

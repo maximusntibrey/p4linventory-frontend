@@ -7,12 +7,9 @@ import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { SuccessNotice } from '../../components/focus';
 import { QueryGate } from '../../components/QueryGate';
-import { StatusBadge } from '../../components/StatusBadge';
 import { ImageUpload } from './ImageUpload';
 import { ItemForm } from './ItemForm';
 import {
@@ -23,6 +20,7 @@ import {
   itemStatusBadge,
   withoutCost,
 } from './labels';
+import { Button, Card, PageHeader, StatusWord } from '../../components/ui';
 
 type S = components['schemas'];
 type Warning = S['ItemWithCostAndWarnings']['warnings'][number];
@@ -104,18 +102,18 @@ function Detail({
   return (
     <>
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl text-ink">{item.name}</h1>
+        <PageHeader title={item.name} />
         <p className="m-0 flex flex-wrap items-center gap-2 text-muted">
           <span>{item.sku}</span>
           <span aria-hidden="true">·</span>
           <span>{item.brand_name ?? 'No brand'}</span>
-          <StatusBadge status={badge.status} label={badge.label} />
+          <StatusWord status={badge.status} label={badge.label} />
         </p>
       </div>
       {notice && <SuccessNotice>{notice}</SuccessNotice>}
       <Warnings list={warnings} />
       <Card className="flex flex-col gap-1">
-        <h2 className="text-2xl">Summary</h2>
+        <h2 className="text-title">Summary</h2>
         <p className="m-0">
           {item.model_name} · {item.mpn} · {conditionLabels[item.condition]}
           {item.grade ? ` · Grade ${item.grade}` : ''}
@@ -128,13 +126,13 @@ function Detail({
         )}
       </Card>
       <Card className="flex flex-col gap-3">
-        <h2 className="text-2xl">Picture</h2>
+        <h2 className="text-title">Picture</h2>
         <ImageUpload item={item} canManage={canManage} onUploaded={remember} />
       </Card>
       {canManage && (
         <>
           <Card className="flex flex-col gap-3">
-            <h2 className="text-2xl">Details</h2>
+            <h2 className="text-title">Details</h2>
             <ApiProblem error={edit.error} at={edit.submittedAt} />
             <ItemForm
               key={`${item.id}|${item.updated_at}`}
@@ -149,7 +147,7 @@ function Detail({
             />
           </Card>
           <Card className="flex flex-col gap-3">
-            <h2 className="text-2xl">Status</h2>
+            <h2 className="text-title">Status</h2>
             <ApiProblem error={move.error} at={move.submittedAt} />
             {confirm ? (
               <ConfirmPanel
@@ -210,7 +208,7 @@ export function ItemDetail() {
         : api('get', '/api/v1/items/{id}/', { path: { id } }),
   });
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <QueryGate query={detail}>
         {(item) => (
           <Detail
@@ -222,7 +220,7 @@ export function ItemDetail() {
       </QueryGate>
       <Link
         to="/items"
-        className="inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline"
+        className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
       >
         <ArrowLeft aria-hidden="true" size={20} />
         <span>Back to items</span>

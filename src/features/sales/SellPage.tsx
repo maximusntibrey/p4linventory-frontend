@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, ListChecks, ShoppingCart, Trash2 } from 'lucide-react';
 import { api, ApiError, rowsOf } from '../../api';
@@ -7,17 +6,14 @@ import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { ResultCard } from '../../components/focus';
 import { ItemPicker } from '../../components/ItemPicker';
 import type { Candidate } from '../../components/ItemPicker';
-import { Select } from '../../components/Select';
 import { BranchPicker } from '../workingBranch/BranchPicker';
 import { ghs } from '../items/labels';
-import { fromCents, linkButton, paymentCodes, paymentLabel, toCents } from './labels';
+import { fromCents, paymentCodes, paymentLabel, toCents } from './labels';
+import { Button, Card, PageHeader, SelectField, TextField, LinkButton } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string; price: string | null };
@@ -139,8 +135,8 @@ export function SellPage() {
   // A Super Admin works in the branch picked here; nobody sells without one.
   if (!where) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Sell</h1>
+      <div className="flex flex-col gap-4">
+        <PageHeader title="Sell" />
         <p className="m-0">Choose the branch you are selling at.</p>
         <BranchPicker onDone={() => undefined} />
       </div>
@@ -149,8 +145,8 @@ export function SellPage() {
 
   if (done) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Sell</h1>
+      <div className="flex flex-col gap-4">
+        <PageHeader title="Sell" />
         <ResultCard>
           <p className="m-0 text-lg font-semibold">Sale {done.reference} is recorded.</p>
           <p className="m-0">
@@ -168,23 +164,26 @@ export function SellPage() {
           <Button icon={ShoppingCart} onClick={reset} className="w-full sm:w-auto">
             Sell again
           </Button>
-          <Link to="/sell/sales" className={`${linkButton} w-full sm:w-auto`}>
-            <ListChecks aria-hidden="true" size={20} />
-            <span>Sales list</span>
-          </Link>
+          <LinkButton
+            to="/sell/sales"
+            icon={ListChecks}
+            variant="secondary"
+            className="w-full sm:w-auto"
+          >
+            Sales list
+          </LinkButton>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-4xl text-ink">Sell</h1>
-        <Link to="/sell/sales" className={linkButton}>
-          <ListChecks aria-hidden="true" size={20} />
-          <span>Sales list</span>
-        </Link>
+        <PageHeader title="Sell" />
+        <LinkButton to="/sell/sales" icon={ListChecks} variant="secondary">
+          Sales list
+        </LinkButton>
       </div>
       <p className="m-0 text-muted">
         Selling at <strong className="text-ink">{where.name}</strong>
@@ -194,7 +193,7 @@ export function SellPage() {
           <li
             key={s}
             aria-current={s === step ? 'step' : undefined}
-            className={`rounded-full border px-3 py-1 text-sm font-semibold ${s === step ? 'border-accent bg-accent text-white' : 'border-line text-muted'}`}
+            className={`rounded-full border px-3 py-1 text-sm font-semibold ${s === step ? 'border-primary-solid bg-primary-solid text-on-primary' : 'border-line text-muted'}`}
           >
             Step {i + 1} of 3: {stepTitle[s]}
           </li>
@@ -236,7 +235,7 @@ export function SellPage() {
                     {l.available !== undefined && `${l.available} available · `}
                     {l.price ? `${ghs(l.price)} each` : 'No price yet'}
                   </p>
-                  <Field
+                  <TextField
                     label={`Quantity: ${l.name}`}
                     inputMode="numeric"
                     autoComplete="off"
@@ -298,7 +297,7 @@ export function SellPage() {
       {step === 'pay' && (
         <Card className="flex flex-col gap-4">
           <h2 className="text-3xl">Payment</h2>
-          <Select
+          <SelectField
             label="Payment method"
             value={payment}
             onChange={(e) => setPayment(e.target.value)}
@@ -310,7 +309,7 @@ export function SellPage() {
                 {paymentLabel(c)}
               </option>
             ))}
-          </Select>
+          </SelectField>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" icon={ArrowLeft} onClick={() => setStep('items')}>
               Back

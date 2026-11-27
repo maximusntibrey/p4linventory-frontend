@@ -3,10 +3,10 @@ import type { ReactNode } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { sessionEndedKey } from '../api/queryClient';
-import { Button } from '../components/Button';
 import { Forbidden } from '../pages/Forbidden';
 import { useMe } from './session';
 import type { Me } from './session';
+import { Button } from '../components/ui';
 
 const MeContext = createContext<Me | null>(null);
 

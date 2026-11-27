@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Avatar } from './Avatar';
@@ -8,7 +8,10 @@ import { SearchInput } from './SearchInput';
 export type TopbarProps = {
   /** Global search. Ctrl+K or Cmd+K focuses it from anywhere. */
   search?: { label: string; value: string; onChange: (v: string) => void };
-  notifications?: { count: number; onClick: () => void };
+  /** Search that opens a command palette instead of an inline box. Ctrl+K or Cmd+K opens it. */
+  commandSearch?: { label: string; onOpen: () => void };
+  /** `unavailable` draws the bell as a non-interactive button whose label says why (no data to show). */
+  notifications?: { count: number; onClick: () => void; unavailable?: string };
   user?: { name: string; email: string; src?: string; onClick?: () => void };
   /** Left slot (for example the mobile menu button). */
   leading?: ReactNode;
@@ -16,18 +19,27 @@ export type TopbarProps = {
   children?: ReactNode;
 };
 
-export function Topbar({ search, notifications, user, leading, children }: TopbarProps) {
+export function Topbar({
+  search,
+  commandSearch,
+  notifications,
+  user,
+  leading,
+  children,
+}: TopbarProps) {
   const input = useRef<HTMLInputElement>(null);
+  const open = commandSearch?.onOpen;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        input.current?.focus();
+        if (open) open();
+        else input.current?.focus();
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  }, [open]);
   const pill = user && (
     <>
       <Avatar name={user.name} decorative />
@@ -40,6 +52,22 @@ export function Topbar({ search, notifications, user, leading, children }: Topba
   return (
     <header className="sticky top-0 z-(--z-nav) flex flex-wrap items-center gap-2 border-b border-line bg-canvas px-4 py-2">
       {leading}
+      {commandSearch && (
+        <button
+          type="button"
+          onClick={commandSearch.onOpen}
+          className="relative flex min-h-target min-w-0 flex-1 basis-48 items-center gap-2 rounded-md border border-control bg-canvas pr-14 pl-3 text-left text-muted"
+        >
+          <Search aria-hidden="true" size={18} className="shrink-0" />
+          <span className="truncate">{commandSearch.label}</span>
+          <kbd
+            aria-hidden="true"
+            className="absolute right-3 rounded-sm border border-line bg-surface px-1.5 py-0.5 text-xs font-semibold text-muted"
+          >
+            ⌘K
+          </kbd>
+        </button>
+      )}
       {search && (
         <SearchInput
           ref={input}
@@ -55,9 +83,11 @@ export function Topbar({ search, notifications, user, leading, children }: Topba
         {notifications && (
           <IconButton
             icon={Bell}
-            label="Notifications"
+            label={notifications.unavailable ?? 'Notifications'}
             badge={notifications.count}
-            onClick={notifications.onClick}
+            aria-disabled={notifications.unavailable ? true : undefined}
+            onClick={notifications.unavailable ? undefined : notifications.onClick}
+            className={notifications.unavailable ? 'opacity-60' : undefined}
           />
         )}
         {user &&

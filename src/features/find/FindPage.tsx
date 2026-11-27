@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Search } from 'lucide-react';
-import { api, rowsOf } from '../../api';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { Field } from '../../components/Field';
-import { Pager } from '../../components/Pager';
+import { api, ApiError, rowsOf } from '../../api';
+import type { components } from '../../api';
 import { QueryGate } from '../../components/QueryGate';
-import { StatusBadge } from '../../components/StatusBadge';
+import { describeError } from '../../components/ErrorSummary';
+import { Forbidden } from '../../pages/Forbidden';
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  PageHeader,
+  StatusWord,
+  TextField,
+} from '../../components/ui';
+import type { Column } from '../../components/ui';
+
+type Row = components['schemas']['StockBalance'];
 
 /** Other branches for one item: branch name and available quantity only (the API sends nothing more). */
 function OtherBranches({ itemId }: { itemId: number }) {
@@ -56,9 +65,62 @@ export function FindPage() {
       return n;
     });
 
+  const data = list.data;
+  if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
+  const columns: Column<Row>[] = [
+    {
+      id: 'item',
+      header: 'Item',
+      cell: (r) => (
+        <span className="flex flex-col">
+          <span className="font-semibold">{r.item_name}</span>
+          <span className="text-sm text-muted">{r.sku}</span>
+        </span>
+      ),
+    },
+    {
+      id: 'here',
+      header: 'Available here',
+      cell: (r) => (
+        <span>
+          <span className="text-muted">{r.location_name}: </span>
+          <span className="font-semibold">{r.available} available</span>
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (r) => (
+        <StatusWord status={r.available === 0 ? 'out' : r.low_stock ? 'low' : 'in-stock'} />
+      ),
+    },
+    {
+      id: 'others',
+      header: 'Other branches',
+      cell: (r) => {
+        const key = `${r.location_id}-${r.item_id}`;
+        const shown = open.has(key);
+        return (
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="secondary"
+              icon={MapPin}
+              aria-expanded={shown}
+              aria-label={`${shown ? 'Hide' : 'Show'} other branches for ${r.item_name}`}
+              onClick={() => toggle(key)}
+            >
+              {shown ? 'Hide other branches' : 'Other branches'}
+            </Button>
+            {shown && <OtherBranches itemId={r.item_id} />}
+          </div>
+        );
+      },
+    },
+  ];
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Find</h1>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Find" subtitle="Where an item is in stock." />
       <form
         role="search"
         className="flex flex-col gap-3"
@@ -68,58 +130,36 @@ export function FindPage() {
           setPage(1);
         }}
       >
-        <Field label="Item name or SKU" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <TextField
+          label="Item name or SKU"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+        />
         <Button type="submit" variant="secondary" icon={Search} className="w-full sm:w-auto">
           Search
         </Button>
       </form>
-      <QueryGate query={list}>
-        {(data) => {
-          const rows = rowsOf(data);
-          return (
-            <>
-              {rows.length === 0 && <p className="m-0 text-muted">No items found.</p>}
-              <ul className="m-0 grid list-none gap-3 p-0">
-                {rows.map((r) => {
-                  const key = `${r.location_id}-${r.item_id}`;
-                  const shown = open.has(key);
-                  return (
-                    <li key={key}>
-                      <Card className="flex flex-col gap-2">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <p className="m-0 min-w-0 break-words text-lg font-semibold">
-                            {r.item_name}
-                          </p>
-                          <StatusBadge
-                            status={r.available === 0 ? 'out' : r.low_stock ? 'low' : 'in-stock'}
-                          />
-                        </div>
-                        <p className="m-0 text-sm text-muted">{r.sku}</p>
-                        <p className="m-0">
-                          <span className="text-muted">{r.location_name}: </span>
-                          <span className="font-semibold">{r.available} available</span>
-                        </p>
-                        <Button
-                          variant="secondary"
-                          icon={MapPin}
-                          aria-expanded={shown}
-                          aria-label={`${shown ? 'Hide' : 'Show'} other branches for ${r.item_name}`}
-                          onClick={() => toggle(key)}
-                          className="w-full sm:w-auto"
-                        >
-                          {shown ? 'Hide other branches' : 'Other branches'}
-                        </Button>
-                        {shown && <OtherBranches itemId={r.item_id} />}
-                      </Card>
-                    </li>
-                  );
-                })}
-              </ul>
-              <Pager page={data} onPage={setPage} />
-            </>
-          );
-        }}
-      </QueryGate>
+      <DataTable
+        caption="Stock found"
+        columns={columns}
+        rows={data ? rowsOf(data) : []}
+        rowKey={(r) => `${r.location_id}-${r.item_id}`}
+        state={list.isPending ? 'loading' : list.isError && !data ? 'error' : 'ready'}
+        errorMessage={list.isError ? describeError(list.error).title : undefined}
+        onRetry={() => void list.refetch()}
+        empty={
+          <EmptyState icon={Search} title="No items found" description="Try another name or SKU." />
+        }
+        pagination={
+          data && data.count > data.page_size
+            ? {
+                page: data.page,
+                pageCount: Math.ceil(data.count / data.page_size),
+                onPageChange: setPage,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

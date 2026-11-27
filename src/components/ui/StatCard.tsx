@@ -66,12 +66,29 @@ export function StatCard({ label, value, info, delta }: StatCardProps) {
   );
 }
 
-/** One bordered container split into cells (2 per row on phones, 4 on desktop). */
-export function StatsStrip({ label, children }: { label: string; children: ReactNode }) {
+const stripColumns = {
+  2: 'grid-cols-2',
+  3: 'grid-cols-1 sm:grid-cols-3',
+  4: 'grid-cols-2 md:grid-cols-4',
+} as const;
+
+/** One bordered container split into cells. `columns` is the cell count on wide screens, so no empty cell shows (default 4: 2 per row on phones). */
+export function StatsStrip({
+  label,
+  children,
+  columns = 4,
+}: {
+  label: string;
+  children: ReactNode;
+  columns?: keyof typeof stripColumns;
+}) {
   return (
     <dl
       aria-label={label}
-      className="m-0 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-4"
+      className={cx(
+        'm-0 grid gap-px overflow-hidden rounded-lg border border-line bg-line',
+        stripColumns[columns],
+      )}
     >
       {children}
     </dl>

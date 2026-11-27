@@ -151,8 +151,8 @@ describe('FIX-31 a sign-in that does not hold', () => {
   });
 });
 
-describe('FIX-32 stock groups by location id', () => {
-  it('two locations with the same name stay two sections', async () => {
+describe('FIX-32 stock rows keep two locations with the same name apart', () => {
+  it('two locations with the same name stay two rows', async () => {
     server.use(
       http.get('/api/v1/stock/', () =>
         HttpResponse.json({
@@ -169,8 +169,8 @@ describe('FIX-32 stock groups by location id', () => {
       ),
     );
     renderApp('/stock', { as: 'super_admin' });
-    const heads = await screen.findAllByRole('heading', { level: 2, name: 'Main Branch' });
-    expect(heads).toHaveLength(2);
-    expect(heads[0].closest('section')).not.toBe(heads[1].closest('section'));
+    const cells = await screen.findAllByText('Main Branch', { selector: 'td' });
+    expect(cells).toHaveLength(2);
+    expect(cells[0].closest('tr')).not.toBe(cells[1].closest('tr'));
   });
 });

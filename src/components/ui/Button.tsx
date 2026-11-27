@@ -19,6 +19,19 @@ const sizes: Record<ButtonSize, string> = {
   lg: 'min-h-12 px-6 text-lg',
 };
 
+/** The look of a button, so a link that navigates can wear it (LinkButton). */
+export const buttonClass = (
+  variant: ButtonVariant = 'primary',
+  size: ButtonSize = 'md',
+  extra?: string,
+) =>
+  cx(
+    'inline-flex min-w-11 items-center justify-center gap-2 rounded-md border font-semibold no-underline disabled:opacity-50',
+    variants[variant],
+    sizes[size],
+    extra,
+  );
+
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -44,12 +57,7 @@ export function Button({
       {...rest}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cx(
-        'inline-flex min-w-11 items-center justify-center gap-2 rounded-md border font-semibold disabled:opacity-50',
-        variants[variant],
-        sizes[size],
-        className,
-      )}
+      className={buttonClass(variant, size, className)}
     >
       {loading ? (
         <Loader2 aria-hidden="true" size={20} className="animate-spin" />

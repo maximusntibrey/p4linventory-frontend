@@ -9,7 +9,7 @@ import { server } from '../../mocks/server';
 import { apiError, capture, click } from '../../test/helpers';
 import { renderApp } from '../../test/renderApp';
 
-const banner = () => within(screen.getByRole('banner'));
+const banner = () => within(screen.getAllByRole('banner')[0]);
 
 describe('working branch: first pick', () => {
   it('a user whose /me has no branch and allows picking gets the picker, with no way around it', async () => {
@@ -115,7 +115,7 @@ describe('working branch: switching', () => {
     const list = within(within(screen.getByRole('main')).getByRole('list'));
     for (const b of list.getAllByRole('button')) {
       expect(b.getAttribute('tabindex')).toBeNull();
-      expect(b.className).toContain('min-h-11');
+      expect(b.className).toMatch(/min-h-(11|target)/);
     }
   });
 });

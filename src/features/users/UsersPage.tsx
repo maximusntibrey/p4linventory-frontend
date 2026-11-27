@@ -1,20 +1,27 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
-import { api, rowsOf } from '../../api';
+import { Plus, Search, Users } from 'lucide-react';
+import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import { useBranchFilter } from '../workingBranch/BranchFilter';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { Field } from '../../components/Field';
-import { Pager } from '../../components/Pager';
-import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
+import { describeError } from '../../components/ErrorSummary';
+import { Forbidden } from '../../pages/Forbidden';
 import { roleLabels, statusBadge } from './labels';
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  SelectField,
+  StatusWord,
+  TextField,
+} from '../../components/ui';
+import type { Column } from '../../components/ui';
 
+type User = components['schemas']['User'];
 type UserStatus = components['schemas']['UserStatus'];
 const statuses: { value: UserStatus; label: string }[] = [
   { value: 'active', label: 'Active' },
@@ -47,83 +54,88 @@ export function UsersPage() {
       }),
   });
 
+  const data = list.data;
+  if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
+  const columns: Column<User>[] = [
+    {
+      id: 'name',
+      header: 'Name',
+      cell: (u) => (
+        <Link
+          to={`/users/${u.id}`}
+          className="inline-flex min-h-target items-center font-semibold text-ink underline"
+        >
+          {u.full_name}
+        </Link>
+      ),
+    },
+    { id: 'login', header: 'Login ID', cell: (u) => u.login_id },
+    { id: 'roles', header: 'Roles', cell: (u) => u.roles.map((r) => roleLabels[r]).join(', ') },
+    { id: 'status', header: 'Status', cell: (u) => <StatusWord status={statusBadge[u.status]} /> },
+  ];
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
-      <QueryGate query={list}>
-        {(data) => (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h1 className="text-4xl text-ink">Users</h1>
-              {canManage && (
-                <Link
-                  to="/users/new"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-4 font-semibold text-white no-underline hover:bg-accent-hover"
-                >
-                  <Plus aria-hidden="true" size={20} />
-                  <span>Add a user</span>
-                </Link>
-              )}
-            </div>
-            <form
-              role="search"
-              className="flex flex-col gap-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setFilters(draft);
-                setPage(1);
-              }}
-            >
-              <Field
-                label="Search by name or login ID"
-                value={draft.q}
-                onChange={(e) => setDraft({ ...draft, q: e.target.value })}
-              />
-              <Select
-                label="Status"
-                value={draft.status}
-                onChange={(e) => setDraft({ ...draft, status: e.target.value as UserStatus | '' })}
-              >
-                <option value="">All</option>
-                {statuses.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </Select>
-              <Button type="submit" variant="secondary" icon={Search}>
-                Search
-              </Button>
-            </form>
-            {rowsOf(data).length === 0 ? (
-              <p className="m-0 text-muted">No users match.</p>
-            ) : (
-              <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                {rowsOf(data).map((u) => (
-                  <li key={u.id}>
-                    <Card className="flex flex-col gap-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h2 className="text-2xl">
-                          <Link
-                            to={`/users/${u.id}`}
-                            className="inline-flex min-h-11 items-center text-ink underline"
-                          >
-                            {u.full_name}
-                          </Link>
-                        </h2>
-                        <StatusBadge status={statusBadge[u.status]} />
-                      </div>
-                      <p className="m-0 text-sm text-muted">
-                        {u.login_id} · {u.roles.map((r) => roleLabels[r]).join(', ')}
-                      </p>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Pager page={data} onPage={setPage} />
-          </>
-        )}
-      </QueryGate>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Users"
+        actions={
+          canManage && (
+            <LinkButton to="/users/new" icon={Plus}>
+              Add a user
+            </LinkButton>
+          )
+        }
+      />
+      <form
+        role="search"
+        className="grid gap-3 sm:grid-cols-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setFilters(draft);
+          setPage(1);
+        }}
+      >
+        <TextField
+          label="Search by name or login ID"
+          value={draft.q}
+          onChange={(e) => setDraft({ ...draft, q: e.target.value })}
+        />
+        <SelectField
+          label="Status"
+          value={draft.status}
+          onChange={(e) => setDraft({ ...draft, status: e.target.value as UserStatus | '' })}
+        >
+          <option value="">All</option>
+          {statuses.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </SelectField>
+        <div className="flex items-end">
+          <Button type="submit" variant="secondary" icon={Search}>
+            Search
+          </Button>
+        </div>
+      </form>
+      <DataTable
+        caption="Users"
+        columns={columns}
+        rows={data ? rowsOf(data) : []}
+        rowKey={(u) => String(u.id)}
+        state={list.isPending ? 'loading' : list.isError ? 'error' : 'ready'}
+        errorMessage={list.isError ? describeError(list.error).title : undefined}
+        onRetry={() => void list.refetch()}
+        empty={<EmptyState icon={Users} title="No users match" description="Change the search." />}
+        pagination={
+          data && data.count > data.page_size
+            ? {
+                page: data.page,
+                pageCount: Math.ceil(data.count / data.page_size),
+                onPageChange: setPage,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

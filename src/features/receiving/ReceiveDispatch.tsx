@@ -7,14 +7,11 @@ import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { QueryGate } from '../../components/QueryGate';
-import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { dispatchStatusBadge } from '../dispatches/labels';
+import { Button, Card, PageHeader, StatusWord, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Dispatch = S['Dispatch'];
@@ -24,7 +21,7 @@ const count = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text.trim())
 const backLink = (
   <Link
     to="/receive"
-    className="inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline"
+    className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
   >
     <ArrowLeft aria-hidden="true" size={20} />
     <span>Back to waiting list</span>
@@ -38,7 +35,7 @@ function Outcome({ dispatch }: { dispatch: Dispatch }) {
     <Card className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <h2 className="text-3xl">{dispatch.reference}</h2>
-        <StatusBadge status={badge.status} label={badge.label} />
+        <StatusWord status={badge.status} label={badge.label} />
       </div>
       <p className="m-0 break-words">
         From {dispatch.origin.name} to {dispatch.destination.name}
@@ -63,7 +60,7 @@ function Outcome({ dispatch }: { dispatch: Dispatch }) {
               {l.qty_received !== null && ` · Received ${l.qty_received}`}
               {l.qty_accepted !== null && ` · Accepted ${l.qty_accepted}`}
             </p>
-            {l.shortfall > 0 && <StatusBadge status="low" label={`Short by ${l.shortfall}`} />}
+            {l.shortfall > 0 && <StatusWord status="low" label={`Short by ${l.shortfall}`} />}
             {l.line_note && <p className="m-0 text-sm">Note: {l.line_note}</p>}
           </li>
         ))}
@@ -159,7 +156,7 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <h2 className="text-3xl">{dispatch.reference}</h2>
-          <StatusBadge status="in-transit" />
+          <StatusWord status="in-transit" />
         </div>
         <p className="m-0 break-words">From {dispatch.origin.name}</p>
         <Button
@@ -183,7 +180,7 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
               <p className="m-0 break-words font-semibold">
                 {l.item_name} <span className="text-sm font-normal text-muted">{l.sku}</span>
               </p>
-              <Field
+              <TextField
                 label={`Received: ${l.item_name}`}
                 hint={`Sent: ${l.qty_sent}`}
                 inputMode="numeric"
@@ -193,12 +190,12 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
                 onChange={(e) => setQty({ ...qty, [l.id]: e.target.value })}
                 error={lineProblem[i] ?? server?.fieldError(`lines.${i}.qty_received`)}
               />
-              {shortBy[i] > 0 && <StatusBadge status="low" label={`Short by ${shortBy[i]}`} />}
+              {shortBy[i] > 0 && <StatusWord status="low" label={`Short by ${shortBy[i]}`} />}
             </li>
           ))}
         </ul>
         {anyShort && (
-          <Field
+          <TextField
             label="Note about the shortfall"
             hint="Say what is missing or wrong. This is needed when less than was sent arrives."
             maxLength={1000}
@@ -226,7 +223,7 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
       )}
       {mode === 'reject' && (
         <Card className="flex flex-col gap-3">
-          <Field
+          <TextField
             label="Reason for rejecting"
             maxLength={1000}
             autoComplete="off"
@@ -275,8 +272,8 @@ export function ReceiveDispatch() {
     queryFn: () => api('get', '/api/v1/dispatches/{id}/', { path: { id } }),
   });
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Check delivery</h1>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Check delivery" />
       <QueryGate query={one}>
         {(d) =>
           d.status === 'in_transit' && canReceive ? (

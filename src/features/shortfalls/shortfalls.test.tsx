@@ -110,7 +110,7 @@ describe('shortfalls screen', () => {
     await screen.findByText(/RES-000001 recorded/);
     expect(accraRow().quarantined).toBe(3);
     expect(warehouseRow()).toMatchObject({ on_hand: 10, reserved: 0 });
-    expect(await screen.findByText('No shortfalls match.')).toBeTruthy();
+    expect(await screen.findByText('No shortfalls match')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Resolve shortfall/ })).toBeNull();
     type('Status', 'resolved');
     expect(await screen.findByText('Remaining 0')).toBeTruthy();

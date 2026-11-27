@@ -5,16 +5,14 @@ import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { ResultCard } from '../../components/focus';
 import { ItemPicker } from '../../components/ItemPicker';
 import type { Candidate } from '../../components/ItemPicker';
 import { amountPattern, twoDecimals } from '../../lib/money';
 import { formatAccra } from '../../lib/time';
 import { ghs } from '../items/labels';
+import { Button, Card, PageHeader, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string; cost: string };
@@ -91,8 +89,8 @@ export function GoodsReceiptPage() {
 
   if (done) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Receive stock</h1>
+      <div className="flex flex-col gap-4">
+        <PageHeader title="Receive stock" />
         <ResultCard>
           <p className="m-0 text-lg font-semibold">
             Receipt {done.reference} is confirmed. The stock is in the warehouse.
@@ -116,8 +114,8 @@ export function GoodsReceiptPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Receive stock</h1>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Receive stock" />
       <ApiProblem error={create.error} at={create.submittedAt} />
       {reviewing ? (
         <Card className="flex flex-col gap-3">
@@ -145,7 +143,7 @@ export function GoodsReceiptPage() {
       ) : (
         <>
           <Card className="flex flex-col gap-4">
-            <Field
+            <TextField
               label="Supplier"
               value={supplier}
               maxLength={200}
@@ -153,7 +151,7 @@ export function GoodsReceiptPage() {
               onChange={(e) => setSupplier(e.target.value)}
               error={problems?.supplier ?? server?.fieldError('supplier_name')}
             />
-            <Field
+            <TextField
               label="Notes (optional)"
               value={notes}
               maxLength={1000}
@@ -186,7 +184,7 @@ export function GoodsReceiptPage() {
                     {l.name} <span className="text-sm font-normal text-muted">{l.sku}</span>
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <Field
+                    <TextField
                       label={`Quantity: ${l.name}`}
                       inputMode="numeric"
                       autoComplete="off"
@@ -196,7 +194,7 @@ export function GoodsReceiptPage() {
                         problems?.rows[i]?.quantity ?? server?.fieldError(`lines.${i}.quantity`)
                       }
                     />
-                    <Field
+                    <TextField
                       label={`Unit cost (GHS): ${l.name}`}
                       inputMode="decimal"
                       autoComplete="off"

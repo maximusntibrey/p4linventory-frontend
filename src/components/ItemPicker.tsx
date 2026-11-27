@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
-import { Button } from './Button';
-import { Field } from './Field';
 import { QueryGate } from './QueryGate';
+import { Button, TextField } from './ui';
 
 export type Candidate = {
   item_id: number;
@@ -35,7 +34,7 @@ export function ItemPicker({ label, queryKey, find, added, onAdd }: Props) {
   const run = () => setQ(draft.trim());
   return (
     <div role="search" className="flex flex-col gap-3">
-      <Field
+      <TextField
         label={label}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}

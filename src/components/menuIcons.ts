@@ -2,9 +2,9 @@ import {
   AlertTriangle,
   Boxes,
   Circle,
-  Clock,
   House,
   Inbox,
+  ScrollText,
   Search,
   ListChecks,
   ShoppingCart,
@@ -29,11 +29,8 @@ const byKey: Record<string, LucideIcon> = {
   receive: Inbox,
   receive_stock: Inbox,
   dispatch: Truck,
-  activity: Clock,
+  activity: ScrollText,
   shortfalls: AlertTriangle,
 };
-
-/** Menu entries drawn in the nav bar; the server's further entries are opened from Home (FE doc s3, OQ-23). */
-export const MAX_NAV_ITEMS = 5;
 
 export const iconForMenuKey = (key: string): LucideIcon => byKey[key] ?? Circle;

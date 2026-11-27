@@ -82,6 +82,21 @@ const paged = <T>(request: Request, rows: T[]) => {
     results: rows.slice((n - 1) * size, n * size),
   });
 };
+/** Contract: the one warehouse exists already, and a type cannot change on edit (400 on branch_type). */
+const branchTypeError = (sent: unknown, current: 'branch' | 'warehouse') => {
+  if (sent === undefined || sent === current) return null;
+  if (sent !== 'branch' && sent !== 'warehouse')
+    return invalid([{ field: 'branch_type', message: 'Choose Normal Branch or Warehouse.' }]);
+  return invalid([
+    {
+      field: 'branch_type',
+      message:
+        sent === 'warehouse'
+          ? 'A warehouse already exists.'
+          : 'The warehouse cannot become a branch.',
+    },
+  ]);
+};
 const byId = <T extends { id: number }>(rows: T[], id: unknown) =>
   rows.find((r) => r.id === Number(id));
 
@@ -93,6 +108,7 @@ export const mockStore = {
   receipts: [structuredClone(d.goodsReceipt)],
   sales: structuredClone(d.sales),
   activity: structuredClone(d.activityEvents),
+  branches: structuredClone(d.branches),
   /** Resolutions per dispatch line id (the shortfall id). */
   resolutions: {} as Record<number, S['Shortfall']['resolutions']>,
   resolutionCount: 0,
@@ -106,6 +122,8 @@ export const resetMockStore = () => {
   mockStore.receipts = [structuredClone(d.goodsReceipt)];
   mockStore.sales = structuredClone(d.sales);
   mockStore.activity = structuredClone(d.activityEvents);
+  // In place: the by-id handler keeps this array reference.
+  mockStore.branches.splice(0, mockStore.branches.length, ...structuredClone(d.branches));
   mockStore.resolutions = {};
   mockStore.resolutionCount = 0;
   mockStore.imports = 0;
@@ -313,6 +331,53 @@ const activityScope = (): ((e: S['ActivityEvent']) => boolean) => {
   const own = ownBranchId();
   return own === undefined ? () => true : (e) => e.branch_id === own;
 };
+/** Activity list and export share scope, filters and ordering (contract 0.6.0). Returns an error response or the rows. */
+const activityRows = (request: Request): Response | S['ActivityEvent'][] => {
+  if (!me().permissions.includes('activity.view')) return forbidden();
+  const p = new URL(request.url).searchParams;
+  const own = ownBranchId();
+  if (own !== undefined && p.get('branch_id') && Number(p.get('branch_id')) !== own)
+    return err(403, 'wrong_branch', 'That is not your branch.');
+  const day = /^\d{4}-\d{2}-\d{2}$/;
+  const from = p.get('date_from');
+  const to = p.get('date_to');
+  const bad = [
+    ['date_from', from],
+    ['date_to', to],
+  ].flatMap(([field, v]) =>
+    v && (!day.test(v) || Number.isNaN(Date.parse(v)))
+      ? [{ field, message: 'Use a date like 2026-11-24.' }]
+      : [],
+  );
+  const ordering = p.get('ordering') ?? '-timestamp';
+  if (!/^-?(timestamp|user|action)$/.test(ordering))
+    bad.push({ field: 'ordering', message: 'Use timestamp, user or action, with an optional -.' });
+  if (bad.length) return invalid(bad);
+  if (from && to && from > to)
+    return invalid([{ field: 'date_to', message: 'The end date is before the start date.' }]);
+  const scope = activityScope();
+  const q = (p.get('search') ?? '').toLowerCase();
+  const key = (e: S['ActivityEvent']) =>
+    ordering.endsWith('user') ? e.user_login_id : ordering.endsWith('action') ? e.action : e.id;
+  const dir = ordering.startsWith('-') ? -1 : 1;
+  return mockStore.activity
+    .filter(
+      (e) =>
+        scope(e) &&
+        (!p.get('user_id') || e.user_id === Number(p.get('user_id'))) &&
+        (!p.get('branch_id') || e.branch_id === Number(p.get('branch_id'))) &&
+        (!p.get('action') || e.action === p.get('action')) &&
+        (!p.get('target_type') || e.target_type === p.get('target_type')) &&
+        (!q ||
+          [e.action, e.target_type, e.target_ref, e.user_login_id].some((v) =>
+            v.toLowerCase().includes(q),
+          )) &&
+        // Accra is UTC+0 all year, so the calendar day is the ISO date.
+        (!from || e.occurred_at.slice(0, 10) >= from) &&
+        (!to || e.occurred_at.slice(0, 10) <= to),
+    )
+    .sort((x, y) => (key(x) < key(y) ? -dir : key(x) > key(y) ? dir : y.id - x.id));
+};
 const newestFirst = (rows: S['ActivityEvent'][]) => [...rows].sort((a, b) => b.id - a.id);
 
 /** Shortfalls (dispatch lines received short) the caller may see: SA all, WA by sender, BA by destination. */
@@ -423,7 +488,7 @@ export const handlers: RequestHandler[] = [
     '/api/v1/working-branch/',
     writeAuthed(async ({ request }) => {
       if (fixedLocation()) return forbidden();
-      const branch = byId(d.branches, (await readJson(request)).branch_id);
+      const branch = byId(mockStore.branches, (await readJson(request)).branch_id);
       if (!branch)
         return invalid([{ field: 'branch_id', message: 'Pick one of the listed branches.' }]);
       mockSession.workingBranch = branch;
@@ -437,11 +502,13 @@ export const handlers: RequestHandler[] = [
       const params = new URL(request.url).searchParams;
       const only = params.get('branch');
       const kind = params.get('kind');
+      const type = params.get('branch_type');
       const active = params.get('is_active');
       return page(
-        d.branches.filter(
+        mockStore.branches.filter(
           (b) =>
             (!kind || b.kind === kind) &&
+            (!type || b.branch_type === type) &&
             (!active || String(b.is_active) === active) &&
             (!only || b.id === Number(only)),
         ),
@@ -452,38 +519,40 @@ export const handlers: RequestHandler[] = [
     '/api/v1/branches/',
     writeAuthed(async ({ request }) => {
       const b = await readJson(request);
-      return HttpResponse.json(
-        {
-          id: 4,
-          kind: 'branch',
-          code: text(b.code, ''),
-          name: text(b.name, ''),
-          is_active: true,
-          created_at: d.t,
-          updated_at: d.t,
-        } satisfies S['Branch'],
-        { status: 201 },
-      );
+      const typeError = branchTypeError(b.branch_type, 'branch');
+      if (typeError) return typeError;
+      const branch_type = b.branch_type === 'warehouse' ? 'warehouse' : 'branch';
+      const row = {
+        id: Math.max(0, ...mockStore.branches.map((x) => x.id)) + 1,
+        kind: branch_type,
+        branch_type,
+        code: text(b.code, ''),
+        name: text(b.name, ''),
+        is_active: true,
+        created_at: d.t,
+        updated_at: d.t,
+      } satisfies S['Branch'];
+      mockStore.branches.push(row);
+      return HttpResponse.json(row, { status: 201 });
     }),
   ),
-  http.get('/api/v1/branches/:id/', one(d.branches)),
+  http.get('/api/v1/branches/:id/', one(mockStore.branches)),
   patch(
     '/api/v1/branches/:id/',
     writeAuthed(async ({ params, request }) => {
-      const row = byId(d.branches, params.id);
+      const row = byId(mockStore.branches, params.id);
       if (!row) return notFound();
       const b = await readJson(request);
-      return HttpResponse.json({
-        ...row,
-        code: text(b.code, row.code),
-        name: text(b.name, row.name),
-      } satisfies S['Branch']);
+      const typeError = branchTypeError(b.branch_type, row.branch_type);
+      if (typeError) return typeError;
+      Object.assign(row, { code: text(b.code, row.code), name: text(b.name, row.name) });
+      return HttpResponse.json(row);
     }),
   ),
   post(
     '/api/v1/branches/:id/deactivate/',
     writeAuthed(({ params }) => {
-      const row = byId(d.branches, params.id);
+      const row = byId(mockStore.branches, params.id);
       if (!row) return notFound();
       if (row.kind === 'warehouse') {
         return err(409, 'invalid_status_transition', 'The warehouse cannot be deactivated.');
@@ -494,7 +563,7 @@ export const handlers: RequestHandler[] = [
   post(
     '/api/v1/branches/:id/activate/',
     writeAuthed(({ params }) => {
-      const row = byId(d.branches, params.id);
+      const row = byId(mockStore.branches, params.id);
       return row ? HttpResponse.json({ ...row, is_active: true }) : notFound();
     }),
   ),
@@ -959,7 +1028,7 @@ export const handlers: RequestHandler[] = [
       if (!me().permissions.includes('dispatches.create')) return forbidden();
       const b = await readJson(request);
       const errors: S['Error']['errors'] = [];
-      const to = d.branches.find(
+      const to = mockStore.branches.find(
         (x) => x.id === b.destination_id && x.kind === 'branch' && x.is_active,
       );
       if (!to) errors.push({ field: 'destination_id', message: 'Choose an active branch.' });
@@ -1153,39 +1222,46 @@ export const handlers: RequestHandler[] = [
   http.get(
     '/api/v1/activity-log/',
     authed(({ request }) => {
-      if (!me().permissions.includes('activity.view')) return forbidden();
-      const p = new URL(request.url).searchParams;
-      const own = ownBranchId();
-      if (own !== undefined && p.get('branch_id') && Number(p.get('branch_id')) !== own)
-        return err(403, 'wrong_branch', 'That is not your branch.');
-      const day = /^\d{4}-\d{2}-\d{2}$/;
-      const from = p.get('date_from');
-      const to = p.get('date_to');
-      const bad = [
-        ['date_from', from],
-        ['date_to', to],
-      ].flatMap(([field, v]) =>
-        v && (!day.test(v) || Number.isNaN(Date.parse(v)))
-          ? [{ field, message: 'Use a date like 2026-11-24.' }]
-          : [],
-      );
-      if (bad.length) return invalid(bad);
-      if (from && to && from > to)
-        return invalid([{ field: 'date_to', message: 'The end date is before the start date.' }]);
-      const scope = activityScope();
-      return paged(
-        request,
-        newestFirst(mockStore.activity).filter(
-          (e) =>
-            scope(e) &&
-            (!p.get('user_id') || e.user_id === Number(p.get('user_id'))) &&
-            (!p.get('branch_id') || e.branch_id === Number(p.get('branch_id'))) &&
-            (!p.get('action') || e.action === p.get('action')) &&
-            // Accra is UTC+0 all year, so the calendar day is the ISO date.
-            (!from || e.occurred_at.slice(0, 10) >= from) &&
-            (!to || e.occurred_at.slice(0, 10) <= to),
-        ),
-      );
+      const rows = activityRows(request);
+      return rows instanceof Response ? rows : paged(request, rows);
+    }),
+  ),
+  http.get(
+    '/api/v1/activity-log/export/',
+    authed(({ request }) => {
+      const rows = activityRows(request);
+      if (rows instanceof Response) return rows;
+      const cap = 5000;
+      const cell = (v: string | null) => {
+        const x = v ?? '';
+        return `"${(/^[=+\-@\t\r]/.test(x) ? `'${x}` : x).replace(/"/g, '""')}"`;
+      };
+      const lines = [
+        'occurred_at,user_login_id,user_role,branch_name,action,target_type,target_ref,is_self_approval',
+        ...rows
+          .slice(0, cap)
+          .map((e) =>
+            [
+              e.occurred_at,
+              e.user_login_id,
+              e.user_role,
+              e.branch_name,
+              e.action,
+              e.target_type,
+              e.target_ref,
+              String(e.is_self_approval),
+            ]
+              .map(cell)
+              .join(','),
+          ),
+      ];
+      return new HttpResponse(lines.join('\n'), {
+        headers: {
+          'Content-Type': 'text/csv',
+          'X-Export-Truncated': String(rows.length > cap),
+          'Access-Control-Expose-Headers': 'X-Export-Truncated',
+        },
+      });
     }),
   ),
   http.get(

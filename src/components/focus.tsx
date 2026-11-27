@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-import { Card } from './Card';
+import { Card } from './ui';
 
 /** Remembers the focused element when the panel opens and gives focus back when it closes. Call it before the panel's own focus effect. */
 export function useReturnFocus() {

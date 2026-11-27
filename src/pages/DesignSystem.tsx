@@ -6,6 +6,9 @@ import {
   Avatar,
   AvatarCell,
   BulkActionBar,
+  Card,
+  CommandPalette,
+  LinkButton,
   Button,
   Checkbox,
   ColumnVisibilityMenu,
@@ -332,6 +335,8 @@ function FormsDemo() {
 
 function ShellDemo() {
   const [q, setQ] = useState('');
+  const [palette, setPalette] = useState(false);
+  const [type, setType] = useState<'branch' | 'warehouse' | ''>('');
   return (
     <>
       <div className="h-[28rem] overflow-auto rounded-lg border border-line">
@@ -372,6 +377,47 @@ function ShellDemo() {
           />
         </AppShell>
       </div>
+      <h2 className="text-title">
+        Command search, bell without data, cards, link button, 3-cell strip
+      </h2>
+      <Topbar
+        commandSearch={{ label: 'Search or jump to…', onOpen: () => setPalette(true) }}
+        notifications={{ count: 0, onClick: () => undefined, unavailable: 'No notifications yet' }}
+      />
+      <CommandPalette
+        open={palette}
+        onClose={() => setPalette(false)}
+        label="Search or jump to"
+        items={[
+          { id: '/', label: 'Home', icon: Home },
+          { id: '/items', label: 'Items', hint: 'Menu', icon: Boxes },
+        ]}
+        onSelect={() => setPalette(false)}
+      />
+      <Card className="flex flex-col gap-3">
+        <h3 className="text-title">Card</h3>
+        <LinkButton to="/design-system" icon={Home} variant="secondary">
+          Link that looks like a button
+        </LinkButton>
+        <SegmentedControl<'branch' | 'warehouse' | ''>
+          variant="cards"
+          label="Branch Type"
+          legend="Branch Type"
+          required
+          value={type}
+          onValueChange={setType}
+          error={type === '' ? 'Choose a branch type.' : undefined}
+          options={[
+            { value: 'branch', label: 'Normal Branch', icon: Package, description: 'A shop.' },
+            { value: 'warehouse', label: 'Warehouse', icon: Boxes, description: 'Central store.' },
+          ]}
+        />
+      </Card>
+      <StatsStrip label="Three figures" columns={3}>
+        <StatCard label="Waiting" value={1} />
+        <StatCard label="In transit" value={2} />
+        <StatCard label="Active items" value={3} />
+      </StatsStrip>
     </>
   );
 }

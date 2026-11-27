@@ -439,6 +439,9 @@ Branches: `sprint/3-specifications` in both repos. Tag at end: `v1.1.0` on `main
 ### Frontend, Sprint 3
 
 - [ ] F11.1 Fixes from real MVP use and UI polish from feedback
+- [x] F11.1a Contract 0.6.0 mocks: `branch_type` on branches (filter, create, edit, 400 for a second warehouse), activity-log search, filters, ordering, paging and CSV export (mock tests in `src/mocks/handlers.test.ts`)
+- [x] F11.2 Audit Logs as its own sidebar tab `/audit-logs` (DataTable, search, filters, server sort and paging, CSV export with the truncation notice); `/activity` redirects; the dashboard no longer lists activity (tests: `src/features/audit`, `e2e/mock-audit-branches.spec.ts`)
+- [x] F11.3 Branch Type on Branches: required selector in create and edit, badge and type filter in the list, server 400 shown on the field (tests: `src/features/branches/branchType.test.tsx`, `e2e/mock-audit-branches.spec.ts`)
 - [ ] F12.1 Laptop specification form sections and laptop filters
 - [ ] F13.1 Part specification forms, compatibility picker, "parts for laptop model X" search
 - [ ] F14.1 Accessory forms and filters
@@ -690,39 +693,40 @@ Rule: all UI uses the design-system tokens and components; no ad-hoc styles; new
 - [x] DS.2 Component library in `src/components/ui/` (component, vitest-axe and keyboard tests); placeholder logo (real logo file not available)
 - [x] DS.3 Enforcement: `npm run design:check` in `npm run check`, baseline `scripts/design-token-baseline.json` (0 violations), script tests
 - [x] DS.4 Living showcase `/design-system` (lazy; dev, or Super Admin via the server's `all_branches`), `docs/DESIGN-SYSTEM.md`, 360 px e2e
-- [ ] DS.5 Migrate pages to the library, route by route (table below); the baseline must stay empty
-- [ ] DS.6 Replace the legacy `components/*` (Field, Select, Nav, TopBar, Pager, StatusBadge, Card, AppShell) with the library and delete them
+- [x] DS.5 Migrate pages to the library, route by route (table below); the baseline stays empty. Evidence: `npm run check`, `npm run e2e` and the 25-route console-error spec `e2e/mock-routes.spec.ts` green
+- [x] DS.6 Legacy `components/*` replaced: Nav, TopBar, Card, Button, Field, Select, StatusBadge, Pager and the old AppShell are gone; Field, Select and StatusBadge now live in the library as `TextField`, `SelectField` and `StatusWord` (they keep react-hook-form `register` and the SKILLS status words)
 - [ ] DS.7 Replace the placeholder logo with the real file and adjust brand tokens
 
 ### Route migration
 
 | Route | Screen | Status |
 |---|---|---|
-| `/login` | Login | not migrated |
-| `/password-change` | ChangePassword (forced) | not migrated |
-| `/` | Home | not migrated |
-| `/account/password` | ChangePassword | not migrated |
-| `/warehouse` | ComingSoon (Warehouse) | not migrated |
-| `/activity` | ActivityPage | not migrated |
-| `/shortfalls` | ShortfallsPage | not migrated |
-| `/sell` | SellPage | not migrated |
-| `/sell/sales` | SalesPage | not migrated |
-| `/items/import` | ImportPage | not migrated |
-| `/find` | FindPage | not migrated |
-| `/goods-receipts` | GoodsReceiptPage | not migrated |
-| `/dispatches` | DispatchesPage | not migrated |
-| `/dispatches/new` | DispatchNew | not migrated |
-| `/receive` | WaitingPage | not migrated |
-| `/receive/:id` | ReceiveDispatch | not migrated |
-| `/items` | ItemsPage | not migrated |
-| `/items/new` | ItemNew | not migrated |
-| `/items/:id` | ItemDetail | not migrated |
-| `/stock` | StockPage | not migrated |
-| `/branches` | BranchesPage | not migrated |
-| `/users` | UsersPage | not migrated |
-| `/users/new` | UserNew | not migrated |
-| `/users/:id` | UserDetail | not migrated |
-| `*` | NotFound | not migrated |
+| `/login` | Login | migrated (AuthLayout with Logo, library Card and form controls) |
+| `/password-change` | ChangePassword (forced) | migrated (AuthLayout with Logo, library form controls) |
+| `/` | Home | migrated (PageHeader, StatsStrip with real figures, library Card; no activity list) |
+| `/account/password` | ChangePassword | migrated (AppShell, PageHeader, library form controls) |
+| `/warehouse` | ComingSoon (Warehouse) | migrated (AppShell, tokens; placeholder screen) |
+| `/audit-logs` | AuditLogsPage | migrated (DataTable, Toolbar, PageHeader, Pagination, EmptyState) |
+| `/activity` | ActivityPage | migrated (redirects to `/audit-logs`) |
+| `/shortfalls` | ShortfallsPage | migrated (DataTable, PageHeader, StatusBadge, EmptyState, resolve panel) |
+| `/sell` | SellPage | migrated (PageHeader, Card, library form controls (TextField, SelectField, Button), skeleton loading and error states) |
+| `/sell/sales` | SalesPage | migrated (DataTable, PageHeader, LinkButton, cancel panel) |
+| `/items/import` | ImportPage | migrated (PageHeader, Card, library form controls (TextField, SelectField, Button), skeleton loading and error states) |
+| `/find` | FindPage | migrated (DataTable, PageHeader, EmptyState) |
+| `/goods-receipts` | GoodsReceiptPage | migrated (PageHeader, Card, library form controls (TextField, SelectField, Button), skeleton loading and error states) |
+| `/dispatches` | DispatchesPage | migrated (DataTable, PageHeader, LinkButton) |
+| `/dispatches/new` | DispatchNew | migrated (PageHeader, Card, library form controls (TextField, SelectField, Button), skeleton loading and error states) |
+| `/receive` | WaitingPage | migrated (DataTable, PageHeader, EmptyState) |
+| `/receive/:id` | ReceiveDispatch | migrated (PageHeader, Card, library form controls (TextField, SelectField, Button), skeleton loading and error states) |
+| `/items` | ItemsPage | migrated (DataTable, PageHeader, LinkButton) |
+| `/items/new` | ItemNew | migrated (PageHeader, Card, library form controls (TextField, SelectField, Button), skeleton loading and error states) |
+| `/items/:id` | ItemDetail | migrated (PageHeader, Card, library form controls (TextField, SelectField, Button), skeleton loading and error states) |
+| `/stock` | StockPage | migrated (DataTable, PageHeader, EmptyState) |
+| `/branches` | BranchesPage | migrated (DataTable, Toolbar, SegmentedControl, PageHeader) |
+| `/users` | UsersPage | migrated (DataTable, PageHeader, LinkButton) |
+| `/users/new` | UserNew | migrated (PageHeader, Card, library form controls (TextField, SelectField, Button), skeleton loading and error states) |
+| `/users/:id` | UserDetail | migrated (PageHeader, Card, library form controls (TextField, SelectField, Button), skeleton loading and error states) |
+| `*` | NotFound | migrated (PageHeader, LinkButton) |
 | `/design-system` | DesignSystem showcase | built on the library |
 
 ## DECISION LOG (working copy)
@@ -785,9 +789,13 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | FQ-14 | F7.2 BLOCKED: contract 0.4.2 has no activity-log (audit event) list operation, no filter parameters (user, branch, action, date from/to), no action values and no permission code for opening it from Home (Super Admin only). Nothing built or mocked. Recommend: `GET /api/v1/activity-log/` (cursor or page, newest first) with query user_id, branch_id, action, date_from, date_to; item {id, occurred_at, actor, branch, action, summary}; permission code `activity_log.view` (Super Admin) plus the Home link in me.home_links; no cost or secrets in summaries. | F7.2 | Answered: contract 0.5.0 (owner approved) publishes it; built and ticked on Sprint 2 Day 7 | |
 | FQ-15 | F7.3 BLOCKED: contract 0.4.2 has no shortfall (flagged discrepancy) list and no resolve operation: no list of open shortfalls (dispatch line, item, sender, destination, quantity, reason), no resolve call with resolution (return_to_sender / confirm_loss / record_damage), required note and Idempotency-Key, no status values, no error codes, no permission code. Nothing built or mocked. Recommend: `GET /api/v1/shortfalls/` (status filter open/resolved) and `POST /api/v1/shortfalls/{id}/resolve/` {resolution, note (required, non-empty)} with Idempotency-Key, 409 when already resolved, permission `shortfalls.resolve` (any admin role, decided C-rule), stock effects only on the server. | F7.3 | Answered: contract 0.5.0 (owner approved) publishes it; built and ticked on Sprint 2 Day 7 | |
 | FQ-16 | F7.2/F7.3: which `home_links` /me gives per role, and the Activity User filter (shown only with `users.view`; no user list for WA and BA). | F7.2, F7.3 | Answered: contract 0.5.2 publishes /me home_links per role (SA Activity, Shortfalls, Sell, Find, Receive, Sales; WA Activity, Shortfalls; BA Activity, Shortfalls, Sales; FS none). The mock now matches (FIX-47). The User filter stays tied to `users.view`. | |
-| DQ-1 | DS: the contract has no permission for the design-system showcase. It is gated by dev mode, or in production by the server flag `all_branches` (Super Admin). Should the backend add a dedicated permission? | Design system run | Open | |
-| DQ-2 | DS: the real logo file and exact brand values were not available. Tokens and `src/assets/logo*.svg` are approximations. Supply the logo to replace them. | Design system run | Open | |
-| DQ-3 | DS: the owner asked for the focus ring in #FF6B00; it is 2.9:1 on white (fails the 3:1 non-text rule), so the ring uses #EA580C. Confirm. Also: IconButton and the collapsed Sidebar show the text label as a tooltip on hover and focus, not always visible (rule: every icon has a visible text label). Confirm this is acceptable. | Design system run | Open | |
+| BQ-1 | F11.3: places where branches are listed or selected, left unchanged (no behaviour or rule changed, the type badge is shown only in the Branches list): working-branch picker (`BranchPicker`), Super Admin branch filter in the topbar (`BranchFilter`, `kind=branch` only), dispatch destination (`DispatchNew`, client rule `kind === branch` in the mock), dispatch and waiting-list filters (`DispatchesPage`, `WaitingPage`), stock location filter (`StockPage`), user permanent location (`UserForm`), CSV import location (`ImportPage`), origin and destination names on dispatch, receiving and shortfall screens, stock per location on Home. Should any of them show or filter by type (for example only Normal Branches as dispatch destinations, or the warehouse as the only goods-receipt location)? Also: there is no separate branch detail screen, so the type shows in the list row and in the Edit form. | F11.3 | Open | |
+| BQ-2 | F11.2: Details column. `ActivityEvent` has no details text, so the column shows the branch name and a Self-approved badge. The contract has no filter by branch name in the Audit Logs screen (it has `branch_id`); the old Branch filter was dropped from the screen because the request listed user, action, module and dates. Confirm, or ask for the branch filter back. | F11.2 | Answered: done (Branch filter back on Audit Logs; StatsStrip `columns`; showcase covers the new components) | Lead |
+| BQ-3 | DS.5: `StatsStrip` lays out 2 or 4 cells per row; the dashboard has 3 real figures, so one cell is empty. Add a 3-cell layout to the library, or a fourth real figure? | DS.5 | Answered: done (Branch filter back on Audit Logs; StatsStrip `columns`; showcase covers the new components) | Lead |
+| BQ-4 | DS.5: the bell is drawn disabled with the label 'No notifications yet' because no notification endpoint exists. The `/design-system` showcase does not yet show `CommandPalette`, `Card`, `LinkButton` and the new `SegmentedControl` form props (they have component tests and DESIGN-SYSTEM.md entries). | DS.5 | Answered: done (Branch filter back on Audit Logs; StatsStrip `columns`; showcase covers the new components) | Lead |
+| DQ-1 | DS: the contract has no permission for the design-system showcase. It is gated by dev mode, or in production by the server flag `all_branches` (Super Admin). Should the backend add a dedicated permission? | Design system run | Answered (owner): a dedicated permission is wanted. The backend adds it later with a contract bump; the current gate stays and `canOpenDesignSystem` in `src/routes.tsx` is the one helper to swap. Approved, pending backend. | Owner |
+| DQ-2 | DS: the real logo file and exact brand values were not available. Tokens and `src/assets/logo*.svg` are approximations. Supply the logo to replace them. | Design system run | Answered (owner): skip for now; the placeholder logo stays and DS.7 is deferred. | Owner |
+| DQ-3 | DS: the owner asked for the focus ring in #FF6B00; it is 2.9:1 on white (fails the 3:1 non-text rule), so the ring uses #EA580C. Confirm. Also: IconButton and the collapsed Sidebar show the text label as a tooltip on hover and focus, not always visible (rule: every icon has a visible text label). Confirm this is acceptable. | Design system run | Answered (owner): focus ring #EA580C confirmed; solid fill #C2410C with white text confirmed; #FF6B00 for accents only. | Owner |
 
 ## FIX LOG
 
