@@ -100,7 +100,7 @@ export function ImageUpload({
             accept={types.join(',')}
             aria-invalid={problem ? true : undefined}
             aria-describedby={problem ? `${inputId}-problem` : undefined}
-            className="min-h-11 text-base"
+            className="min-h-target text-base"
             onChange={(e) => choose(e.target.files?.[0])}
           />
           {problem && (

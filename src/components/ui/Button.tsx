@@ -12,11 +12,11 @@ const variants: Record<ButtonVariant, string> = {
   ghost: 'bg-transparent text-ink border-transparent hover:bg-surface',
   danger: 'bg-canvas text-bad border-bad hover:bg-bad-bg',
 };
-// min-h-11 = 44 px (same as the target token). Every size keeps it on touch; sm only tightens padding and type.
+// min-h-target = 44 px, the token (never min-h-11: that scales with the phone density). Every size keeps it on touch; sm only tightens padding and type.
 const sizes: Record<ButtonSize, string> = {
-  sm: 'min-h-11 px-3 text-sm',
-  md: 'min-h-11 px-4 text-base',
-  lg: 'min-h-12 px-6 text-lg',
+  sm: 'min-h-target px-3 text-sm',
+  md: 'min-h-target px-4 text-base',
+  lg: 'min-h-[3rem] px-6 text-lg',
 };
 
 /** The look of a button, so a link that navigates can wear it (LinkButton). */
@@ -26,7 +26,7 @@ export const buttonClass = (
   extra?: string,
 ) =>
   cx(
-    'inline-flex min-w-11 items-center justify-center gap-2 rounded-md border font-semibold no-underline disabled:opacity-50',
+    'inline-flex min-w-target items-center justify-center gap-2 rounded-md border font-semibold no-underline disabled:opacity-50',
     variants[variant],
     sizes[size],
     extra,

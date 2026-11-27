@@ -122,7 +122,7 @@ describe('LinkButton', () => {
     );
     const link = screen.getByRole('link', { name: 'New item' });
     expect(link).toHaveAttribute('href', '/items/new');
-    expect(link.className).toMatch(/min-h-11/);
+    expect(link.className).toMatch(/min-h-target/);
   });
 });
 
