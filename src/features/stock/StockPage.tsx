@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
-import { api, rowsOf } from '../../api';
+import { Boxes, Search } from 'lucide-react';
+import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { QueryGate } from '../../components/QueryGate';
-import { Button, Card, Pager, SelectField, StatusWord, TextField } from '../../components/ui';
+import { describeError } from '../../components/ErrorSummary';
+import { Forbidden } from '../../pages/Forbidden';
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  PageHeader,
+  SelectField,
+  StatusWord,
+  TextField,
+} from '../../components/ui';
+import type { Column } from '../../components/ui';
 
 type Row = components['schemas']['StockBalance'];
 
@@ -43,9 +53,43 @@ export function StockPage() {
       }),
   });
 
+  const data = list.data;
+  if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
+  const columns: Column<Row>[] = [
+    {
+      id: 'item',
+      header: 'Item',
+      cell: (r) => (
+        <span className="flex flex-col">
+          <span className="font-semibold">{r.item_name}</span>
+          <span className="text-sm text-muted">{r.sku}</span>
+        </span>
+      ),
+    },
+    { id: 'location', header: 'Location', cell: (r) => r.location_name },
+    ...figures.map((f) => ({
+      id: String(f.key),
+      header: f.label,
+      align: 'right' as const,
+      cell: (r: Row) => r[f.key],
+    })),
+    {
+      id: 'reorder',
+      header: 'Reorder level',
+      align: 'right',
+      cell: (r) => (r.reorder_level === null ? '' : r.reorder_level),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (r) => (
+        <StatusWord status={r.available === 0 ? 'out' : r.low_stock ? 'low' : 'in-stock'} />
+      ),
+    },
+  ];
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-display">Stock</h1>
+      <PageHeader title="Stock" subtitle="By item and location." />
       <form
         role="search"
         className="grid gap-3 sm:grid-cols-2"
@@ -82,58 +126,31 @@ export function StockPage() {
           </Button>
         </div>
       </form>
-      <QueryGate query={list}>
-        {(data) => {
-          const rows = rowsOf(data);
-          const byLocation = new Map<number, Row[]>();
-          for (const r of rows) {
-            byLocation.set(r.location_id, [...(byLocation.get(r.location_id) ?? []), r]);
-          }
-          return (
-            <>
-              {rows.length === 0 && <p className="m-0 text-muted">No stock matches.</p>}
-              {[...byLocation].map(([id, group]) => (
-                <section key={id} aria-labelledby={`loc-${group[0].location_id}`}>
-                  <h2 id={`loc-${group[0].location_id}`} className="mb-2 text-3xl">
-                    {group[0].location_name}
-                  </h2>
-                  <ul className="m-0 grid list-none gap-3 p-0 md:grid-cols-2">
-                    {group.map((r) => (
-                      <li key={`${r.location_id}-${r.item_id}`}>
-                        <Card className="flex h-full flex-col gap-2">
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <p className="m-0 min-w-0 break-words text-lg font-semibold">
-                              {r.item_name}
-                            </p>
-                            <StatusWord
-                              status={r.available === 0 ? 'out' : r.low_stock ? 'low' : 'in-stock'}
-                            />
-                          </div>
-                          <p className="m-0 text-sm text-muted">{r.sku}</p>
-                          <dl className="m-0 grid grid-cols-2 gap-x-3 gap-y-1">
-                            {figures.map((f) => (
-                              <div key={f.key} className="flex justify-between gap-2">
-                                <dt className="text-sm text-muted">{f.label}</dt>
-                                <dd className="m-0 font-semibold">{r[f.key]}</dd>
-                              </div>
-                            ))}
-                          </dl>
-                          {r.reorder_level !== null && (
-                            <p className="m-0 text-sm text-muted">
-                              Reorder level: {r.reorder_level}
-                            </p>
-                          )}
-                        </Card>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-              <Pager page={data} onPage={setPage} />
-            </>
-          );
-        }}
-      </QueryGate>
+      <DataTable
+        caption="Stock"
+        columns={columns}
+        rows={data ? rowsOf(data) : []}
+        rowKey={(r) => `${r.location_id}-${r.item_id}`}
+        state={list.isPending ? 'loading' : list.isError && !data ? 'error' : 'ready'}
+        errorMessage={list.isError ? describeError(list.error).title : undefined}
+        onRetry={() => void list.refetch()}
+        empty={
+          <EmptyState
+            icon={Boxes}
+            title="No stock matches"
+            description="Change the search or the location."
+          />
+        }
+        pagination={
+          data && data.count > data.page_size
+            ? {
+                page: data.page,
+                pageCount: Math.ceil(data.count / data.page_size),
+                onPageChange: setPage,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }
