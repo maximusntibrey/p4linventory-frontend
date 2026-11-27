@@ -1,11 +1,13 @@
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Rows3 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button } from './Button';
+import { Drawer } from './Drawer';
 import { cx } from './cx';
 import { FormField } from './FormField';
 import { Input } from './Input';
 import { Select } from './Select';
+import { useCompact } from './useCompact';
 
 export type PaginationProps = {
   /** 1-based. */
@@ -39,6 +41,8 @@ export function Pagination({
   onPageSizeChange,
 }: PaginationProps) {
   const [goTo, setGoTo] = useState('');
+  const compact = useCompact();
+  const [rowsOpen, setRowsOpen] = useState(false);
   const go = (n: number) => onPageChange(Math.min(pageCount, Math.max(1, n)));
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -46,6 +50,55 @@ export function Pagination({
     if (Number.isFinite(n)) go(n);
     setGoTo('');
   };
+  const sizeSelect = pageSize !== undefined && onPageSizeChange && (
+    <FormField label="Rows per page">
+      {(c) => (
+        <Select {...c} value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))}>
+          {pageSizeOptions.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </Select>
+      )}
+    </FormField>
+  );
+  // Phones: previous, a page indicator and next; rows per page sits in a drawer.
+  if (compact) {
+    return (
+      <nav aria-label="Pagination" className="flex items-center justify-between gap-2">
+        <Button
+          variant="secondary"
+          icon={ChevronLeft}
+          disabled={page <= 1}
+          onClick={() => go(page - 1)}
+        >
+          Previous
+        </Button>
+        <span aria-current="page" className="text-sm font-semibold">
+          Page {page} of {pageCount}
+        </span>
+        <Button
+          variant="secondary"
+          icon={ChevronRight}
+          disabled={page >= pageCount}
+          onClick={() => go(page + 1)}
+        >
+          Next
+        </Button>
+        {sizeSelect && (
+          <>
+            <Button variant="ghost" icon={Rows3} onClick={() => setRowsOpen(true)}>
+              Rows
+            </Button>
+            <Drawer open={rowsOpen} onClose={() => setRowsOpen(false)} title="Rows per page">
+              {sizeSelect}
+            </Drawer>
+          </>
+        )}
+      </nav>
+    );
+  }
   return (
     <nav aria-label="Pagination" className="flex flex-wrap items-end justify-between gap-3">
       {pageSize !== undefined && onPageSizeChange && (
