@@ -1,5 +1,6 @@
 // Design-token guard (wired into `npm run check`): fails on raw colours and inline style props.
-// Allowed: src/styles/tokens.css, src/assets/** (logo, svg), test files, and `style={widthStyle(...)}`
+// Allowed: src/themes/** (the Mantis theme and palette: the ONLY place brand colours live), src/styles/tokens.css
+// (legacy Tailwind tokens, removed with Tailwind in the last UI run), src/assets/** (logo, svg), test files, and `style={widthStyle(...)}`
 // (the one documented helper for dynamic widths, src/components/ui/dynamicStyle.ts).
 // Existing offenders live in scripts/design-token-baseline.json and may only shrink.
 // Usage: node scripts/check-design-tokens.mjs [--root <dir>] [--write-baseline]
@@ -17,6 +18,8 @@ const COLOUR =
 const INLINE_STYLE = /\bstyle\s*=\s*(?!\{\s*widthStyle\()/g;
 const EXEMPT = (p) =>
   p === 'src/styles/tokens.css' ||
+  p.startsWith('src/themes/') ||
+  p === 'src/utils/colorUtils.js' || // vendored: builds rgba(var(--x)) strings, holds no colour
   p.startsWith('src/assets/') ||
   p.startsWith('src/test/') ||
   p.startsWith('src/mocks/') ||
@@ -41,7 +44,8 @@ if (existsSync(src)) {
     if (EXEMPT(rel)) continue;
     const text = stripComments(readFileSync(file, 'utf8'));
     const colors = (text.match(COLOUR) ?? []).length;
-    const inlineStyles = /\.css$/.test(rel) ? 0 : (text.match(INLINE_STYLE) ?? []).length;
+    // Vendored Mantis template files (.js/.jsx) keep their own inline styles; our code is TypeScript.
+    const inlineStyles = /\.(css|jsx?)$/.test(rel) ? 0 : (text.match(INLINE_STYLE) ?? []).length;
     if (colors || inlineStyles) found[rel] = { colors, inlineStyles };
   }
 }
