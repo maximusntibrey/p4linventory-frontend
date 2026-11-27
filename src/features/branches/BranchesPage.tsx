@@ -9,9 +9,7 @@ import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { describeError } from '../../components/ErrorSummary';
-import { Field } from '../../components/Field';
 import { SuccessNotice, useReturnFocus } from '../../components/focus';
-import { StatusBadge } from '../../components/StatusBadge';
 import {
   Button,
   Card,
@@ -19,6 +17,8 @@ import {
   EmptyState,
   PageHeader,
   SegmentedControl,
+  StatusWord,
+  TextField,
   Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -71,14 +71,14 @@ function BranchForm({ branch, onClose }: { branch?: Branch; onClose: (saved: boo
         className="flex flex-col gap-4"
         onSubmit={(e) => void handleSubmit((v) => save.mutate(v))(e)}
       >
-        <Field
+        <TextField
           label="Code"
           hint="A short code, for example ACC."
           autoComplete="off"
           error={errors.code?.message ?? server?.fieldError('code')}
           {...register('code', { required: 'Enter a code.' })}
         />
-        <Field
+        <TextField
           label="Name"
           autoComplete="off"
           error={errors.name?.message ?? server?.fieldError('name')}
@@ -164,7 +164,7 @@ export function BranchesPage() {
     {
       id: 'status',
       header: 'Status',
-      cell: (b) => <StatusBadge status={b.is_active ? 'active' : 'deactivated'} />,
+      cell: (b) => <StatusWord status={b.is_active ? 'active' : 'deactivated'} />,
     },
     ...(canManage
       ? [

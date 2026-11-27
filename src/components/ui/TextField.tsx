@@ -1,5 +1,6 @@
 import type { InputHTMLAttributes } from 'react';
-import { FormField, Input } from './ui';
+import { FormField } from './FormField';
+import { Input } from './Input';
 
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -9,7 +10,7 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 /** Labelled text input built from the library's FormField and Input; keeps the form-library friendly props. */
-export function Field({ label, hint, error, ...rest }: Props) {
+export function TextField({ label, hint, error, ...rest }: Props) {
   return (
     <FormField label={label} help={hint} error={error}>
       {(c) => <Input {...rest} {...c} />}

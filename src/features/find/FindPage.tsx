@@ -2,11 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Search } from 'lucide-react';
 import { api, rowsOf } from '../../api';
-import { Field } from '../../components/Field';
-import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
-import { StatusBadge } from '../../components/StatusBadge';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, Pager, StatusWord, TextField } from '../../components/ui';
 
 /** Other branches for one item: branch name and available quantity only (the API sends nothing more). */
 function OtherBranches({ itemId }: { itemId: number }) {
@@ -67,7 +64,11 @@ export function FindPage() {
           setPage(1);
         }}
       >
-        <Field label="Item name or SKU" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <TextField
+          label="Item name or SKU"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+        />
         <Button type="submit" variant="secondary" icon={Search} className="w-full sm:w-auto">
           Search
         </Button>
@@ -89,7 +90,7 @@ export function FindPage() {
                           <p className="m-0 min-w-0 break-words text-lg font-semibold">
                             {r.item_name}
                           </p>
-                          <StatusBadge
+                          <StatusWord
                             status={r.available === 0 ? 'out' : r.low_stock ? 'low' : 'in-stock'}
                           />
                         </div>

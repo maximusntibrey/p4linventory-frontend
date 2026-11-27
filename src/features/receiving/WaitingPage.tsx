@@ -3,13 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { PackageCheck } from 'lucide-react';
 import { api, rowsOf } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { unitsSent } from '../dispatches/labels';
-import { Card, LinkButton } from '../../components/ui';
+import { Card, LinkButton, Pager, SelectField, StatusWord } from '../../components/ui';
 
 /**
  * What is waiting at a branch. The working branch comes from /me; when /me has none (the Super Admin),
@@ -43,7 +40,7 @@ export function WaitingPage() {
     <div className="flex flex-col gap-4">
       <h1 className="text-display">Receive</h1>
       {!own && (
-        <Select
+        <SelectField
           label="Branch"
           value={picked}
           onChange={(e) => {
@@ -57,7 +54,7 @@ export function WaitingPage() {
               {b.name}
             </option>
           ))}
-        </Select>
+        </SelectField>
       )}
       {branchId === undefined ? (
         <p className="m-0 text-muted">Choose a branch to see what is waiting there.</p>
@@ -77,7 +74,7 @@ export function WaitingPage() {
                       <Card className="flex h-full flex-col gap-2">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <p className="m-0 text-lg font-semibold">{d.reference}</p>
-                          <StatusBadge status="in-transit" />
+                          <StatusWord status="in-transit" />
                         </div>
                         <p className="m-0 break-words">From {d.origin.name}</p>
                         <p className="m-0 text-sm text-muted">

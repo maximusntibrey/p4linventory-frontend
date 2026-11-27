@@ -6,14 +6,13 @@ import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { ResultCard } from '../../components/focus';
 import { ItemPicker } from '../../components/ItemPicker';
 import type { Candidate } from '../../components/ItemPicker';
 import { amountPattern, twoDecimals } from '../../lib/money';
 import { formatAccra } from '../../lib/time';
 import { ghs } from '../items/labels';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string; cost: string };
@@ -144,7 +143,7 @@ export function GoodsReceiptPage() {
       ) : (
         <>
           <Card className="flex flex-col gap-4">
-            <Field
+            <TextField
               label="Supplier"
               value={supplier}
               maxLength={200}
@@ -152,7 +151,7 @@ export function GoodsReceiptPage() {
               onChange={(e) => setSupplier(e.target.value)}
               error={problems?.supplier ?? server?.fieldError('supplier_name')}
             />
-            <Field
+            <TextField
               label="Notes (optional)"
               value={notes}
               maxLength={1000}
@@ -185,7 +184,7 @@ export function GoodsReceiptPage() {
                     {l.name} <span className="text-sm font-normal text-muted">{l.sku}</span>
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <Field
+                    <TextField
                       label={`Quantity: ${l.name}`}
                       inputMode="numeric"
                       autoComplete="off"
@@ -195,7 +194,7 @@ export function GoodsReceiptPage() {
                         problems?.rows[i]?.quantity ?? server?.fieldError(`lines.${i}.quantity`)
                       }
                     />
-                    <Field
+                    <TextField
                       label={`Unit cost (GHS): ${l.name}`}
                       inputMode="decimal"
                       autoComplete="off"

@@ -9,13 +9,11 @@ import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { SuccessNotice } from '../../components/focus';
-import { Field } from '../../components/Field';
 import { QueryGate } from '../../components/QueryGate';
-import { StatusBadge } from '../../components/StatusBadge';
 import { permissionCodes, permissionLabels, roleLabels, statusBadge } from './labels';
 import { OneTimePassword } from './OneTimePassword';
 import { UserForm } from './UserForm';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, StatusWord, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Target = 'active' | 'suspended' | 'deactivated';
@@ -193,7 +191,7 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
           <span>{user.login_id}</span>
           <span aria-hidden="true">·</span>
           <span>{user.roles.map((r) => roleLabels[r]).join(', ')}</span>
-          <StatusBadge status={statusBadge[user.status]} />
+          <StatusWord status={statusBadge[user.status]} />
         </p>
       </div>
       {notice && <SuccessNotice>{notice}</SuccessNotice>}
@@ -278,7 +276,7 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
                   onConfirm={() => status.mutate(confirm)}
                   onCancel={closeConfirm}
                 >
-                  <Field
+                  <TextField
                     label="Reason (optional)"
                     maxLength={500}
                     value={reason}

@@ -7,8 +7,6 @@ import type { components, paths } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
 import { describeError } from '../../components/ErrorSummary';
-import { Field } from '../../components/Field';
-import { Select } from '../../components/Select';
 import { Forbidden } from '../../pages/Forbidden';
 import { formatAccra } from '../../lib/time';
 import {
@@ -16,7 +14,9 @@ import {
   DataTable,
   EmptyState,
   PageHeader,
+  SelectField,
   StatusBadge,
+  TextField,
   Toolbar,
 } from '../../components/ui';
 import type { Column, SortState } from '../../components/ui';
@@ -193,26 +193,26 @@ export function AuditLogsPage() {
         aria-label="Audit log filters"
       >
         {people.data && (
-          <Select label="User" value={draft.user_id} onChange={set('user_id')}>
+          <SelectField label="User" value={draft.user_id} onChange={set('user_id')}>
             <option value="">All users</option>
             {rowsOf(people.data).map((u) => (
               <option key={u.id} value={u.id}>
                 {u.login_id} · {u.full_name}
               </option>
             ))}
-          </Select>
+          </SelectField>
         )}
         {places.data && (
-          <Select label="Branch" value={draft.branch_id} onChange={set('branch_id')}>
+          <SelectField label="Branch" value={draft.branch_id} onChange={set('branch_id')}>
             <option value="">All branches</option>
             {rowsOf(places.data).map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
               </option>
             ))}
-          </Select>
+          </SelectField>
         )}
-        <Field
+        <TextField
           label="Action"
           hint="For example dispatch_created. Leave empty for all."
           value={draft.action}
@@ -220,7 +220,7 @@ export function AuditLogsPage() {
           autoComplete="off"
           onChange={set('action')}
         />
-        <Field
+        <TextField
           label="Module"
           hint="For example dispatch or sale. Leave empty for all."
           value={draft.target_type}
@@ -228,8 +228,13 @@ export function AuditLogsPage() {
           autoComplete="off"
           onChange={set('target_type')}
         />
-        <Field label="From date" type="date" value={draft.date_from} onChange={set('date_from')} />
-        <Field
+        <TextField
+          label="From date"
+          type="date"
+          value={draft.date_from}
+          onChange={set('date_from')}
+        />
+        <TextField
           label="To date"
           type="date"
           value={draft.date_to}

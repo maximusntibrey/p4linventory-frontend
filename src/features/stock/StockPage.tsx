@@ -4,12 +4,8 @@ import { Search } from 'lucide-react';
 import { api, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Field } from '../../components/Field';
-import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, Pager, SelectField, StatusWord, TextField } from '../../components/ui';
 
 type Row = components['schemas']['StockBalance'];
 
@@ -60,14 +56,14 @@ export function StockPage() {
         }}
       >
         <div className={canPickLocation ? '' : 'sm:col-span-2'}>
-          <Field
+          <TextField
             label="Search by item name or SKU"
             value={draft.q}
             onChange={(e) => setDraft({ ...draft, q: e.target.value })}
           />
         </div>
         {canPickLocation && (
-          <Select
+          <SelectField
             label="Location"
             value={draft.location}
             onChange={(e) => setDraft({ ...draft, location: e.target.value })}
@@ -78,7 +74,7 @@ export function StockPage() {
                 {l.name}
               </option>
             ))}
-          </Select>
+          </SelectField>
         )}
         <div className="sm:col-span-2">
           <Button type="submit" variant="secondary" icon={Search} className="w-full sm:w-auto">
@@ -109,7 +105,7 @@ export function StockPage() {
                             <p className="m-0 min-w-0 break-words text-lg font-semibold">
                               {r.item_name}
                             </p>
-                            <StatusBadge
+                            <StatusWord
                               status={r.available === 0 ? 'out' : r.low_stock ? 'low' : 'in-stock'}
                             />
                           </div>

@@ -9,21 +9,17 @@ import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { SuccessNotice } from '../../components/focus';
-import { Field } from '../../components/Field';
-import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { ghs } from '../items/labels';
 import { linkButton, paymentCodes, paymentLabel, saleStatusLabels } from './labels';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, Pager, SelectField, StatusWord, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 
 function StatusOf({ status }: { status: S['SaleStatus'] }) {
-  if (status === 'completed') return <StatusBadge status="completed" />;
-  if (status === 'cancelled') return <StatusBadge status="cancelled" />;
+  if (status === 'completed') return <StatusWord status="completed" />;
+  if (status === 'cancelled') return <StatusWord status="cancelled" />;
   return <span className="font-semibold">{saleStatusLabels[status]}</span>;
 }
 
@@ -85,7 +81,7 @@ export function SalesPage() {
         </Link>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Select
+        <SelectField
           label="Status"
           value={filters.status}
           onChange={(e) => {
@@ -96,8 +92,8 @@ export function SalesPage() {
           <option value="">All</option>
           <option value="completed">{saleStatusLabels.completed}</option>
           <option value="cancelled">{saleStatusLabels.cancelled}</option>
-        </Select>
-        <Select
+        </SelectField>
+        <SelectField
           label="Payment method"
           value={filters.payment}
           onChange={(e) => {
@@ -111,7 +107,7 @@ export function SalesPage() {
               {paymentLabel(c)}
             </option>
           ))}
-        </Select>
+        </SelectField>
       </div>
       {notice && <SuccessNotice key={notice.at}>{notice.text}</SuccessNotice>}
       {!cancelling && <ApiProblem error={cancel.error} at={cancel.submittedAt} />}
@@ -187,7 +183,7 @@ export function SalesPage() {
                             }}
                             onCancel={close}
                           >
-                            <Field
+                            <TextField
                               label="Reason"
                               value={reason}
                               maxLength={1000}

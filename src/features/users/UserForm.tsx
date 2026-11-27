@@ -4,10 +4,8 @@ import { Save } from 'lucide-react';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Field } from '../../components/Field';
-import { Select } from '../../components/Select';
 import { roleCodes, roleLabels } from './labels';
-import { Button } from '../../components/ui';
+import { Button, SelectField, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Values = {
@@ -84,7 +82,7 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
         })(e)
       }
     >
-      <Field
+      <TextField
         label="Full name"
         autoComplete="off"
         error={errors.full_name?.message ?? server?.fieldError('full_name')}
@@ -120,7 +118,7 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
           )}
         </fieldset>
       )}
-      <Select
+      <SelectField
         key={locations.isSuccess ? 'ready' : 'loading'} // remount so the saved value is selected once the options exist
         label="Permanent location"
         error={server?.fieldError('permanent_location_id')}
@@ -132,7 +130,7 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
             {l.name}
           </option>
         ))}
-      </Select>
+      </SelectField>
       <Button type="submit" icon={Save} disabled={pending}>
         {pending ? 'Saving…' : submitLabel}
       </Button>

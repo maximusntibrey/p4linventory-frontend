@@ -6,13 +6,9 @@ import { api, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import { useBranchFilter } from '../workingBranch/BranchFilter';
-import { Field } from '../../components/Field';
-import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
 import { roleLabels, statusBadge } from './labels';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, Pager, SelectField, StatusWord, TextField } from '../../components/ui';
 
 type UserStatus = components['schemas']['UserStatus'];
 const statuses: { value: UserStatus; label: string }[] = [
@@ -72,12 +68,12 @@ export function UsersPage() {
                 setPage(1);
               }}
             >
-              <Field
+              <TextField
                 label="Search by name or login ID"
                 value={draft.q}
                 onChange={(e) => setDraft({ ...draft, q: e.target.value })}
               />
-              <Select
+              <SelectField
                 label="Status"
                 value={draft.status}
                 onChange={(e) => setDraft({ ...draft, status: e.target.value as UserStatus | '' })}
@@ -88,7 +84,7 @@ export function UsersPage() {
                     {s.label}
                   </option>
                 ))}
-              </Select>
+              </SelectField>
               <Button type="submit" variant="secondary" icon={Search}>
                 Search
               </Button>
@@ -109,7 +105,7 @@ export function UsersPage() {
                             {u.full_name}
                           </Link>
                         </h2>
-                        <StatusBadge status={statusBadge[u.status]} />
+                        <StatusWord status={statusBadge[u.status]} />
                       </div>
                       <p className="m-0 text-sm text-muted">
                         {u.login_id} · {u.roles.map((r) => roleLabels[r]).join(', ')}

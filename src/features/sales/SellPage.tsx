@@ -8,15 +8,13 @@ import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { ResultCard } from '../../components/focus';
 import { ItemPicker } from '../../components/ItemPicker';
 import type { Candidate } from '../../components/ItemPicker';
-import { Select } from '../../components/Select';
 import { BranchPicker } from '../workingBranch/BranchPicker';
 import { ghs } from '../items/labels';
 import { fromCents, linkButton, paymentCodes, paymentLabel, toCents } from './labels';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, SelectField, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string; price: string | null };
@@ -235,7 +233,7 @@ export function SellPage() {
                     {l.available !== undefined && `${l.available} available · `}
                     {l.price ? `${ghs(l.price)} each` : 'No price yet'}
                   </p>
-                  <Field
+                  <TextField
                     label={`Quantity: ${l.name}`}
                     inputMode="numeric"
                     autoComplete="off"
@@ -297,7 +295,7 @@ export function SellPage() {
       {step === 'pay' && (
         <Card className="flex flex-col gap-4">
           <h2 className="text-3xl">Payment</h2>
-          <Select
+          <SelectField
             label="Payment method"
             value={payment}
             onChange={(e) => setPayment(e.target.value)}
@@ -309,7 +307,7 @@ export function SellPage() {
                 {paymentLabel(c)}
               </option>
             ))}
-          </Select>
+          </SelectField>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" icon={ArrowLeft} onClick={() => setStep('items')}>
               Back

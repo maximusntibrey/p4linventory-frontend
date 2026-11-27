@@ -8,8 +8,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { StatusBadge as Badge } from './ui';
-import type { Tone } from './ui';
+import { StatusBadge as Badge } from './StatusBadge';
+import type { Tone } from './StatusBadge';
 
 /** Stock words, the account/branch words and the transfer words of SKILLS "Status vocabularies". */
 export type Status =
@@ -44,7 +44,7 @@ const config: Record<Status, { label: string; icon: LucideIcon; tone: Tone }> = 
 };
 
 /** Maps the SKILLS status words onto the library StatusBadge. Always icon plus text. `label` overrides the wording. */
-export function StatusBadge({ status, label }: { status: Status; label?: string }) {
+export function StatusWord({ status, label }: { status: Status; label?: string }) {
   const { label: text, icon, tone } = config[status];
   return (
     <Badge tone={tone} icon={icon}>

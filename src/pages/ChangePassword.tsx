@@ -8,8 +8,7 @@ import { meKey, useLogout } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
 import { describeError, ErrorSummary } from '../components/ErrorSummary';
 import type { ErrorParts } from '../components/ErrorSummary';
-import { Field } from '../components/Field';
-import { Button, Card } from '../components/ui';
+import { Button, Card, TextField } from '../components/ui';
 
 type Values = { current_password: string; new_password: string; confirm: string };
 
@@ -78,14 +77,14 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
           )(e);
         }}
       >
-        <Field
+        <TextField
           label={forced ? 'One-time password' : 'Current password'}
           type="password"
           autoComplete="current-password"
           error={errors.current_password?.message ?? server?.fieldError('current_password')}
           {...register('current_password', { required: 'Enter your current password.' })}
         />
-        <Field
+        <TextField
           label="New password"
           type="password"
           hint="At least 10 characters."
@@ -93,7 +92,7 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
           error={errors.new_password?.message ?? server?.fieldError('new_password')}
           {...register('new_password', { required: 'Enter a new password.' })}
         />
-        <Field
+        <TextField
           label="Confirm new password"
           type="password"
           autoComplete="new-password"

@@ -2,10 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { Home } from 'lucide-react';
-import { Field } from './Field';
-import { StatusBadge } from './StatusBadge';
-import type { Status } from './StatusBadge';
-import { Button, Card } from './ui';
+import { Button, Card, StatusWord, TextField } from './ui';
+import type { Status } from './ui';
 
 describe('Button', () => {
   it('shows a visible label, icon hidden from assistive tech, 44 px target class, click works', async () => {
@@ -38,7 +36,9 @@ describe('Card', () => {
 
 describe('Field', () => {
   it('links label, hint and inline error to the input', async () => {
-    const { container } = render(<Field label="Quantity" hint="Whole numbers" error="Too many" />);
+    const { container } = render(
+      <TextField label="Quantity" hint="Whole numbers" error="Too many" />,
+    );
     const input = screen.getByLabelText('Quantity');
     expect(input.getAttribute('aria-invalid')).toBe('true');
     const described = input.getAttribute('aria-describedby')!.split(' ');
@@ -48,7 +48,7 @@ describe('Field', () => {
   });
 
   it('has no error wiring without an error', () => {
-    render(<Field label="Name" />);
+    render(<TextField label="Name" />);
     const input = screen.getByLabelText('Name');
     expect(input.getAttribute('aria-invalid')).toBeNull();
     expect(input.getAttribute('aria-describedby')).toBeNull();
@@ -66,7 +66,7 @@ describe('StatusBadge', () => {
     ['suspended', 'Suspended'],
     ['deactivated', 'Deactivated'],
   ])('%s shows text and an icon, not colour alone', async (status, text) => {
-    const { container } = render(<StatusBadge status={status} />);
+    const { container } = render(<StatusWord status={status} />);
     expect(screen.getByText(text)).toBeTruthy();
     expect(container.querySelector('svg')).not.toBeNull();
     expect(await axe(container)).toHaveNoViolations();

@@ -3,14 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { api, rowsOf } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { dispatchStatusBadge, dispatchStatuses, unitsSent } from './labels';
 import type { components } from '../../api';
-import { Card, LinkButton } from '../../components/ui';
+import { Card, LinkButton, Pager, SelectField, StatusWord } from '../../components/ui';
 
 type Status = components['schemas']['DispatchStatus'];
 
@@ -49,7 +46,7 @@ export function DispatchesPage() {
         </LinkButton>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
-        <Select
+        <SelectField
           label="Status"
           value={status}
           onChange={(e) => {
@@ -63,8 +60,8 @@ export function DispatchesPage() {
               {dispatchStatusBadge[s].label}
             </option>
           ))}
-        </Select>
-        <Select
+        </SelectField>
+        <SelectField
           label="Branch"
           value={branch}
           onChange={(e) => {
@@ -78,7 +75,7 @@ export function DispatchesPage() {
               {b.name}
             </option>
           ))}
-        </Select>
+        </SelectField>
       </div>
       <QueryGate query={list}>
         {(data) => {
@@ -94,7 +91,7 @@ export function DispatchesPage() {
                       <Card className="flex h-full flex-col gap-2">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <p className="m-0 text-lg font-semibold">{d.reference}</p>
-                          <StatusBadge status={badge.status} label={badge.label} />
+                          <StatusWord status={badge.status} label={badge.label} />
                         </div>
                         <p className="m-0 break-words">
                           {d.origin.name} to {d.destination.name}
@@ -110,7 +107,7 @@ export function DispatchesPage() {
                           ))}
                         </ul>
                         {d.has_open_discrepancy && (
-                          <StatusBadge status="low" label="Open shortfall" />
+                          <StatusWord status="low" label="Open shortfall" />
                         )}
                       </Card>
                     </li>

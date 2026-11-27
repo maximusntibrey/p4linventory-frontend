@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, rowsOf } from '../../api';
-import { Select } from '../../components/Select';
+import { SelectField } from '../../components/ui';
 
 type Filter = { branch?: number; setBranch: (id?: number) => void };
 
@@ -25,7 +25,7 @@ export function BranchFilter() {
   const { branch, setBranch } = useBranchFilter();
   const list = useFilterBranches(true);
   return (
-    <Select
+    <SelectField
       label="Filter by branch"
       value={branch ?? ''}
       onChange={(e) => setBranch(e.target.value ? Number(e.target.value) : undefined)}
@@ -36,6 +36,6 @@ export function BranchFilter() {
           {b.name}
         </option>
       ))}
-    </Select>
+    </SelectField>
   );
 }

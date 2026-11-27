@@ -4,9 +4,8 @@ import { api } from '../api';
 import { useCurrentMe } from '../auth/guards';
 import { iconForMenuKey } from '../components/menuIcons';
 import { resolveEntry } from '../components/navModel';
-import { PageHeader, StatCard, StatsStrip } from '../components/ui';
+import { PageHeader, StatCard, StatsStrip, StatusWord } from '../components/ui';
 import { QueryGate } from '../components/QueryGate';
-import { StatusBadge } from '../components/StatusBadge';
 import { useBranchFilter } from '../features/workingBranch/BranchFilter';
 import { Card } from '../components/ui';
 
@@ -64,7 +63,7 @@ export function Home() {
                 ) : (
                   <>
                     <p className="m-0 font-semibold">
-                      <StatusBadge status="low" label={`${d.low_stock_count} to reorder`} />
+                      <StatusWord status="low" label={`${d.low_stock_count} to reorder`} />
                     </p>
                     <ul className="m-0 flex list-none flex-col gap-2 p-0">
                       {d.low_stock.map((r) => (

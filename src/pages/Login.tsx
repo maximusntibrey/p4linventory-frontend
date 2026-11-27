@@ -8,8 +8,7 @@ import { fetchMe, meKey, useMe } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
 import { describeError, ErrorSummary } from '../components/ErrorSummary';
 import type { ErrorParts } from '../components/ErrorSummary';
-import { Field } from '../components/Field';
-import { Button } from '../components/ui';
+import { Button, TextField } from '../components/ui';
 
 type Values = { login_id: string; password: string };
 
@@ -82,7 +81,7 @@ export function Login() {
           )(e);
         }}
       >
-        <Field
+        <TextField
           label="Login ID"
           hint="For example SA-0001 or USR-0001."
           autoComplete="username"
@@ -91,7 +90,7 @@ export function Login() {
           error={errors.login_id?.message ?? server?.fieldError('login_id')}
           {...register('login_id', { required: 'Enter your login ID.' })}
         />
-        <Field
+        <TextField
           label="Password"
           type="password"
           autoComplete="current-password"

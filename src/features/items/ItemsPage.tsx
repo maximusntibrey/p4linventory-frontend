@@ -5,11 +5,7 @@ import { Plus, Search, Upload } from 'lucide-react';
 import { api, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Field } from '../../components/Field';
-import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
 import {
   averageCost,
   conditionCodes,
@@ -19,7 +15,7 @@ import {
   itemStatusBadge,
   itemStatuses,
 } from './labels';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, Pager, SelectField, StatusWord, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Condition = S['Item']['condition'];
@@ -100,13 +96,13 @@ export function ItemsPage() {
         }}
       >
         <div className="sm:col-span-2">
-          <Field
+          <TextField
             label="Search by name, SKU, brand, model or part number"
             value={draft.q}
             onChange={(e) => setDraft({ ...draft, q: e.target.value })}
           />
         </div>
-        <Select
+        <SelectField
           label="Category"
           value={draft.category}
           onChange={(e) => setDraft({ ...draft, category: e.target.value })}
@@ -117,8 +113,8 @@ export function ItemsPage() {
               {c.name}
             </option>
           ))}
-        </Select>
-        <Select
+        </SelectField>
+        <SelectField
           label="Brand"
           value={draft.brand}
           onChange={(e) => setDraft({ ...draft, brand: e.target.value })}
@@ -130,8 +126,8 @@ export function ItemsPage() {
               {b.is_active ? '' : ' (deactivated)'}
             </option>
           ))}
-        </Select>
-        <Select
+        </SelectField>
+        <SelectField
           label="Condition"
           value={draft.condition}
           onChange={(e) =>
@@ -144,8 +140,8 @@ export function ItemsPage() {
               {conditionLabels[c]}
             </option>
           ))}
-        </Select>
-        <Select
+        </SelectField>
+        <SelectField
           label="Status"
           value={draft.status}
           onChange={(e) => setDraft({ ...draft, status: e.target.value as Filters['status'] })}
@@ -156,7 +152,7 @@ export function ItemsPage() {
               {itemStatusBadge[s].label}
             </option>
           ))}
-        </Select>
+        </SelectField>
         <div className="flex items-end">
           <Button type="submit" variant="secondary" icon={Search} className="w-full">
             Search
@@ -182,7 +178,7 @@ export function ItemsPage() {
                             {item.name}
                           </Link>
                         </h2>
-                        <StatusBadge
+                        <StatusWord
                           status={itemStatusBadge[item.status].status}
                           label={itemStatusBadge[item.status].label}
                         />

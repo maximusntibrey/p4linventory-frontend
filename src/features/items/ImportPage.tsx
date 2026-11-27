@@ -8,11 +8,9 @@ import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { ResultCard } from '../../components/focus';
-import { Select } from '../../components/Select';
 import { linkButton } from '../sales/labels';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, SelectField, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 
@@ -126,7 +124,7 @@ export function ImportPage() {
       <ApiProblem error={server} at={run.submittedAt} />
       <Card className="flex flex-col gap-4">
         <h2 className="text-3xl">1. Choose the file</h2>
-        <Field
+        <TextField
           key={inputKey}
           label="CSV file"
           type="file"
@@ -141,7 +139,7 @@ export function ImportPage() {
           error={fileError}
         />
         {chooseLocation && (
-          <Select
+          <SelectField
             label="Location"
             value={location}
             onChange={(e) => {
@@ -155,7 +153,7 @@ export function ImportPage() {
                 {l.name}
               </option>
             ))}
-          </Select>
+          </SelectField>
         )}
         <Button
           icon={FileCheck}

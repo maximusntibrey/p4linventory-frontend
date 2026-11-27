@@ -10,7 +10,6 @@ import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { SuccessNotice } from '../../components/focus';
 import { QueryGate } from '../../components/QueryGate';
-import { StatusBadge } from '../../components/StatusBadge';
 import { ImageUpload } from './ImageUpload';
 import { ItemForm } from './ItemForm';
 import {
@@ -21,7 +20,7 @@ import {
   itemStatusBadge,
   withoutCost,
 } from './labels';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, StatusWord } from '../../components/ui';
 
 type S = components['schemas'];
 type Warning = S['ItemWithCostAndWarnings']['warnings'][number];
@@ -108,7 +107,7 @@ function Detail({
           <span>{item.sku}</span>
           <span aria-hidden="true">·</span>
           <span>{item.brand_name ?? 'No brand'}</span>
-          <StatusBadge status={badge.status} label={badge.label} />
+          <StatusWord status={badge.status} label={badge.label} />
         </p>
       </div>
       {notice && <SuccessNotice>{notice}</SuccessNotice>}

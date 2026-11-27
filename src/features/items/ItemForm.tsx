@@ -5,12 +5,10 @@ import { Save } from 'lucide-react';
 import { api, ApiError } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import type { components } from '../../api';
-import { Field } from '../../components/Field';
 import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
 import { twoDecimals } from '../../lib/money';
 import { conditionCodes, conditionLabels } from './labels';
-import { Button } from '../../components/ui';
+import { Button, SelectField, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Def = S['ItemFieldDefinition'];
@@ -184,18 +182,18 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
     }
     if (def.type === 'choice') {
       return (
-        <Select key={def.key} label={def.label} hint={hint} error={message} {...reg}>
+        <SelectField key={def.key} label={def.label} hint={hint} error={message} {...reg}>
           <option value="">Not set</option>
           {(def.choices ?? []).map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
           ))}
-        </Select>
+        </SelectField>
       );
     }
     return (
-      <Field
+      <TextField
         key={def.key}
         label={def.label}
         hint={hint}
@@ -209,13 +207,13 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
 
   return (
     <form noValidate className="flex flex-col gap-4" onSubmit={(e) => void submit(e)}>
-      <Field
+      <TextField
         label="Name"
         autoComplete="off"
         error={errors.name?.message ?? server?.fieldError('name')}
         {...register('name', { required: 'Enter the item name.' })}
       />
-      <Select
+      <SelectField
         key={`category-${ready}`}
         label="Category"
         error={errors.category?.message ?? server?.fieldError('category_id')}
@@ -230,8 +228,8 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
             {c.name}
           </option>
         ))}
-      </Select>
-      <Select
+      </SelectField>
+      <SelectField
         key={`subtype-${ready}-${categoryId}`}
         label="Type"
         error={errors.subtype?.message ?? server?.fieldError('subtype_id')}
@@ -243,8 +241,8 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
             {s.name}
           </option>
         ))}
-      </Select>
-      <Select
+      </SelectField>
+      <SelectField
         key={`brand-${ready}`}
         label="Brand"
         error={errors.brand?.message ?? server?.fieldError('brand_id')}
@@ -260,20 +258,20 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
               {b.is_active ? '' : ' (deactivated)'}
             </option>
           ))}
-      </Select>
-      <Field
+      </SelectField>
+      <TextField
         label="Model"
         autoComplete="off"
         error={errors.model_name?.message ?? server?.fieldError('model_name')}
         {...register('model_name', { required: 'Enter the model.' })}
       />
-      <Field
+      <TextField
         label="Part number (MPN)"
         autoComplete="off"
         error={errors.mpn?.message ?? server?.fieldError('mpn')}
         {...register('mpn', { required: 'Enter the part number.' })}
       />
-      <Select
+      <SelectField
         label="Condition"
         error={errors.condition?.message ?? server?.fieldError('condition')}
         {...register('condition', { required: 'Choose the condition.' })}
@@ -284,9 +282,9 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
             {conditionLabels[c]}
           </option>
         ))}
-      </Select>
+      </SelectField>
       {canPrice && (
-        <Field
+        <TextField
           label="Selling price (GHS)"
           hint={
             item?.selling_price

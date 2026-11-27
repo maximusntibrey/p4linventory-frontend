@@ -6,15 +6,11 @@ import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { SuccessNotice } from '../../components/focus';
-import { Pager } from '../../components/Pager';
 import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
 import { formatAccra } from '../../lib/time';
 import { resolutionEffects, resolutionLabels, resolutionCodes } from './labels';
-import { Button, Card } from '../../components/ui';
+import { Button, Card, Pager, SelectField, StatusWord, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 
@@ -96,7 +92,7 @@ export function ShortfallsPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-display">Shortfalls</h1>
-      <Select
+      <SelectField
         label="Status"
         value={status}
         onChange={(e) => {
@@ -107,7 +103,7 @@ export function ShortfallsPage() {
         <option value="open">Open</option>
         <option value="resolved">Resolved</option>
         <option value="">All</option>
-      </Select>
+      </SelectField>
       {notice && <SuccessNotice key={notice.at}>{notice.text}</SuccessNotice>}
       {opened === null && <ApiProblem error={resolve.error} at={resolve.submittedAt} />}
       <QueryGate query={list}>
@@ -123,9 +119,9 @@ export function ShortfallsPage() {
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <h2 className="text-title">{s.item_name}</h2>
                         {s.status === 'open' ? (
-                          <StatusBadge status="low" label="Open" />
+                          <StatusWord status="low" label="Open" />
                         ) : (
-                          <StatusBadge status="completed" label="Resolved" />
+                          <StatusWord status="completed" label="Resolved" />
                         )}
                       </div>
                       <p className="m-0 text-sm text-muted">
@@ -146,7 +142,7 @@ export function ShortfallsPage() {
                               {r.is_self_approval && (
                                 <>
                                   {' '}
-                                  <StatusBadge status="low" label="Self-approved" />
+                                  <StatusWord status="low" label="Self-approved" />
                                 </>
                               )}
                             </li>
@@ -181,7 +177,7 @@ export function ShortfallsPage() {
                             onConfirm={() => submit(s)}
                             onCancel={close}
                           >
-                            <Select
+                            <SelectField
                               label="Resolution"
                               value={form.resolution}
                               error={errors.resolution}
@@ -193,8 +189,8 @@ export function ShortfallsPage() {
                                   {resolutionLabels[c]}
                                 </option>
                               ))}
-                            </Select>
-                            <Field
+                            </SelectField>
+                            <TextField
                               label="Quantity"
                               inputMode="numeric"
                               hint={`Up to ${s.remaining}.`}
@@ -203,7 +199,7 @@ export function ShortfallsPage() {
                               autoComplete="off"
                               onChange={(e) => setForm({ ...form, quantity: e.target.value })}
                             />
-                            <Field
+                            <TextField
                               label="Note"
                               value={form.note}
                               maxLength={1000}
