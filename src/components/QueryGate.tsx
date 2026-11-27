@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Box from '@mui/material/Box';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { ApiError } from '../api';
 import { Forbidden } from '../pages/Forbidden';
@@ -16,29 +17,52 @@ type Props<T> = {
 export function QueryGate<T>({ query, children, inline = false }: Props<T>) {
   if (query.isPending) {
     return (
-      <div role="status" aria-busy="true" className="flex flex-col gap-3">
-        <span className="sr-only">Loading…</span>
-        <Skeleton className="h-8 w-1/3" />
+      <Box
+        role="status"
+        aria-busy="true"
+        sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
+      >
+        <Box
+          component="span"
+          sx={{
+            ...{
+              position: 'absolute',
+              width: 1,
+              height: 1,
+              overflow: 'hidden',
+              clip: 'rect(0 0 0 0)',
+              whiteSpace: 'nowrap',
+            },
+          }}
+        >
+          Loading…
+        </Box>
+        <Skeleton width="33%" height={32} />
         <SkeletonText lines={4} />
-      </div>
+      </Box>
     );
   }
   if (query.isError) {
     const e = query.error;
     if (e instanceof ApiError && e.kind === 'forbidden') {
       return inline ? (
-        <p role="alert" className="m-0 font-semibold text-bad">
+        <Box component="p" role="alert" sx={{ m: 0, fontWeight: 600, color: 'error.main' }}>
           Your account is not allowed to see this.
-        </p>
+        </Box>
       ) : (
         <Forbidden />
       );
     }
     return (
-      <div role="alert" className="flex flex-col items-start gap-3">
-        <p className="m-0 font-semibold text-bad">{describeError(e).title}</p>
+      <Box
+        role="alert"
+        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1.5 }}
+      >
+        <Box component="p" sx={{ m: 0, fontWeight: 600, color: 'error.main' }}>
+          {describeError(e).title}
+        </Box>
         <Button onClick={() => void query.refetch()}>Try again</Button>
-      </div>
+      </Box>
     );
   }
   return <>{children(query.data)}</>;

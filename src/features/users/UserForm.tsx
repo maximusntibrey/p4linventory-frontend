@@ -1,11 +1,12 @@
 import { useForm } from 'react-hook-form';
+import Box from '@mui/material/Box';
 import { useQuery } from '@tanstack/react-query';
-import { Save } from 'lucide-react';
+import { Save } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import { roleCodes, roleLabels } from './labels';
-import { Button, SelectField, TextField } from '../../components/ui';
+import { Button, SelectField, TextField, CheckField } from '../../components/ui';
 
 type S = components['schemas'];
 type Values = {
@@ -59,9 +60,10 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
     (canMulti ? errors.roles?.message : errors.role?.message) ?? server?.fieldError('roles');
 
   return (
-    <form
+    <Box
+      component="form"
       noValidate
-      className="flex flex-col gap-4"
+      sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
       onSubmit={(e) =>
         void handleSubmit((v) => {
           const location = v.location === '' ? undefined : Number(v.location);
@@ -89,34 +91,43 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
         {...register('full_name', { required: 'Enter the full name.' })}
       />
       {multiRole ? (
-        <p className="m-0">
-          <span className="font-semibold">Roles: </span>
+        <Box component="p" sx={{ m: 0 }}>
+          <Box component="span" sx={{ fontWeight: 600 }}>
+            Roles:{' '}
+          </Box>
           {user?.roles.map((r) => roleLabels[r]).join(', ')}
-        </p>
+        </Box>
       ) : (
-        <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
-          <legend className="mb-1 p-0 font-semibold">{canMulti ? 'Roles' : 'Role'}</legend>
+        <Box
+          component="fieldset"
+          sx={{ m: 0, display: 'flex', flexDirection: 'column', gap: 0.5, border: 0, p: 0 }}
+        >
+          <Box component="legend" sx={{ mb: 0.5, p: 0, fontWeight: 600 }}>
+            {canMulti ? 'Roles' : 'Role'}
+          </Box>
           {roleCodes.map((code) => (
-            <label key={code} className="flex min-h-target items-center gap-3">
-              <input
-                type={canMulti ? 'checkbox' : 'radio'}
-                value={code}
-                className="size-5 accent-primary-solid"
-                {...(canMulti
-                  ? register('roles', {
-                      validate: (v) => (v && v.length > 0) || 'Choose at least one role.',
-                    })
-                  : register('role', { required: 'Choose a role.' }))}
-              />
-              <span>{roleLabels[code]}</span>
-            </label>
+            <CheckField
+              key={code}
+              label={roleLabels[code]}
+              type={canMulti ? 'checkbox' : 'radio'}
+              value={code}
+              {...(canMulti
+                ? register('roles', {
+                    validate: (v) => (v && v.length > 0) || 'Choose at least one role.',
+                  })
+                : register('role', { required: 'Choose a role.' }))}
+            />
           ))}
           {roleError && (
-            <p className="m-0 text-sm font-semibold text-bad" role="alert">
+            <Box
+              component="p"
+              sx={{ m: 0, fontSize: '0.875rem', fontWeight: 600, color: 'error.main' }}
+              role="alert"
+            >
               {roleError}
-            </p>
+            </Box>
           )}
-        </fieldset>
+        </Box>
       )}
       <SelectField
         key={locations.isSuccess ? 'ready' : 'loading'} // remount so the saved value is selected once the options exist
@@ -134,6 +145,6 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
       <Button type="submit" icon={Save} disabled={pending}>
         {pending ? 'Saving…' : submitLabel}
       </Button>
-    </form>
+    </Box>
   );
 }

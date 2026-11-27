@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check } from 'lucide-react';
+import Box from '@mui/material/Box';
+import { Check } from 'components/icons';
 import { api, rowsOf } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
@@ -43,22 +44,36 @@ export function BranchPicker({ onCancel, onDone }: Props) {
   const current = me.working_branch?.id;
 
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title={current ? 'Switch branch' : 'Choose your branch'} />
-      <p className="m-0 text-muted">Pick the branch you are working at.</p>
+      <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+        Pick the branch you are working at.
+      </Box>
       <ApiProblem error={choose.error} at={choose.submittedAt} />
       <QueryGate query={list}>
         {(page) =>
           rowsOf(page).length === 0 ? (
-            <p className="m-0 text-muted">No branches are available to you.</p>
+            <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+              No branches are available to you.
+            </Box>
           ) : (
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            <Box
+              component="ul"
+              sx={{
+                m: 0,
+                display: 'flex',
+                listStyle: 'none',
+                flexDirection: 'column',
+                gap: 1,
+                p: 0,
+              }}
+            >
               {rowsOf(page).map((b) => (
                 <li key={b.id}>
                   <Button
                     variant={b.id === current ? 'primary' : 'secondary'}
                     icon={b.id === current ? Check : undefined}
-                    className="w-full justify-start"
+                    sx={{ width: '100%', justifyContent: 'flex-start' }}
                     aria-current={b.id === current ? 'true' : undefined}
                     disabled={choose.isPending}
                     onClick={() => choose.mutate(b.id)}
@@ -68,7 +83,7 @@ export function BranchPicker({ onCancel, onDone }: Props) {
                   </Button>
                 </li>
               ))}
-            </ul>
+            </Box>
           )
         }
       </QueryGate>
@@ -77,6 +92,6 @@ export function BranchPicker({ onCancel, onDone }: Props) {
           Cancel
         </Button>
       )}
-    </div>
+    </Box>
   );
 }

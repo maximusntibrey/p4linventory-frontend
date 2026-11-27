@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CheckCheck, PackageCheck, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCheck, PackageCheck, XCircle } from 'components/icons';
 import { api, ApiError } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
@@ -19,55 +20,101 @@ type Dispatch = S['Dispatch'];
 const count = (text: string) => (/^\d+$/.test(text.trim()) ? Number(text.trim()) : NaN);
 
 const backLink = (
-  <Link
+  <Box
+    component={Link}
     to="/receive"
-    className="inline-flex min-h-target items-center gap-2 font-semibold text-primary-solid underline"
+    sx={{
+      display: 'inline-flex',
+      minHeight: 44,
+      alignItems: 'center',
+      gap: 1,
+      fontWeight: 600,
+      color: 'primary.main',
+      textDecoration: 'underline',
+    }}
   >
     <ArrowLeft aria-hidden="true" size={20} />
     <span>Back to waiting list</span>
-  </Link>
+  </Box>
 );
 
 /** The outcome of a dispatch: each line sent, received and accepted, with shortfalls highlighted. */
 function Outcome({ dispatch }: { dispatch: Dispatch }) {
   const badge = dispatchStatusBadge[dispatch.status];
   return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-3xl">{dispatch.reference}</h2>
+    <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 1,
+        }}
+      >
+        <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+          {dispatch.reference}
+        </Box>
         <StatusWord status={badge.status} label={badge.label} />
-      </div>
-      <p className="m-0 break-words">
+      </Box>
+      <Box component="p" sx={{ m: 0, overflowWrap: 'anywhere' }}>
         From {dispatch.origin.name} to {dispatch.destination.name}
-      </p>
+      </Box>
       {dispatch.received_at && (
-        <p className="m-0 text-sm text-muted">
+        <Box component="p" sx={{ m: 0, fontSize: '0.875rem', color: 'text.secondary' }}>
           Decided {formatAccra(dispatch.received_at)}
           {dispatch.received_by ? ` by ${dispatch.received_by}` : ''}
-        </p>
+        </Box>
       )}
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
+      <Box
+        component="ul"
+        sx={{ m: 0, display: 'flex', listStyle: 'none', flexDirection: 'column', gap: 1, p: 0 }}
+      >
         {dispatch.lines.map((l) => (
-          <li
+          <Box
+            component="li"
             key={l.id}
-            className={`rounded-lg border p-3 ${l.shortfall > 0 ? 'border-warn bg-warn-bg' : 'border-line'}`}
+            sx={{
+              borderRadius: 1,
+              border: '1px solid',
+              p: 1.5,
+              ...(l.shortfall > 0
+                ? { borderColor: 'warning.main', bgcolor: 'warning.lighter' }
+                : { borderColor: 'divider' }),
+            }}
           >
-            <p className="m-0 break-words font-semibold">
-              {l.item_name} <span className="text-sm font-normal text-muted">{l.sku}</span>
-            </p>
-            <p className="m-0 text-sm">
+            <Box component="p" sx={{ m: 0, overflowWrap: 'anywhere', fontWeight: 600 }}>
+              {l.item_name}{' '}
+              <Box
+                component="span"
+                sx={{ fontSize: '0.875rem', fontWeight: 400, color: 'text.secondary' }}
+              >
+                {l.sku}
+              </Box>
+            </Box>
+            <Box component="p" sx={{ m: 0, fontSize: '0.875rem' }}>
               Sent {l.qty_sent}
               {l.qty_received !== null && ` · Received ${l.qty_received}`}
               {l.qty_accepted !== null && ` · Accepted ${l.qty_accepted}`}
-            </p>
+            </Box>
             {l.shortfall > 0 && <StatusWord status="low" label={`Short by ${l.shortfall}`} />}
-            {l.line_note && <p className="m-0 text-sm">Note: {l.line_note}</p>}
-          </li>
+            {l.line_note && (
+              <Box component="p" sx={{ m: 0, fontSize: '0.875rem' }}>
+                Note: {l.line_note}
+              </Box>
+            )}
+          </Box>
         ))}
-      </ul>
-      {dispatch.receive_note && <p className="m-0">Note: {dispatch.receive_note}</p>}
+      </Box>
+      {dispatch.receive_note && (
+        <Box component="p" sx={{ m: 0 }}>
+          Note: {dispatch.receive_note}
+        </Box>
+      )}
       {dispatch.has_open_discrepancy && (
-        <p className="m-0 font-semibold">The shortfall stays open until it is resolved.</p>
+        <Box component="p" sx={{ m: 0, fontWeight: 600 }}>
+          The shortfall stays open until it is resolved.
+        </Box>
       )}
     </Card>
   );
@@ -151,18 +198,30 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <ApiProblem error={decide.error} at={decide.submittedAt} />
-      <Card className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <h2 className="text-3xl">{dispatch.reference}</h2>
+      <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 1,
+          }}
+        >
+          <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+            {dispatch.reference}
+          </Box>
           <StatusWord status="in-transit" />
-        </div>
-        <p className="m-0 break-words">From {dispatch.origin.name}</p>
+        </Box>
+        <Box component="p" sx={{ m: 0, overflowWrap: 'anywhere' }}>
+          From {dispatch.origin.name}
+        </Box>
         <Button
           variant="secondary"
           icon={CheckCheck}
-          className="self-start"
+          sx={{ alignSelf: 'flex-start' }}
           disabled={mode !== null}
           onClick={() => {
             setQty(Object.fromEntries(dispatch.lines.map((l) => [l.id, String(l.qty_sent)])));
@@ -171,15 +230,35 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
         >
           Received all
         </Button>
-        <ul className="m-0 flex list-none flex-col gap-3 p-0">
+        <Box
+          component="ul"
+          sx={{ m: 0, display: 'flex', listStyle: 'none', flexDirection: 'column', gap: 1.5, p: 0 }}
+        >
           {dispatch.lines.map((l, i) => (
-            <li
+            <Box
+              component="li"
               key={l.id}
-              className={`flex flex-col gap-2 rounded-lg border p-3 ${shortBy[i] > 0 ? 'border-warn bg-warn-bg' : 'border-line'}`}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1,
+                borderRadius: 1,
+                border: '1px solid',
+                p: 1.5,
+                ...(shortBy[i] > 0
+                  ? { borderColor: 'warning.main', bgcolor: 'warning.lighter' }
+                  : { borderColor: 'divider' }),
+              }}
             >
-              <p className="m-0 break-words font-semibold">
-                {l.item_name} <span className="text-sm font-normal text-muted">{l.sku}</span>
-              </p>
+              <Box component="p" sx={{ m: 0, overflowWrap: 'anywhere', fontWeight: 600 }}>
+                {l.item_name}{' '}
+                <Box
+                  component="span"
+                  sx={{ fontSize: '0.875rem', fontWeight: 400, color: 'text.secondary' }}
+                >
+                  {l.sku}
+                </Box>
+              </Box>
               <TextField
                 label={`Received: ${l.item_name}`}
                 hint={`Sent: ${l.qty_sent}`}
@@ -191,9 +270,9 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
                 error={lineProblem[i] ?? server?.fieldError(`lines.${i}.qty_received`)}
               />
               {shortBy[i] > 0 && <StatusWord status="low" label={`Short by ${shortBy[i]}`} />}
-            </li>
+            </Box>
           ))}
-        </ul>
+        </Box>
         {anyShort && (
           <TextField
             label="Note about the shortfall"
@@ -222,7 +301,7 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
         />
       )}
       {mode === 'reject' && (
-        <Card className="flex flex-col gap-3">
+        <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <TextField
             label="Reason for rejecting"
             maxLength={1000}
@@ -244,7 +323,7 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
         </Card>
       )}
       {mode === null && (
-        <div className="flex flex-wrap gap-2">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           <Button
             icon={PackageCheck}
             onClick={() => {
@@ -257,9 +336,9 @@ function ReceiveForm({ dispatch }: { dispatch: Dispatch }) {
           <Button variant="danger" icon={XCircle} onClick={() => setMode('reject')}>
             Reject delivery
           </Button>
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -272,7 +351,7 @@ export function ReceiveDispatch() {
     queryFn: () => api('get', '/api/v1/dispatches/{id}/', { path: { id } }),
   });
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Check delivery" />
       <QueryGate query={one}>
         {(d) =>
@@ -284,6 +363,6 @@ export function ReceiveDispatch() {
         }
       </QueryGate>
       {backLink}
-    </div>
+    </Box>
   );
 }

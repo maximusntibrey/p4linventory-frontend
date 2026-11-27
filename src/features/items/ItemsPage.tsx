@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Tag, Upload } from 'lucide-react';
+import { Plus, Tag, Upload } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
@@ -17,9 +18,9 @@ import {
   itemStatuses,
 } from './labels';
 import {
-  Button,
   DataTable,
   EmptyState,
+  FilterForm,
   LinkButton,
   PageHeader,
   SelectField,
@@ -82,17 +83,25 @@ export function ItemsPage() {
       id: 'name',
       header: 'Name',
       cell: (item) => (
-        <span className="flex flex-col">
-          <Link
+        <Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Box
+            component={Link}
             to={`/items/${item.id}`}
-            className="inline-flex min-h-target items-center font-semibold text-ink underline"
+            sx={{
+              display: 'inline-flex',
+              minHeight: 44,
+              alignItems: 'center',
+              fontWeight: 600,
+              color: 'text.primary',
+              textDecoration: 'underline',
+            }}
           >
             {item.name}
-          </Link>
-          <span className="text-sm text-muted">
+          </Box>
+          <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
             {item.sku} · {item.brand_name ?? 'No brand'} · {item.model_name}
-          </span>
-        </span>
+          </Box>
+        </Box>
       ),
     },
     { id: 'condition', header: 'Condition', cell: (item) => conditionLabels[item.condition] },
@@ -125,7 +134,7 @@ export function ItemsPage() {
     },
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader
         title="Items"
         actions={
@@ -143,22 +152,19 @@ export function ItemsPage() {
           </>
         }
       />
-      <form
-        role="search"
-        className="grid gap-3 sm:grid-cols-2"
-        onSubmit={(e) => {
-          e.preventDefault();
+      <FilterForm
+        onSubmit={() => {
           setFilters(draft);
           setPage(1);
         }}
-      >
-        <div className="sm:col-span-2">
+        search={
           <TextField
             label="Search by name, SKU, brand, model or part number"
             value={draft.q}
             onChange={(e) => setDraft({ ...draft, q: e.target.value })}
           />
-        </div>
+        }
+      >
         <SelectField
           label="Category"
           value={draft.category}
@@ -210,12 +216,7 @@ export function ItemsPage() {
             </option>
           ))}
         </SelectField>
-        <div className="flex items-end">
-          <Button type="submit" variant="secondary" icon={Search} className="w-full">
-            Search
-          </Button>
-        </div>
-      </form>
+      </FilterForm>
       <DataTable
         caption="Items"
         columns={columns}
@@ -241,6 +242,6 @@ export function ItemsPage() {
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 }

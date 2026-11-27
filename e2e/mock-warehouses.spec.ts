@@ -48,17 +48,3 @@ test('one warehouse: no Warehouse select; after a second one is added, receipt a
   );
   expect(overflow).toBeLessThanOrEqual(0);
 });
-
-test('the design-system showcase opens for the Super Admin only', async ({ page }) => {
-  await signIn(page, LOGINS.super_admin);
-  await go(page, '/design-system');
-  await expect(page.getByRole('heading', { level: 1, name: 'Design system' })).toBeVisible();
-});
-
-for (const role of ['branch_admin', 'warehouse_admin', 'front_staff'] as const) {
-  test(`the design-system showcase is not allowed for ${role}`, async ({ page }) => {
-    await signIn(page, LOGINS[role]);
-    await go(page, '/design-system');
-    await expect(page.getByRole('heading', { level: 1, name: '403: Not allowed' })).toBeVisible();
-  });
-}

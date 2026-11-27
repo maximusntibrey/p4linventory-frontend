@@ -41,12 +41,12 @@ describe('Audit Logs screen', () => {
     renderApp('/audit-logs', { as: 'super_admin' });
     await h1();
     expect(screen.getByRole('searchbox', { name: SEARCH })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Export CSV' })).toBeTruthy();
     click('Filter');
     for (const l of ['User', 'Branch', 'Action', 'Module', 'From date', 'To date']) {
       expect(await screen.findByLabelText(l)).toBeTruthy();
     }
     expect(screen.getByRole('button', { name: 'Apply filters' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Export CSV' })).toBeTruthy();
   });
 
   it('shows a skeleton while loading and no layout of rows before data', async () => {
@@ -279,7 +279,7 @@ describe('Audit Logs has its own tab, not the dashboard', () => {
 
   it('the dashboard no longer carries recent activity or an audit list', async () => {
     renderApp('/', { as: 'super_admin' });
-    await screen.findByText('Active items');
+    await screen.findByText('Low stock items');
     expect(screen.queryByRole('heading', { name: 'Recent activity' })).toBeNull();
     expect(screen.queryByText(/User created/)).toBeNull();
   });

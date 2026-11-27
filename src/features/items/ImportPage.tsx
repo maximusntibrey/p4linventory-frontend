@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileCheck, Info, Upload } from 'lucide-react';
+import { FileCheck, Info, Upload } from 'components/icons';
 import { api, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
@@ -15,13 +16,26 @@ type S = components['schemas'];
 /** Said before anyone confirms, as agreed with the owner (2026-11-24). */
 function Warning() {
   return (
-    <p className="m-0 flex items-start gap-2 rounded-lg border border-line bg-surface p-3">
-      <Info aria-hidden="true" size={20} className="mt-0.5 shrink-0" />
+    <Box
+      component="p"
+      sx={{
+        m: 0,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 1,
+        borderRadius: 1,
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'grey.100',
+        p: 1.5,
+      }}
+    >
+      <Info aria-hidden="true" size={20} />
       <span>
         New items are created as <strong>Draft</strong>. Importing the same file again adds the
         quantities again.
       </span>
-    </p>
+    </Box>
   );
 }
 
@@ -33,14 +47,26 @@ function Counts({ r }: { r: S['ItemImportReport'] }) {
     ['Opening quantity in total', r.opening_quantity_total],
   ];
   return (
-    <dl className="m-0 grid grid-cols-1 gap-1 sm:grid-cols-2">
+    <Box
+      component="dl"
+      sx={{
+        m: 0,
+        display: 'grid',
+        gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))' },
+        gap: 0.5,
+      }}
+    >
       {rows.map(([k, v]) => (
-        <div key={k} className="flex justify-between gap-2">
-          <dt className="text-muted">{k}</dt>
-          <dd className="m-0 font-semibold">{v}</dd>
-        </div>
+        <Box key={k} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
+          <Box component="dt" sx={{ color: 'text.secondary' }}>
+            {k}
+          </Box>
+          <Box component="dd" sx={{ m: 0, fontWeight: 600 }}>
+            {v}
+          </Box>
+        </Box>
       ))}
-    </dl>
+    </Box>
   );
 }
 
@@ -96,32 +122,36 @@ export function ImportPage() {
 
   if (report?.committed) {
     return (
-      <div className="flex flex-col gap-4">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <PageHeader title="Import from CSV" />
         <ResultCard>
-          <p className="m-0 text-lg font-semibold">Import {report.batch_reference} is done.</p>
+          <Box component="p" sx={{ m: 0, fontSize: '1.125rem', fontWeight: 600 }}>
+            Import {report.batch_reference} is done.
+          </Box>
           <Counts r={report} />
         </ResultCard>
-        <div className="flex flex-wrap gap-2">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           <Button icon={Upload} onClick={again}>
             Import another file
           </Button>
           <LinkButton to="/items" variant="secondary">
             Back to items
           </LinkButton>
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
   const clean = report !== null && report.errors.length === 0;
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Import from CSV" />
       <Warning />
       <ApiProblem error={server} at={run.submittedAt} />
-      <Card className="flex flex-col gap-4">
-        <h2 className="text-3xl">1. Choose the file</h2>
+      <Card sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+          1. Choose the file
+        </Box>
         <TextField
           key={inputKey}
           label="CSV file"
@@ -156,7 +186,7 @@ export function ImportPage() {
         <Button
           icon={FileCheck}
           disabled={run.isPending}
-          className="w-full sm:w-auto sm:self-start"
+          sx={{ width: { xs: '100%', sm: 'auto' }, alignSelf: { sm: 'flex-start' } }}
           onClick={() => {
             if (!file) {
               setFileError('Choose a CSV file first.');
@@ -171,23 +201,47 @@ export function ImportPage() {
       </Card>
 
       {report && (
-        <Card className="flex flex-col gap-3">
-          <h2 className="text-3xl">2. Check result</h2>
-          <p role="status" className="m-0 font-semibold">
+        <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+            2. Check result
+          </Box>
+          <Box component="p" role="status" sx={{ m: 0, fontWeight: 600 }}>
             {clean
               ? 'No errors. Nothing has been saved yet.'
               : `${report.errors.length} ${report.errors.length === 1 ? 'error' : 'errors'} found. Nothing was saved. Fix the file and check it again.`}
-          </p>
+          </Box>
           <Counts r={report} />
           {report.errors.length > 0 && (
-            <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Errors by row">
+            <Box
+              component="ul"
+              sx={{
+                m: 0,
+                display: 'flex',
+                listStyle: 'none',
+                flexDirection: 'column',
+                gap: 1,
+                p: 0,
+              }}
+              aria-label="Errors by row"
+            >
               {report.errors.map((e, i) => (
-                <li key={i} className="rounded-lg border border-bad bg-bad-bg p-2 text-bad">
+                <Box
+                  component="li"
+                  key={i}
+                  sx={{
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'error.main',
+                    bgcolor: 'error.lighter',
+                    p: 1,
+                    color: 'error.main',
+                  }}
+                >
                   <strong>Row {e.row}</strong>
                   {e.field ? ` · ${e.field}` : ''}: {e.message}
-                </li>
+                </Box>
               ))}
-            </ul>
+            </Box>
           )}
           {clean && (
             <ConfirmPanel
@@ -201,6 +255,6 @@ export function ImportPage() {
           )}
         </Card>
       )}
-    </div>
+    </Box>
   );
 }

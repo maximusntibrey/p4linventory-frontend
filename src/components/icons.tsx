@@ -1,0 +1,145 @@
+import type { ComponentType } from 'react';
+import Box from '@mui/material/Box';
+import AppstoreIcon from '@ant-design/icons/AppstoreOutlined';
+import ArrowDownIcon from '@ant-design/icons/ArrowDownOutlined';
+import ArrowLeftIcon from '@ant-design/icons/ArrowLeftOutlined';
+import ArrowRightIcon from '@ant-design/icons/ArrowRightOutlined';
+import ArrowUpIcon from '@ant-design/icons/ArrowUpOutlined';
+import AuditIcon from '@ant-design/icons/AuditOutlined';
+import BellIcon from '@ant-design/icons/BellOutlined';
+import CarIcon from '@ant-design/icons/CarOutlined';
+import CheckIcon from '@ant-design/icons/CheckOutlined';
+import CheckCircleIcon from '@ant-design/icons/CheckCircleOutlined';
+import CheckSquareIcon from '@ant-design/icons/CheckSquareOutlined';
+import ClockCircleIcon from '@ant-design/icons/ClockCircleOutlined';
+import CloseCircleIcon from '@ant-design/icons/CloseCircleOutlined';
+import ClusterIcon from '@ant-design/icons/ClusterOutlined';
+import ColumnWidthIcon from '@ant-design/icons/ColumnWidthOutlined';
+import CopyIcon from '@ant-design/icons/CopyOutlined';
+import DatabaseIcon from '@ant-design/icons/DatabaseOutlined';
+import DeleteIcon from '@ant-design/icons/DeleteOutlined';
+import DoubleLeftIcon from '@ant-design/icons/DoubleLeftOutlined';
+import DoubleRightIcon from '@ant-design/icons/DoubleRightOutlined';
+import DownloadIcon from '@ant-design/icons/DownloadOutlined';
+import EditIcon from '@ant-design/icons/EditOutlined';
+import EllipsisIcon from '@ant-design/icons/EllipsisOutlined';
+import EnterIcon from '@ant-design/icons/EnterOutlined';
+import EnvironmentIcon from '@ant-design/icons/EnvironmentOutlined';
+import ExclamationCircleIcon from '@ant-design/icons/ExclamationCircleOutlined';
+import FileDoneIcon from '@ant-design/icons/FileDoneOutlined';
+import FileTextIcon from '@ant-design/icons/FileTextOutlined';
+import FilterIcon from '@ant-design/icons/FilterOutlined';
+import HomeIcon from '@ant-design/icons/HomeOutlined';
+import InboxIcon from '@ant-design/icons/InboxOutlined';
+import InfoCircleIcon from '@ant-design/icons/InfoCircleOutlined';
+import KeyIcon from '@ant-design/icons/KeyOutlined';
+import LeftIcon from '@ant-design/icons/LeftOutlined';
+import LinkIcon from '@ant-design/icons/LinkOutlined';
+import LoadingIcon from '@ant-design/icons/LoadingOutlined';
+import LogoutIcon from '@ant-design/icons/LogoutOutlined';
+import MenuFoldIcon from '@ant-design/icons/MenuFoldOutlined';
+import MenuUnfoldIcon from '@ant-design/icons/MenuUnfoldOutlined';
+import PauseCircleIcon from '@ant-design/icons/PauseCircleOutlined';
+import PictureIcon from '@ant-design/icons/PictureOutlined';
+import PlusIcon from '@ant-design/icons/PlusOutlined';
+import PoweroffIcon from '@ant-design/icons/PoweroffOutlined';
+import RightIcon from '@ant-design/icons/RightOutlined';
+import SaveIcon from '@ant-design/icons/SaveOutlined';
+import SearchIcon from '@ant-design/icons/SearchOutlined';
+import SendIcon from '@ant-design/icons/SendOutlined';
+import SettingIcon from '@ant-design/icons/SettingOutlined';
+import ShopIcon from '@ant-design/icons/ShopOutlined';
+import ShoppingCartIcon from '@ant-design/icons/ShoppingCartOutlined';
+import StopIcon from '@ant-design/icons/StopOutlined';
+import SwapIcon from '@ant-design/icons/SwapOutlined';
+import TableIcon from '@ant-design/icons/TableOutlined';
+import TagIcon from '@ant-design/icons/TagOutlined';
+import TeamIcon from '@ant-design/icons/TeamOutlined';
+import ToolIcon from '@ant-design/icons/ToolOutlined';
+import UnorderedListIcon from '@ant-design/icons/UnorderedListOutlined';
+import UploadIcon from '@ant-design/icons/UploadOutlined';
+import WarningIcon from '@ant-design/icons/WarningOutlined';
+
+/** An icon as our screens use it: decorative by default (the visible text label carries the meaning), sized in px. */
+export type IconType = ComponentType<{
+  size?: number;
+  'aria-hidden'?: boolean | 'true' | 'false';
+  className?: string;
+}>;
+
+const wrap = (Ant: ComponentType<Record<string, unknown>>): IconType =>
+  function Icon({ size = 16, 'aria-hidden': hidden = true }) {
+    return (
+      <Box
+        component={Ant}
+        aria-hidden={hidden}
+        sx={{ fontSize: size, color: 'inherit', display: 'inline-flex' }}
+      />
+    );
+  };
+
+export const Search = wrap(SearchIcon);
+export const Link = wrap(LinkIcon);
+export const Plus = wrap(PlusIcon);
+export const ArrowLeft = wrap(ArrowLeftIcon);
+export const Home = wrap(HomeIcon);
+export const AlertCircle = wrap(ExclamationCircleIcon);
+export const Save = wrap(SaveIcon);
+export const CheckCircle2 = wrap(CheckCircleIcon);
+export const AlertTriangle = wrap(WarningIcon);
+export const Trash2 = wrap(DeleteIcon);
+export const KeyRound = wrap(KeyIcon);
+export const Info = wrap(InfoCircleIcon);
+export const XCircle = wrap(CloseCircleIcon);
+export const Upload = wrap(UploadIcon);
+export const Truck = wrap(CarIcon);
+export const Tag = wrap(TagIcon);
+export const Store = wrap(ShopIcon);
+export const ShoppingCart = wrap(ShoppingCartIcon);
+export const PackageCheck = wrap(CheckSquareIcon);
+export const Inbox = wrap(InboxIcon);
+export const Filter = wrap(FilterIcon);
+export const Download = wrap(DownloadIcon);
+export const ClipboardCheck = wrap(AuditIcon);
+export const Boxes = wrap(DatabaseIcon);
+export const Bell = wrap(BellIcon);
+export const Ban = wrap(StopIcon);
+export const Warehouse = wrap(ClusterIcon);
+export const Users = wrap(TeamIcon);
+export const SlidersHorizontal = wrap(FilterIcon);
+export const Settings = wrap(SettingIcon);
+export const Send = wrap(SendIcon);
+export const ScrollText = wrap(FileTextIcon);
+export const Rows3 = wrap(TableIcon);
+export const PowerOff = wrap(PoweroffIcon);
+export const Power = wrap(PoweroffIcon);
+export const Pencil = wrap(EditIcon);
+export const PauseCircle = wrap(PauseCircleIcon);
+export const MoreHorizontal = wrap(EllipsisIcon);
+export const MapPin = wrap(EnvironmentIcon);
+export const LogOut = wrap(LogoutIcon);
+export const Loader2 = wrap(LoadingIcon);
+export const ListChecks = wrap(UnorderedListIcon);
+export const ImageUp = wrap(PictureIcon);
+export const FileCheck = wrap(FileDoneIcon);
+export const CornerDownLeft = wrap(EnterIcon);
+export const Copy = wrap(CopyIcon);
+export const Construction = wrap(ToolIcon);
+export const Columns3 = wrap(ColumnWidthIcon);
+export const Clock = wrap(ClockCircleIcon);
+export const Circle = wrap(AppstoreIcon);
+export const ChevronLeft = wrap(LeftIcon);
+export const ChevronRight = wrap(RightIcon);
+export const ChevronsLeft = wrap(DoubleLeftIcon);
+export const ChevronsRight = wrap(DoubleRightIcon);
+export const CheckCheck = wrap(CheckIcon);
+export const Check = wrap(CheckIcon);
+export const ArrowUpRight = wrap(ArrowUpIcon);
+export const ArrowUpDown = wrap(SwapIcon);
+export const ArrowUp = wrap(ArrowUpIcon);
+export const ArrowRight = wrap(ArrowRightIcon);
+export const ArrowLeftRight = wrap(SwapIcon);
+export const ArrowDownRight = wrap(ArrowDownIcon);
+export const ArrowDown = wrap(ArrowDownIcon);
+export const PanelLeftOpen = wrap(MenuUnfoldIcon);
+export const PanelLeftClose = wrap(MenuFoldIcon);

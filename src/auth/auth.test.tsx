@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { axe } from 'vitest-axe';
 import { server } from '../mocks/server';
 import { mockSession } from '../mocks/handlers';
+import { openProfile } from '../test/helpers';
 import { renderApp } from '../test/renderApp';
 import { meKey } from './session';
 
@@ -28,6 +29,7 @@ describe('login', () => {
     signIn('SA-0001', 'correct horse');
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy();
     expect(where()).toBe('/');
+    await openProfile();
     expect(within(screen.getAllByRole('banner')[0]).getByText('SA-0001')).toBeTruthy();
   });
 
@@ -139,9 +141,9 @@ describe('forced password change (one-time password)', () => {
     type('New password', 'a-brand-new-pass');
     type('Confirm new password', 'a-brand-new-pass');
     click('Save new password');
-    // Front Staff has no Home entry, so the first menu entry opens.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Sell' })).toBeTruthy();
-    expect(where()).toBe('/sell');
+    // Every user lands on Home; Front Staff's Home is built from the endpoints they may call.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy();
+    expect(where()).toBe('/');
     expect(mockSession.mustChange).toBe(false);
   });
 
@@ -269,6 +271,7 @@ describe('logout', () => {
     const { client } = renderApp('/', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Home' });
     client.setQueryData(['items'], [{ id: 1 }]);
+    await openProfile();
     click('Log out');
     expect(await screen.findByRole('heading', { level: 1, name: 'Sign in' })).toBeTruthy();
     expect(where()).toBe('/login');
@@ -281,6 +284,7 @@ describe('logout', () => {
     server.use(http.post('/api/v1/auth/logout/', () => HttpResponse.error()));
     renderApp('/', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Home' });
+    await openProfile();
     click('Log out');
     expect((await screen.findByRole('alert')).textContent).toContain('Could not log out.');
     expect(where()).toBe('/');
@@ -289,6 +293,7 @@ describe('logout', () => {
   it('Switch branch is drawn only for a user whose /me allows it (F3.1)', async () => {
     renderApp('/', { as: 'branch_admin' });
     await screen.findByRole('navigation', { name: 'Main' });
-    expect(screen.queryByRole('button', { name: 'Switch branch' })).toBeNull();
+    await openProfile();
+    expect(screen.queryByRole('button', { name: 'Switch working branch' })).toBeNull();
   });
 });

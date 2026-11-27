@@ -1,14 +1,21 @@
-import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, Columns3, Inbox } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Avatar } from './Avatar';
+import Box from '@mui/material/Box';
+import Checkbox from '@mui/material/Checkbox';
+import Skeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Typography from '@mui/material/Typography';
+import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, Inbox } from '../icons';
 import { Button } from './Button';
-import { Checkbox } from './Checkbox';
-import { cx } from './cx';
 import { EmptyState } from './EmptyState';
 import { Pagination } from './Pagination';
 import type { PaginationProps } from './Pagination';
-import { Skeleton } from './Skeleton';
 
 export type Column<Row> = {
   id: string;
@@ -27,9 +34,9 @@ export type DataTableProps<Row> = {
   columns: Column<Row>[];
   rows: Row[];
   rowKey: (row: Row) => string;
-  /** Text used in "Select <name>" for each row checkbox. */
+  /** Text used in "Select name" for each row checkbox. */
   rowLabel?: (row: Row) => string;
-  /** Column ids to show; omit for all. Pair with ColumnVisibilityMenu. */
+  /** Column ids to show; omit for all. */
   visibleColumns?: string[];
   state?: 'ready' | 'loading' | 'error';
   errorMessage?: string;
@@ -47,6 +54,15 @@ export type DataTableProps<Row> = {
 };
 
 const SKELETON_ROWS = 5;
+// On phones each cell shows its column name. It is a real element hidden from assistive tech, so cell names stay clean.
+const cardLabel = {
+  display: { xs: 'inline', md: 'none' },
+  fontWeight: 600,
+  color: 'text.secondary',
+  textAlign: 'left',
+  justifySelf: 'start',
+} as const;
+const ariaSort = { asc: 'ascending', desc: 'descending' } as const;
 
 export function DataTable<Row>({
   caption,
@@ -112,200 +128,173 @@ export function DataTable<Row>({
   let body: ReactNode;
   if (state === 'error') {
     body = (
-      <tr>
-        <td colSpan={colSpan} className="p-6">
-          <div role="alert" className="flex flex-col items-center gap-3 text-center">
-            <AlertCircle aria-hidden="true" size={28} className="text-bad" />
-            <p className="m-0 font-semibold text-bad">{errorMessage}</p>
+      <TableRow>
+        <TableCell colSpan={colSpan} sx={{ p: 3 }}>
+          <Stack role="alert" sx={{ alignItems: 'center', gap: 1.5, textAlign: 'center' }}>
+            <Box sx={{ color: 'error.main', display: 'flex' }}>
+              <AlertCircle size={28} />
+            </Box>
+            <Typography variant="subtitle1" component="p" color="error.main">
+              {errorMessage}
+            </Typography>
             {onRetry && (
               <Button variant="secondary" onClick={onRetry}>
                 Try again
               </Button>
             )}
-          </div>
-        </td>
-      </tr>
+          </Stack>
+        </TableCell>
+      </TableRow>
     );
   } else if (state === 'loading') {
     body = Array.from({ length: SKELETON_ROWS }, (_, i) => (
-      <tr key={i}>
+      <TableRow key={i}>
         {Array.from({ length: colSpan }, (_, j) => (
-          <td key={j} className="p-(--density-cell)">
-            <Skeleton />
-          </td>
+          <TableCell key={j}>
+            <Skeleton aria-hidden="true" />
+          </TableCell>
         ))}
-      </tr>
+      </TableRow>
     ));
   } else if (shown.length === 0) {
     body = (
-      <tr>
-        <td colSpan={colSpan} className="p-4">
+      <TableRow>
+        <TableCell colSpan={colSpan} sx={{ p: 3 }}>
           {empty ?? (
             <EmptyState icon={Inbox} title="Nothing to show" description="No rows match." />
           )}
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
     );
   } else {
     body = shown.map((row) => {
       const k = rowKey(row);
       const on = selected?.has(k) ?? false;
       return (
-        <tr
-          key={k}
-          aria-selected={selectable ? on : undefined}
-          className={cx(
-            'border-t border-line',
-            on && 'bg-primary-soft shadow-[inset_4px_0_0_var(--color-primary)]',
-          )}
-        >
+        <TableRow key={k} hover selected={on}>
           {selectable && (
-            <td className="w-12 px-3">
+            <TableCell padding="checkbox">
               <Checkbox
-                label={`Select ${rowLabel?.(row) ?? k}`}
                 checked={on}
                 onChange={() => toggle(k)}
-                className="[&>span]:sr-only"
+                slotProps={{ input: { 'aria-label': `Select ${rowLabel ? rowLabel(row) : k}` } }}
               />
-            </td>
+            </TableCell>
           )}
           {cols.map((c) => (
-            <td
-              key={c.id}
-              className={cx('p-(--density-cell) align-middle', c.align === 'right' && 'text-right')}
-            >
-              {c.cell(row)}
-            </td>
+            <TableCell key={c.id} align={c.align === 'right' ? 'right' : 'left'}>
+              <Box component="span" aria-hidden="true" sx={cardLabel}>
+                {c.header}
+              </Box>
+              <Box component="span" sx={{ minWidth: 0 }}>
+                {c.cell(row)}
+              </Box>
+            </TableCell>
           ))}
-        </tr>
+        </TableRow>
       );
     });
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div
-        className={cx(
-          'overflow-auto rounded-lg border border-line bg-canvas',
-          stickyHeader && 'max-h-[70vh]',
-        )}
-        // Scrollable region must be focusable so keyboard users can scroll it (WCAG 2.1.1).
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-        tabIndex={0}
-        role="region"
-        aria-label={`${caption} (scrollable)`}
+    <Stack sx={{ gap: 2 }}>
+      <TableContainer
+        sx={{
+          maxHeight: stickyHeader ? '70vh' : undefined,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+        }}
       >
-        <table
+        <Table
+          aria-label={caption}
+          stickyHeader={stickyHeader}
           aria-busy={state === 'loading' || undefined}
-          className="w-full min-w-max border-collapse text-left"
+          sx={(theme) => ({
+            // Phones and tablets: each row becomes a labelled card (the header stays for assistive tech).
+            [theme.breakpoints.down('md')]: {
+              '& thead': {
+                position: 'absolute',
+                width: 1,
+                height: 1,
+                overflow: 'hidden',
+                clip: 'rect(0 0 0 0)',
+              },
+              '& tbody tr': {
+                display: 'block',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                py: 0.5,
+              },
+              // Two fixed columns: the label at the same x in every row, the value right-aligned and wrapping.
+              '& tbody td': {
+                display: 'grid',
+                gridTemplateColumns: '38% minmax(0, 1fr)',
+                columnGap: 2,
+                alignItems: 'center',
+                minHeight: 44,
+                py: 0.75,
+                px: 2,
+                border: 0,
+                textAlign: 'right',
+                overflowWrap: 'anywhere',
+              },
+              // The theme pads the first and last cell of a row more: cards use one padding for every row.
+              '& tbody tr td.MuiTableCell-root:first-of-type, & tbody tr td.MuiTableCell-root:last-of-type':
+                {
+                  pl: 2,
+                  pr: 2,
+                },
+              '& tbody td > *': { margin: 0 }, // right-aligned cells push children with auto margins in the theme
+              '& tbody td.MuiTableCell-paddingCheckbox': { display: 'block', textAlign: 'left' },
+              '& tbody td > span:last-child': { justifySelf: 'end', textAlign: 'right' },
+              '& tbody td[colspan]': { display: 'table-cell', px: 2 },
+            },
+          })}
         >
-          <caption className="sr-only">{caption}</caption>
-          <thead className={cx('bg-surface', stickyHeader && 'sticky top-0 z-(--z-sticky)')}>
-            <tr>
+          <TableHead>
+            <TableRow>
               {selectable && (
-                <th scope="col" className="w-12 px-3">
+                <TableCell padding="checkbox">
                   <Checkbox
-                    label="Select all rows"
                     checked={allOn}
                     indeterminate={someOn}
                     onChange={toggleAll}
-                    className="[&>span]:sr-only"
+                    slotProps={{ input: { 'aria-label': 'Select all rows' } }}
                   />
-                </th>
+                </TableCell>
               )}
               {cols.map((c) => {
-                const dir = sort?.id === c.id ? sort.direction : null;
-                const Icon = dir === 'asc' ? ArrowUp : dir === 'desc' ? ArrowDown : ArrowUpDown;
+                const active = sort?.id === c.id ? sort.direction : null;
                 return (
-                  <th
+                  <TableCell
                     key={c.id}
-                    scope="col"
-                    aria-sort={
-                      c.sortValue
-                        ? dir === 'asc'
-                          ? 'ascending'
-                          : dir === 'desc'
-                            ? 'descending'
-                            : 'none'
-                        : undefined
-                    }
-                    className={cx('p-0 text-sm font-semibold', c.align === 'right' && 'text-right')}
+                    align={c.align === 'right' ? 'right' : 'left'}
+                    aria-sort={c.sortValue ? (active ? ariaSort[active] : 'none') : undefined}
                   >
                     {c.sortValue ? (
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => cycle(c.id)}
-                        className="inline-flex min-h-target w-full items-center gap-1 px-(--density-cell) font-semibold"
+                        icon={
+                          active === 'asc' ? ArrowUp : active === 'desc' ? ArrowDown : ArrowUpDown
+                        }
                       >
-                        <span>{c.header}</span>
-                        <Icon aria-hidden="true" size={14} />
-                      </button>
+                        {c.header}
+                      </Button>
                     ) : (
-                      <span className="block p-(--density-cell)">{c.header}</span>
+                      c.header
                     )}
-                  </th>
+                  </TableCell>
                 );
               })}
-            </tr>
-          </thead>
-          <tbody>{body}</tbody>
-        </table>
-      </div>
-      {pagination && state === 'ready' && <Pagination {...pagination} />}
-    </div>
-  );
-}
-
-/** Avatar + name (+ secondary line) for the first column. */
-export function AvatarCell({
-  name,
-  subtitle,
-  src,
-}: {
-  name: string;
-  subtitle?: string;
-  src?: string;
-}) {
-  return (
-    <span className="flex items-center gap-3">
-      <Avatar name={name} src={src} decorative size="sm" />
-      <span className="flex min-w-0 flex-col">
-        <span className="font-semibold">{name}</span>
-        {subtitle && <span className="text-sm text-muted">{subtitle}</span>}
-      </span>
-    </span>
-  );
-}
-
-/** Menu of checkboxes that shows or hides columns. Lives in the Toolbar's children slot. */
-export function ColumnVisibilityMenu({
-  columns,
-  visible,
-  onChange,
-}: {
-  columns: { id: string; header: string }[];
-  visible: string[];
-  onChange: (next: string[]) => void;
-}) {
-  return (
-    <details className="relative">
-      <summary className="inline-flex min-h-target cursor-pointer list-none items-center gap-2 rounded-md border border-control bg-canvas px-4 font-semibold">
-        <Columns3 aria-hidden="true" size={20} />
-        <span>Columns</span>
-      </summary>
-      <fieldset className="absolute right-0 z-(--z-overlay) m-0 mt-1 min-w-48 rounded-lg border border-line bg-canvas p-3 shadow-pop">
-        <legend className="sr-only">Visible columns</legend>
-        {columns.map((c) => (
-          <Checkbox
-            key={c.id}
-            label={c.header}
-            checked={visible.includes(c.id)}
-            onChange={(e) =>
-              onChange(e.target.checked ? [...visible, c.id] : visible.filter((v) => v !== c.id))
-            }
-          />
-        ))}
-      </fieldset>
-    </details>
+            </TableRow>
+          </TableHead>
+          <TableBody>{body}</TableBody>
+        </Table>
+      </TableContainer>
+      {pagination && <Pagination {...pagination} />}
+    </Stack>
   );
 }

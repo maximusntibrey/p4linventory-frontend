@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, KeyRound, Save } from 'lucide-react';
+import { ArrowLeft, KeyRound, Save } from 'components/icons';
 import { api } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
@@ -13,7 +14,7 @@ import { QueryGate } from '../../components/QueryGate';
 import { permissionCodes, permissionLabels, roleLabels, statusBadge } from './labels';
 import { OneTimePassword } from './OneTimePassword';
 import { UserForm } from './UserForm';
-import { Button, Card, PageHeader, StatusWord, TextField } from '../../components/ui';
+import { Button, Card, PageHeader, StatusWord, TextField, CheckField } from '../../components/ui';
 
 type S = components['schemas'];
 type Target = 'active' | 'suspended' | 'deactivated';
@@ -36,8 +37,10 @@ function PermissionsCard({ user }: { user: S['User'] }) {
     queryFn: () => api('get', '/api/v1/users/{id}/permissions/', { path: { id: user.id } }),
   });
   return (
-    <Card className="flex flex-col gap-3">
-      <h2 className="text-title">Permissions</h2>
+    <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box component="h2" sx={{ typography: 'h4' }}>
+        Permissions
+      </Box>
       <QueryGate query={current} inline>
         {(data) => (
           <PermissionsForm
@@ -80,8 +83,9 @@ function PermissionsForm({
     },
   });
   return (
-    <form
-      className="flex flex-col gap-3"
+    <Box
+      component="form"
+      sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
       onSubmit={(e) => {
         e.preventDefault();
         setSaved(false);
@@ -89,30 +93,32 @@ function PermissionsForm({
       }}
     >
       <ApiProblem error={save.error} at={save.submittedAt} />
-      <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
-        <legend className="mb-1 p-0 text-muted">Extra things this person may do.</legend>
+      <Box
+        component="fieldset"
+        sx={{ m: 0, display: 'flex', flexDirection: 'column', gap: 0.5, border: 0, p: 0 }}
+      >
+        <Box component="legend" sx={{ mb: 0.5, p: 0, color: 'text.secondary' }}>
+          Extra things this person may do.
+        </Box>
         {permissionCodes.map((code) => (
-          <label key={code} className="flex min-h-target items-center gap-3">
-            <input
-              type="checkbox"
-              className="size-5 accent-primary-solid"
-              checked={chosen.has(code)}
-              onChange={(e) => {
-                const next = new Set(chosen);
-                if (e.target.checked) next.add(code);
-                else next.delete(code);
-                setChosen(next);
-              }}
-            />
-            <span>{permissionLabels[code]}</span>
-          </label>
+          <CheckField
+            key={code}
+            label={permissionLabels[code]}
+            checked={chosen.has(code)}
+            onChange={(e) => {
+              const next = new Set(chosen);
+              if (e.target.checked) next.add(code);
+              else next.delete(code);
+              setChosen(next);
+            }}
+          />
         ))}
-      </fieldset>
+      </Box>
       {saved && <SuccessNotice>Permissions saved.</SuccessNotice>}
       <Button type="submit" icon={Save} disabled={save.isPending}>
         {save.isPending ? 'Saving…' : 'Save permissions'}
       </Button>
-    </form>
+    </Box>
   );
 }
 
@@ -185,15 +191,25 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         <PageHeader title={user.full_name} />
-        <p className="m-0 flex flex-wrap items-center gap-2 text-muted">
+        <Box
+          component="p"
+          sx={{
+            m: 0,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+            color: 'text.secondary',
+          }}
+        >
           <span>{user.login_id}</span>
           <span aria-hidden="true">·</span>
           <span>{user.roles.map((r) => roleLabels[r]).join(', ')}</span>
           <StatusWord status={statusBadge[user.status]} />
-        </p>
-      </div>
+        </Box>
+      </Box>
       {notice && <SuccessNotice>{notice}</SuccessNotice>}
       {otp && (
         <OneTimePassword
@@ -205,8 +221,10 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
       )}
       {canManage && (
         <>
-          <Card className="flex flex-col gap-3">
-            <h2 className="text-title">Details</h2>
+          <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box component="h2" sx={{ typography: 'h4' }}>
+              Details
+            </Box>
             <ApiProblem error={edit.error} at={edit.submittedAt} />
             <UserForm
               key={`${user.full_name}|${user.roles.join()}|${user.permanent_location_id}`}
@@ -220,9 +238,11 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
               }}
             />
           </Card>
-          <Card className="flex flex-col gap-3">
-            <h2 className="text-title">Account</h2>
-            <div className="flex flex-wrap gap-2">
+          <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box component="h2" sx={{ typography: 'h4' }}>
+              Account
+            </Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {targets
                 .filter((t) => t.status !== user.status)
                 .map((t) => (
@@ -250,7 +270,7 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
               >
                 Reset password
               </Button>
-            </div>
+            </Box>
             {confirm === 'reset' && (
               <>
                 <ApiProblem error={reset.error} at={reset.submittedAt} />
@@ -301,15 +321,24 @@ export function UserDetail() {
     queryFn: () => api('get', '/api/v1/users/{id}/', { path: { id } }),
   });
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <QueryGate query={query}>{(u) => <UserView user={u} canManage={canManage} />}</QueryGate>
-      <Link
+      <Box
+        component={Link}
         to="/users"
-        className="inline-flex min-h-target items-center gap-2 font-semibold text-primary-solid underline"
+        sx={{
+          display: 'inline-flex',
+          minHeight: 44,
+          alignItems: 'center',
+          gap: 1,
+          fontWeight: 600,
+          color: 'primary.main',
+          textDecoration: 'underline',
+        }}
       >
         <ArrowLeft aria-hidden="true" size={20} />
         <span>Back to users</span>
-      </Link>
-    </div>
+      </Box>
+    </Box>
   );
 }

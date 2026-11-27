@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Search } from 'lucide-react';
+import { MapPin, Search } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { QueryGate } from '../../components/QueryGate';
@@ -28,19 +29,41 @@ function OtherBranches({ itemId }: { itemId: number }) {
     <QueryGate query={q} inline>
       {(rows) =>
         rows.length === 0 ? (
-          <p className="m-0 text-muted">No other branches.</p>
+          <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+            No other branches.
+          </Box>
         ) : (
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+          <Box
+            component="ul"
+            sx={{
+              m: 0,
+              display: 'flex',
+              listStyle: 'none',
+              flexDirection: 'column',
+              gap: 0.5,
+              p: 0,
+            }}
+          >
             {rows.map((b) => (
-              <li key={b.branch_id} className="flex justify-between gap-2">
-                <span className="min-w-0 break-words">{b.branch_name}</span>
-                <span className="font-semibold">
+              <Box
+                component="li"
+                key={b.branch_id}
+                sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
+              >
+                <Box component="span" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                  {b.branch_name}
+                </Box>
+                <Box component="span" sx={{ fontWeight: 600 }}>
                   {b.quantity} available
-                  {b.quantity === 0 && <span className="ml-2 text-muted">(none)</span>}
-                </span>
-              </li>
+                  {b.quantity === 0 && (
+                    <Box component="span" sx={{ ml: 1, color: 'text.secondary' }}>
+                      (none)
+                    </Box>
+                  )}
+                </Box>
+              </Box>
             ))}
-          </ul>
+          </Box>
         )
       }
     </QueryGate>
@@ -72,10 +95,14 @@ export function FindPage() {
       id: 'item',
       header: 'Item',
       cell: (r) => (
-        <span className="flex flex-col">
-          <span className="font-semibold">{r.item_name}</span>
-          <span className="text-sm text-muted">{r.sku}</span>
-        </span>
+        <Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Box component="span" sx={{ fontWeight: 600 }}>
+            {r.item_name}
+          </Box>
+          <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+            {r.sku}
+          </Box>
+        </Box>
       ),
     },
     {
@@ -83,8 +110,12 @@ export function FindPage() {
       header: 'Available here',
       cell: (r) => (
         <span>
-          <span className="text-muted">{r.location_name}: </span>
-          <span className="font-semibold">{r.available} available</span>
+          <Box component="span" sx={{ color: 'text.secondary' }}>
+            {r.location_name}:{' '}
+          </Box>
+          <Box component="span" sx={{ fontWeight: 600 }}>
+            {r.available} available
+          </Box>
         </span>
       ),
     },
@@ -102,7 +133,7 @@ export function FindPage() {
         const key = `${r.location_id}-${r.item_id}`;
         const shown = open.has(key);
         return (
-          <div className="flex flex-col gap-2">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Button
               variant="secondary"
               icon={MapPin}
@@ -113,17 +144,18 @@ export function FindPage() {
               {shown ? 'Hide other branches' : 'Other branches'}
             </Button>
             {shown && <OtherBranches itemId={r.item_id} />}
-          </div>
+          </Box>
         );
       },
     },
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Find" subtitle="Where an item is in stock." />
-      <form
+      <Box
+        component="form"
         role="search"
-        className="flex flex-col gap-3"
+        sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
         onSubmit={(e) => {
           e.preventDefault();
           setQ(draft.trim());
@@ -135,10 +167,15 @@ export function FindPage() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
         />
-        <Button type="submit" variant="secondary" icon={Search} className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          variant="secondary"
+          icon={Search}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Search
         </Button>
-      </form>
+      </Box>
       <DataTable
         caption="Stock found"
         columns={columns}
@@ -160,6 +197,6 @@ export function FindPage() {
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 }

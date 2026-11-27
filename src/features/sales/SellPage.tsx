@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, ListChecks, ShoppingCart, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ListChecks, ShoppingCart, Trash2 } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
@@ -110,10 +111,10 @@ export function SellPage() {
   const total = lines.reduce((sum, l) => sum + lineCents(l), 0);
   const unpriced = lines.filter((l) => !l.price).length;
   const unpricedNote = unpriced > 0 && (
-    <p className="m-0 text-sm font-semibold text-bad">
+    <Box component="p" sx={{ m: 0, fontSize: '0.875rem', fontWeight: 600, color: 'error.main' }}>
       {unpriced} {unpriced === 1 ? 'item has' : 'items have'} no price yet, so{' '}
       {unpriced === 1 ? 'it is' : 'they are'} not in this total and cannot be sold.
-    </p>
+    </Box>
   );
   const quantityProblems = () =>
     Object.fromEntries(
@@ -135,76 +136,112 @@ export function SellPage() {
   // A Super Admin works in the branch picked here; nobody sells without one.
   if (!where) {
     return (
-      <div className="flex flex-col gap-4">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <PageHeader title="Sell" />
-        <p className="m-0">Choose the branch you are selling at.</p>
+        <Box component="p" sx={{ m: 0 }}>
+          Choose the branch you are selling at.
+        </Box>
         <BranchPicker onDone={() => undefined} />
-      </div>
+      </Box>
     );
   }
 
   if (done) {
     return (
-      <div className="flex flex-col gap-4">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <PageHeader title="Sell" />
         <ResultCard>
-          <p className="m-0 text-lg font-semibold">Sale {done.reference} is recorded.</p>
-          <p className="m-0">
+          <Box component="p" sx={{ m: 0, fontSize: '1.125rem', fontWeight: 600 }}>
+            Sale {done.reference} is recorded.
+          </Box>
+          <Box component="p" sx={{ m: 0 }}>
             Total <strong>{ghs(done.total)}</strong> · {paymentLabel(done.payment_method)}
-          </p>
-          <ul className="m-0 list-none p-0">
+          </Box>
+          <Box component="ul" sx={{ m: 0, listStyle: 'none', p: 0 }}>
             {done.lines.map((l) => (
               <li key={l.id}>
                 {l.quantity} × {l.item_name} at {ghs(l.unit_price)} = {ghs(l.line_total)}
               </li>
             ))}
-          </ul>
+          </Box>
         </ResultCard>
-        <div className="flex flex-wrap gap-2">
-          <Button icon={ShoppingCart} onClick={reset} className="w-full sm:w-auto">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Button icon={ShoppingCart} onClick={reset} sx={{ width: { xs: '100%', sm: 'auto' } }}>
             Sell again
           </Button>
           <LinkButton
             to="/sell/sales"
             icon={ListChecks}
             variant="secondary"
-            className="w-full sm:w-auto"
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Sales list
           </LinkButton>
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+        }}
+      >
         <PageHeader title="Sell" />
         <LinkButton to="/sell/sales" icon={ListChecks} variant="secondary">
           Sales list
         </LinkButton>
-      </div>
-      <p className="m-0 text-muted">
-        Selling at <strong className="text-ink">{where.name}</strong>
-      </p>
-      <ol className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Steps">
+      </Box>
+      <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+        Selling at{' '}
+        <Box component="strong" sx={{ color: 'text.primary' }}>
+          {where.name}
+        </Box>
+      </Box>
+      <Box
+        component="ol"
+        sx={{ m: 0, display: 'flex', listStyle: 'none', flexWrap: 'wrap', gap: 1, p: 0 }}
+        aria-label="Steps"
+      >
         {steps.map((s, i) => (
-          <li
+          <Box
+            component="li"
             key={s}
             aria-current={s === step ? 'step' : undefined}
-            className={`rounded-full border px-3 py-1 text-sm font-semibold ${s === step ? 'border-primary-solid bg-primary-solid text-on-primary' : 'border-line text-muted'}`}
+            sx={{
+              borderRadius: '999px',
+              border: '1px solid',
+              px: 1.5,
+              py: 0.5,
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              ...(s === step
+                ? {
+                    borderColor: 'primary.main',
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                  }
+                : { borderColor: 'divider', color: 'text.secondary' }),
+            }}
           >
             Step {i + 1} of 3: {stepTitle[s]}
-          </li>
+          </Box>
         ))}
-      </ol>
+      </Box>
       <ApiProblem error={sell.error} at={sell.submittedAt} />
 
       {step === 'items' && (
         <>
-          <Card className="flex flex-col gap-3">
-            <h2 className="text-3xl">Add items</h2>
+          <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+              Add items
+            </Box>
             <ItemPicker
               label="Find an item to sell"
               queryKey={['sell', 'find', where.id]}
@@ -214,27 +251,58 @@ export function SellPage() {
             />
             {addError && <ApiProblem error={addError.error} at={addError.at} />}
           </Card>
-          <Card className="flex flex-col gap-3">
-            <h2 className="text-3xl">Sale list</h2>
+          <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+              Sale list
+            </Box>
             {problem?.list && (
-              <p role="alert" className="m-0 font-semibold text-bad">
+              <Box component="p" role="alert" sx={{ m: 0, fontWeight: 600, color: 'error.main' }}>
                 {problem.list}
-              </p>
+              </Box>
             )}
-            {lines.length === 0 && <p className="m-0 text-muted">No items yet.</p>}
-            <ul className="m-0 flex list-none flex-col gap-3 p-0">
+            {lines.length === 0 && (
+              <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+                No items yet.
+              </Box>
+            )}
+            <Box
+              component="ul"
+              sx={{
+                m: 0,
+                display: 'flex',
+                listStyle: 'none',
+                flexDirection: 'column',
+                gap: 1.5,
+                p: 0,
+              }}
+            >
               {lines.map((l) => (
-                <li
+                <Box
+                  component="li"
                   key={l.item_id}
-                  className="flex flex-col gap-2 rounded-lg border border-line p-3"
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    p: 1.5,
+                  }}
                 >
-                  <p className="m-0 break-words font-semibold">
-                    {l.name} <span className="text-sm font-normal text-muted">{l.sku}</span>
-                  </p>
-                  <p className="m-0 text-sm text-muted">
+                  <Box component="p" sx={{ m: 0, overflowWrap: 'anywhere', fontWeight: 600 }}>
+                    {l.name}{' '}
+                    <Box
+                      component="span"
+                      sx={{ fontSize: '0.875rem', fontWeight: 400, color: 'text.secondary' }}
+                    >
+                      {l.sku}
+                    </Box>
+                  </Box>
+                  <Box component="p" sx={{ m: 0, fontSize: '0.875rem', color: 'text.secondary' }}>
                     {l.available !== undefined && `${l.available} available · `}
                     {l.price ? `${ghs(l.price)} each` : 'No price yet'}
-                  </p>
+                  </Box>
                   <TextField
                     label={`Quantity: ${l.name}`}
                     inputMode="numeric"
@@ -253,7 +321,7 @@ export function SellPage() {
                     variant="secondary"
                     icon={Trash2}
                     aria-label={`Remove ${l.name}`}
-                    className="self-start"
+                    sx={{ alignSelf: 'flex-start' }}
                     onClick={() => {
                       setLines((ls) => ls.filter((x) => x.item_id !== l.item_id));
                       setProblem(
@@ -268,17 +336,17 @@ export function SellPage() {
                   >
                     Remove
                   </Button>
-                </li>
+                </Box>
               ))}
-            </ul>
-            <p className="m-0 text-lg">
+            </Box>
+            <Box component="p" sx={{ m: 0, fontSize: '1.125rem' }}>
               Running total: <strong>{ghs(fromCents(total))}</strong>
-            </p>
+            </Box>
             {unpricedNote}
           </Card>
           <Button
             icon={ArrowRight}
-            className="w-full sm:w-auto sm:self-start"
+            sx={{ width: { xs: '100%', sm: 'auto' }, alignSelf: { sm: 'flex-start' } }}
             onClick={() => {
               const quantities = quantityProblems();
               const list = lines.length === 0 ? 'Add at least one item.' : undefined;
@@ -295,8 +363,10 @@ export function SellPage() {
       )}
 
       {step === 'pay' && (
-        <Card className="flex flex-col gap-4">
-          <h2 className="text-3xl">Payment</h2>
+        <Card sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+            Payment
+          </Box>
           <SelectField
             label="Payment method"
             value={payment}
@@ -310,7 +380,7 @@ export function SellPage() {
               </option>
             ))}
           </SelectField>
-          <div className="flex flex-wrap gap-2">
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             <Button variant="secondary" icon={ArrowLeft} onClick={() => setStep('items')}>
               Back
             </Button>
@@ -326,28 +396,42 @@ export function SellPage() {
             >
               Next: confirm
             </Button>
-          </div>
+          </Box>
         </Card>
       )}
 
       {step === 'review' && (
-        <Card className="flex flex-col gap-3">
-          <h2 className="text-3xl">Confirm sale</h2>
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box component="h2" sx={{ fontSize: '1.875rem' }}>
+            Confirm sale
+          </Box>
+          <Box
+            component="ul"
+            sx={{
+              m: 0,
+              display: 'flex',
+              listStyle: 'none',
+              flexDirection: 'column',
+              gap: 0.5,
+              p: 0,
+            }}
+          >
             {lines.map((l) => (
               <li key={l.item_id}>
                 {Number(l.quantity)} × {l.name} ({l.sku}){l.price ? ` at ${ghs(l.price)} each` : ''}
               </li>
             ))}
-          </ul>
-          <p className="m-0">
+          </Box>
+          <Box component="p" sx={{ m: 0 }}>
             Payment: <strong>{paymentLabel(payment)}</strong>
-          </p>
-          <p className="m-0 text-lg">
+          </Box>
+          <Box component="p" sx={{ m: 0, fontSize: '1.125rem' }}>
             Total: <strong>{ghs(fromCents(total))}</strong>
-          </p>
+          </Box>
           {unpricedNote}
-          <p className="m-0 text-sm text-muted">The final price comes from the price list.</p>
+          <Box component="p" sx={{ m: 0, fontSize: '0.875rem', color: 'text.secondary' }}>
+            The final price comes from the price list.
+          </Box>
           <ConfirmPanel
             danger={false}
             title="Record this sale? The stock is taken off straight away."
@@ -362,6 +446,6 @@ export function SellPage() {
           />
         </Card>
       )}
-    </div>
+    </Box>
   );
 }

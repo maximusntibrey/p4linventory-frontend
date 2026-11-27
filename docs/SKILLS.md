@@ -316,6 +316,21 @@ One register per repository. Record every tool, package and skill installed. Not
 | 2026-11-23 | p4linventory-frontend | vitest-axe | 0.1.0 | Accessibility assertions in tests | Day 1 end-of-day cycle; npm audit (high+) in check | In TASKS section 2 list. Exact version pinned in package.json and lockfile. |
 | 2026-11-23 | p4linventory-frontend | zod | 4.6.7 | Client-side input validation (hints only; the server decides) | Day 1 end-of-day cycle; npm audit (high+) in check | In TASKS section 2 list. Exact version pinned in package.json and lockfile. |
 | 2026-11-24 | p4linventory-frontend | (none) | n/a | Day 3 F3.1 to F3.4 installed no package | `npm audit` 0 vulnerabilities in check | Built with react-query, react-hook-form, lucide-react, msw and Playwright already registered above. |
+| UI run 1 | p4linventory-frontend | @ant-design/colors | 8.0.1 | Ant colour presets used by the Mantis palette | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | @ant-design/icons | 6.2.3 | Icons (Mantis icon set) | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | @emotion/cache | 11.14.0 | MUI styling engine (Mantis) | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | @emotion/react | 11.14.0 | MUI styling engine (Mantis) | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | @emotion/styled | 11.14.1 | MUI styling engine (Mantis) | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | @mui/material | 9.0.1 | Mantis UI foundation | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | @mui/system | 9.0.1 | MUI system (Mantis) | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | @mui/x-charts | 9.2.0 | Dashboard charts (Mantis chart cards) | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | framer-motion | 12.39.0 | Mantis AnimateButton | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | lodash-es | 4.18.1 | Mantis theme override merge | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | prop-types | 15.8.1 | Imported by the vendored Mantis files | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | react-device-detect | 2.2.3 | Mantis SimpleBar wrapper | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | simplebar-react | 3.3.2 | Mantis drawer scrollbar | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | swr | 2.4.1 | Mantis drawer open/closed state (api/menu.js) | Owner decision: Mantis Free template, exact version from the template package.json; npm audit (high+) in check | MIT |
+| UI run 1 | p4linventory-frontend | tailwindcss, @tailwindcss/vite, lucide-react | removed | Replaced by MUI/Mantis and @ant-design/icons | Owner decision | Removed in the UI migration (one UI system) |
 
 ## Appendix B: Glossary
 

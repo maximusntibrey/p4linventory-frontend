@@ -26,7 +26,6 @@ const ROUTES = [
   '/users',
   '/users/new',
   '/users/1',
-  '/design-system',
   '/no-such-page',
 ];
 

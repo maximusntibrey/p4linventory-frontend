@@ -28,3 +28,8 @@ export function capture(method: 'post' | 'put' | 'patch', path: string, reply: (
   });
   return { seen, handler };
 }
+
+/** The user menu (name, role, branch controls, change password, log out) opens from the profile button in the header. */
+export async function openProfile() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Open profile menu' }));
+}

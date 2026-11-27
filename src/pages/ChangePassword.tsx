@@ -1,14 +1,21 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, KeyRound, LogOut } from 'lucide-react';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import KeyOutlined from '@ant-design/icons/KeyOutlined';
+import LogoutOutlined from '@ant-design/icons/LogoutOutlined';
 import { api, ApiError } from '../api';
 import { meKey, useLogout } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
 import { describeError, ErrorSummary } from '../components/ErrorSummary';
 import type { ErrorParts } from '../components/ErrorSummary';
-import { Button, Card, PageHeader, TextField } from '../components/ui';
+import { Field } from '../components/Field';
+import MainCard from 'components/MainCard';
+import { PageHeader } from '../components/ui';
 
 type Values = { current_password: string; new_password: string; confirm: string };
 
@@ -54,20 +61,20 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
   const body = (
     <>
       {forced && (
-        <p className="m-0 text-muted">
+        <Typography color="text.secondary">
           You signed in with a one-time password. Choose your own password to continue.
-        </p>
+        </Typography>
       )}
       {done && !forced && (
-        <p role="status" className="m-0 flex items-center gap-2 font-semibold text-ok">
-          <CheckCircle2 aria-hidden="true" size={20} />
-          <span>Your password was changed.</span>
-        </p>
+        <Typography role="status" variant="subtitle1" component="p" color="success.dark">
+          Your password was changed.
+        </Typography>
       )}
       {summary && <ErrorSummary key={summary.n} title={summary.title} items={summary.items} />}
-      <form
+      <Stack
+        component="form"
         noValidate
-        className="flex flex-col gap-4"
+        sx={{ gap: 2 }}
         onSubmit={(e) => {
           setFailure(undefined);
           setDone(false);
@@ -77,14 +84,14 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
           )(e);
         }}
       >
-        <TextField
+        <Field
           label={forced ? 'One-time password' : 'Current password'}
           type="password"
           autoComplete="current-password"
           error={errors.current_password?.message ?? server?.fieldError('current_password')}
           {...register('current_password', { required: 'Enter your current password.' })}
         />
-        <TextField
+        <Field
           label="New password"
           type="password"
           hint="At least 10 characters."
@@ -92,7 +99,7 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
           error={errors.new_password?.message ?? server?.fieldError('new_password')}
           {...register('new_password', { required: 'Enter a new password.' })}
         />
-        <TextField
+        <Field
           label="Confirm new password"
           type="password"
           autoComplete="new-password"
@@ -103,18 +110,33 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
               v === getValues('new_password') || 'The two new passwords do not match.',
           })}
         />
-        <Button type="submit" icon={KeyRound} disabled={change.isPending}>
+        <Button
+          type="submit"
+          variant="contained"
+          size="large"
+          fullWidth
+          startIcon={<KeyOutlined aria-hidden />}
+          disabled={change.isPending}
+        >
           {change.isPending ? 'Saving…' : 'Save new password'}
         </Button>
-      </form>
+      </Stack>
       {forced && (
         <>
           {out.error && (
-            <p role="alert" className="m-0 font-semibold text-bad">
+            <Typography role="alert" variant="subtitle1" component="p" color="error.main">
               {out.error}
-            </p>
+            </Typography>
           )}
-          <Button variant="secondary" icon={LogOut} onClick={out.logout} disabled={out.pending}>
+          <Button
+            variant="outlined"
+            color="secondary"
+            size="large"
+            fullWidth
+            startIcon={<LogoutOutlined aria-hidden />}
+            onClick={out.logout}
+            disabled={out.pending}
+          >
             Log out
           </Button>
         </>
@@ -125,9 +147,9 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
   return forced ? (
     <AuthLayout title="Choose a new password">{body}</AuthLayout>
   ) : (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Change password" />
-      <Card className="flex flex-col gap-4">{body}</Card>
-    </div>
+      <MainCard sx={{ maxWidth: 480 }}>{body}</MainCard>
+    </Box>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
+import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 import { useReturnFocus } from './focus';
 import { Button } from './ui';
@@ -28,25 +29,34 @@ export function ConfirmPanel({
   useReturnFocus();
   useEffect(() => ref.current?.focus(), []);
   return (
-    <div
+    <Box
       ref={ref}
       tabIndex={-1}
       role="group"
       aria-labelledby={id}
-      className="flex flex-col gap-3 rounded-lg border border-bad bg-bad-bg p-3"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.5,
+        borderRadius: 1,
+        border: '1px solid',
+        borderColor: 'error.main',
+        bgcolor: 'error.lighter',
+        p: 1.5,
+      }}
     >
-      <p id={id} className="m-0 font-semibold text-ink">
+      <Box component="p" id={id} sx={{ m: 0, fontWeight: 600, color: 'text.primary' }}>
         {title}
-      </p>
+      </Box>
       {children}
-      <div className="flex flex-wrap gap-2">
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
         <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm} disabled={pending}>
           {pending ? 'Working…' : confirmLabel}
         </Button>
         <Button variant="secondary" onClick={onCancel} disabled={pending}>
           Cancel
         </Button>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

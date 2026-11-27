@@ -102,7 +102,6 @@ export async function stubAuth(page: Page, opts: Opts = {}) {
           home_links: [],
           permissions: [
             'dashboard.view',
-            'design_system.view',
             'items.view',
             'items.manage',
             'items.import',

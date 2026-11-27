@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Truck } from 'lucide-react';
+import { Plus, Truck } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import { describeError } from '../../components/ErrorSummary';
@@ -54,7 +55,11 @@ export function DispatchesPage() {
     {
       id: 'ref',
       header: 'Reference',
-      cell: (d) => <span className="font-semibold">{d.reference}</span>,
+      cell: (d) => (
+        <Box component="span" sx={{ fontWeight: 600 }}>
+          {d.reference}
+        </Box>
+      ),
     },
     {
       id: 'route',
@@ -65,34 +70,37 @@ export function DispatchesPage() {
       id: 'lines',
       header: 'Items',
       cell: (d) => (
-        <span className="flex flex-col">
-          <span className="text-sm text-muted">
+        <Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
             {unitsSent(d)} units · {formatAccra(d.dispatched_at)}
-          </span>
+          </Box>
           {d.lines.map((l) => (
             <span key={l.id}>
               {l.qty_sent} × {l.item_name}
             </span>
           ))}
-        </span>
+        </Box>
       ),
     },
     {
       id: 'status',
       header: 'Status',
       cell: (d) => (
-        <span className="flex flex-col items-start gap-1">
+        <Box
+          component="span"
+          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.5 }}
+        >
           <StatusWord
             status={dispatchStatusBadge[d.status].status}
             label={dispatchStatusBadge[d.status].label}
           />
           {d.has_open_discrepancy && <StatusWord status="low" label="Open shortfall" />}
-        </span>
+        </Box>
       ),
     },
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader
         title="Dispatch"
         actions={
@@ -105,7 +113,7 @@ export function DispatchesPage() {
       />
       {/* Status and branch are filters: they sit in the Toolbar (the Filters drawer on phones). */}
       <Toolbar>
-        <div className="w-full sm:w-48">
+        <Box sx={{ width: { xs: '100%', sm: 192 } }}>
           <SelectField
             label="Status"
             value={status}
@@ -121,8 +129,8 @@ export function DispatchesPage() {
               </option>
             ))}
           </SelectField>
-        </div>
-        <div className="w-full sm:w-48">
+        </Box>
+        <Box sx={{ width: { xs: '100%', sm: 192 } }}>
           <SelectField
             label="Branch"
             value={branch}
@@ -138,7 +146,7 @@ export function DispatchesPage() {
               </option>
             ))}
           </SelectField>
-        </div>
+        </Box>
       </Toolbar>
       <DataTable
         caption="Dispatches"
@@ -165,6 +173,6 @@ export function DispatchesPage() {
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 }

@@ -1,22 +1,49 @@
+import { useId } from 'react';
 import type { SelectHTMLAttributes } from 'react';
-import { FormField } from './FormField';
-import { Select as LibrarySelect } from './Select';
+import FormHelperText from '@mui/material/FormHelperText';
+import InputLabel from '@mui/material/InputLabel';
+import NativeSelect from '@mui/material/NativeSelect';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Stack from '@mui/material/Stack';
 
 type Props = SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
   hint?: string;
+  /** Plain-language message, taken from the API errors. */
   error?: string;
 };
 
-/** Labelled select built from the library's FormField and Select. */
+/** Labelled native select (Mantis InputLabel + OutlinedInput + FormHelperText). Native keeps the phone picker and react-hook-form register. */
 export function SelectField({ label, hint, error, children, ...rest }: Props) {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  const describedBy = [hint && hintId, error && errorId].filter(Boolean).join(' ') || undefined;
   return (
-    <FormField label={label} help={hint} error={error}>
-      {(c) => (
-        <LibrarySelect {...rest} {...c}>
-          {children}
-        </LibrarySelect>
+    <Stack sx={{ gap: 0.5 }}>
+      <InputLabel htmlFor={id}>{label}</InputLabel>
+      {hint && (
+        <FormHelperText id={hintId} sx={{ mt: 0 }}>
+          {hint}
+        </FormHelperText>
       )}
-    </FormField>
+      <NativeSelect
+        fullWidth
+        input={<OutlinedInput error={Boolean(error)} />}
+        inputProps={{
+          ...rest,
+          id,
+          'aria-describedby': describedBy,
+          'aria-invalid': error ? true : undefined,
+        }}
+      >
+        {children}
+      </NativeSelect>
+      {error && (
+        <FormHelperText error id={errorId} sx={{ mt: 0 }}>
+          {error}
+        </FormHelperText>
+      )}
+    </Stack>
   );
 }

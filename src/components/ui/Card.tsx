@@ -1,15 +1,17 @@
-import type { HTMLAttributes } from 'react';
-import { cx } from './cx';
+import type { ReactNode } from 'react';
+import type { SxProps } from '@mui/material/styles';
+import Stack from '@mui/material/Stack';
+import MainCard from 'components/MainCard';
 
-/** Bordered surface that groups related content. Add layout classes (flex, gap) from the caller. */
-export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
+/** The Mantis card: a bordered white surface. Children stack in a column; pass sx for the inner layout. */
+export function Card({
+  children,
+  sx,
+  ...rest
+}: { children?: ReactNode; sx?: SxProps } & Record<string, unknown>) {
   return (
-    <div
-      {...rest}
-      className={cx(
-        'rounded-xl border border-line bg-canvas p-(--density-card) shadow-card',
-        className,
-      )}
-    />
+    <MainCard {...rest}>
+      <Stack sx={{ gap: 2, ...sx }}>{children}</Stack>
+    </MainCard>
   );
 }
