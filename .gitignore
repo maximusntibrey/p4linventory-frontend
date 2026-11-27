@@ -9,3 +9,6 @@ test-results/
 !.env.example
 .DS_Store
 *.tsbuildinfo
+
+# Third-party reference sources (MIT); never published or built
+reference/
