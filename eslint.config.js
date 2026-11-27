@@ -8,6 +8,7 @@ export default tseslint.config(
   {
     ignores: [
       'dist',
+      'reference',
       'docs',
       'public/mockServiceWorker.js',
       'src/api/schema.d.ts',
