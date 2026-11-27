@@ -160,11 +160,11 @@ describe('sell screen', () => {
 });
 
 describe('sales list and cancel', () => {
-  const card = (ref: string) => screen.getByRole('heading', { level: 2, name: ref }).closest('li')!;
+  const card = (ref: string) => screen.getByRole('cell', { name: ref }).closest('tr')!;
 
   it('lists sales with words and icons for status; a cancelled sale shows who and why; axe clean', async () => {
     const { container } = renderApp('/sell/sales', { as: 'branch_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     const done = within(card('SAL-000001'));
     expect(done.getByText('Completed')).toBeTruthy();
     expect(done.getByText('Total GHS 1250.00')).toBeTruthy();
@@ -180,21 +180,19 @@ describe('sales list and cancel', () => {
 
   it('filters are sent to the API', async () => {
     renderApp('/sell/sales', { as: 'branch_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     type('Status', 'cancelled');
-    await waitFor(() =>
-      expect(screen.queryByRole('heading', { level: 2, name: 'SAL-000001' })).toBeNull(),
-    );
-    expect(screen.getByRole('heading', { level: 2, name: 'SAL-000002' })).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole('cell', { name: 'SAL-000001' })).toBeNull());
+    expect(screen.getByRole('cell', { name: 'SAL-000002' })).toBeTruthy();
     type('Payment method', 'cash');
-    expect(await screen.findByText('No sales match.')).toBeTruthy();
+    expect(await screen.findByText('No sales match')).toBeTruthy();
   });
 
   it('cancel asks for a reason, then a confirm step; the badge changes and the stock returns', async () => {
     const sent = capture('post', '/api/v1/sales/1/cancel/', () => HttpResponse.json({}));
     void sent;
     renderApp('/sell/sales', { as: 'branch_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel sale SAL-000001' }));
     const panel = await screen.findByRole('group', { name: /Cancel sale SAL-000001\?/ });
     expect(document.activeElement).toBe(panel);
@@ -211,7 +209,7 @@ describe('sales list and cancel', () => {
 
   it('leaving the confirm step cancels nothing', async () => {
     renderApp('/sell/sales', { as: 'branch_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     const open = screen.getByRole('button', { name: 'Cancel sale SAL-000001' });
     fireEvent.click(open);
     const panel = await screen.findByRole('group', { name: /Cancel sale SAL-000001\?/ });
@@ -222,7 +220,7 @@ describe('sales list and cancel', () => {
 
   it('a sale cancelled elsewhere meanwhile is a 409 shown as a message', async () => {
     renderApp('/sell/sales', { as: 'branch_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel sale SAL-000001' }));
     type('Reason', 'Duplicate');
     mockStore.sales[0].status = 'cancelled';
@@ -232,7 +230,7 @@ describe('sales list and cancel', () => {
 
   it('Front Staff has no sales.cancel: no Cancel button; Branch Admin and Super Admin have it', async () => {
     const { unmount } = renderApp('/sell/sales', { as: 'front_staff' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     expect(screen.queryByRole('button', { name: /Cancel sale/ })).toBeNull();
     unmount();
     mockSession.role = 'branch_admin';
@@ -250,7 +248,7 @@ describe('sales list and cancel', () => {
       ),
     );
     renderApp('/sell/sales', { as: 'branch_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel sale SAL-000001' }));
     type('Reason', 'x');
     fireEvent.click(screen.getByRole('button', { name: 'Cancel this sale' }));
@@ -281,7 +279,7 @@ describe('sales list and cancel', () => {
       }),
     );
     renderApp('/sell/sales', { as: 'branch_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel sale SAL-000001' }));
     type('Reason', 'Twice');
     const go = screen.getByRole('button', { name: 'Cancel this sale' });

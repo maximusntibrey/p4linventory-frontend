@@ -1,21 +1,32 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, ShoppingCart } from 'lucide-react';
-import { api, rowsOf } from '../../api';
+import { api, ApiError, rowsOf } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { SuccessNotice } from '../../components/focus';
-import { QueryGate } from '../../components/QueryGate';
+import { describeError } from '../../components/ErrorSummary';
+import { Forbidden } from '../../pages/Forbidden';
 import { formatAccra } from '../../lib/time';
 import { ghs } from '../items/labels';
-import { linkButton, paymentCodes, paymentLabel, saleStatusLabels } from './labels';
-import { Button, Card, Pager, SelectField, StatusWord, TextField } from '../../components/ui';
+import { paymentCodes, paymentLabel, saleStatusLabels } from './labels';
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  SelectField,
+  StatusWord,
+  TextField,
+} from '../../components/ui';
+import type { Column } from '../../components/ui';
 
 type S = components['schemas'];
+type Sale = S['Sale'];
 
 function StatusOf({ status }: { status: S['SaleStatus'] }) {
   if (status === 'completed') return <StatusWord status="completed" />;
@@ -71,15 +82,97 @@ export function SalesPage() {
     cancel.reset();
   };
 
+  const data = list.data;
+  if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
+  const cancelled =
+    cancelling === null ? undefined : (data ? rowsOf(data) : []).find((x) => x.id === cancelling);
+  const columns: Column<Sale>[] = [
+    {
+      id: 'ref',
+      header: 'Reference',
+      cell: (s) => <span className="font-semibold">{s.reference}</span>,
+    },
+    {
+      id: 'details',
+      header: 'Details',
+      cell: (s) => (
+        <span className="text-sm text-muted">
+          {s.location.name} · {formatAccra(s.sold_at)} · {s.staff} ·{' '}
+          {paymentLabel(s.payment_method)}
+        </span>
+      ),
+    },
+    {
+      id: 'items',
+      header: 'Items',
+      cell: (s) => (
+        <span className="flex flex-col">
+          {s.lines.map((l) => (
+            <span key={l.id}>
+              {l.quantity} × {l.item_name} at {ghs(l.unit_price)}
+            </span>
+          ))}
+        </span>
+      ),
+    },
+    {
+      id: 'total',
+      header: 'Total',
+      align: 'right',
+      cell: (s) => <span className="font-semibold">Total {ghs(s.total)}</span>,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (s) => (
+        <span className="flex flex-col items-start gap-1">
+          <StatusOf status={s.status} />
+          {s.cancellation && (
+            <span className="text-sm">
+              Cancelled by {s.cancellation.cancelled_by} on{' '}
+              {formatAccra(s.cancellation.cancelled_at)}. Reason: {s.cancellation.reason}
+            </span>
+          )}
+        </span>
+      ),
+    },
+    ...(canCancel
+      ? [
+          {
+            id: 'actions',
+            header: 'Actions',
+            cell: (s: Sale) =>
+              s.status === 'completed' ? (
+                <Button
+                  variant="danger"
+                  icon={Ban}
+                  aria-label={`Cancel sale ${s.reference}`}
+                  aria-expanded={cancelling === s.id}
+                  onClick={() => {
+                    cancel.reset();
+                    setReason('');
+                    setReasonError(undefined);
+                    setNotice(null);
+                    setCancelling(s.id);
+                  }}
+                >
+                  Cancel sale
+                </Button>
+              ) : null,
+          },
+        ]
+      : []),
+  ];
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-display">Sales</h1>
-        <Link to="/sell" className={linkButton}>
-          <ShoppingCart aria-hidden="true" size={20} />
-          <span>New sale</span>
-        </Link>
-      </div>
+      <PageHeader
+        title="Sales"
+        actions={
+          <LinkButton to="/sell" icon={ShoppingCart} variant="secondary">
+            New sale
+          </LinkButton>
+        }
+      />
       <div className="grid gap-3 sm:grid-cols-2">
         <SelectField
           label="Status"
@@ -111,98 +204,63 @@ export function SalesPage() {
       </div>
       {notice && <SuccessNotice key={notice.at}>{notice.text}</SuccessNotice>}
       {!cancelling && <ApiProblem error={cancel.error} at={cancel.submittedAt} />}
-      <QueryGate query={list}>
-        {(data) => {
-          const rows = rowsOf(data);
-          return (
-            <>
-              {rows.length === 0 && <p className="m-0 text-muted">No sales match.</p>}
-              <ul className="m-0 grid list-none gap-3 p-0">
-                {rows.map((s) => (
-                  <li key={s.id}>
-                    <Card className="flex flex-col gap-2">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <h2 className="text-title">{s.reference}</h2>
-                        <StatusOf status={s.status} />
-                      </div>
-                      <p className="m-0 text-sm text-muted">
-                        {s.location.name} · {formatAccra(s.sold_at)} · {s.staff} ·{' '}
-                        {paymentLabel(s.payment_method)}
-                      </p>
-                      <ul className="m-0 list-none p-0">
-                        {s.lines.map((l) => (
-                          <li key={l.id}>
-                            {l.quantity} × {l.item_name} at {ghs(l.unit_price)}
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="m-0 text-lg font-semibold">Total {ghs(s.total)}</p>
-                      {s.cancellation && (
-                        <p className="m-0 text-sm">
-                          Cancelled by {s.cancellation.cancelled_by} on{' '}
-                          {formatAccra(s.cancellation.cancelled_at)}. Reason:{' '}
-                          {s.cancellation.reason}
-                        </p>
-                      )}
-                      {canCancel && s.status === 'completed' && (
-                        <Button
-                          variant="danger"
-                          icon={Ban}
-                          aria-label={`Cancel sale ${s.reference}`}
-                          aria-expanded={cancelling === s.id}
-                          className="self-start"
-                          onClick={() => {
-                            cancel.reset();
-                            setReason('');
-                            setReasonError(undefined);
-                            setNotice(null);
-                            setCancelling(s.id);
-                          }}
-                        >
-                          Cancel sale
-                        </Button>
-                      )}
-                      {cancelling === s.id && (
-                        <>
-                          <ApiProblem error={cancel.error} at={cancel.submittedAt} />
-                          <ConfirmPanel
-                            title={`Cancel sale ${s.reference}? The stock goes back and the sale stays on record as Cancelled.`}
-                            confirmLabel="Cancel this sale"
-                            pending={cancel.isPending}
-                            onConfirm={() => {
-                              if (!reason.trim()) {
-                                setReasonError('Give a reason for cancelling.');
-                                return;
-                              }
-                              setReasonError(undefined);
-                              if (flight.start())
-                                cancel.mutate(
-                                  { id: s.id, reason: reason.trim() },
-                                  { onSettled: flight.end },
-                                );
-                            }}
-                            onCancel={close}
-                          >
-                            <TextField
-                              label="Reason"
-                              value={reason}
-                              maxLength={1000}
-                              autoComplete="off"
-                              onChange={(e) => setReason(e.target.value)}
-                              error={reasonError}
-                            />
-                          </ConfirmPanel>
-                        </>
-                      )}
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-              <Pager page={data} onPage={setPage} />
-            </>
-          );
-        }}
-      </QueryGate>
+      {cancelled && (
+        <>
+          <ApiProblem error={cancel.error} at={cancel.submittedAt} />
+          <ConfirmPanel
+            title={`Cancel sale ${cancelled.reference}? The stock goes back and the sale stays on record as Cancelled.`}
+            confirmLabel="Cancel this sale"
+            pending={cancel.isPending}
+            onConfirm={() => {
+              if (!reason.trim()) {
+                setReasonError('Give a reason for cancelling.');
+                return;
+              }
+              setReasonError(undefined);
+              if (flight.start())
+                cancel.mutate(
+                  { id: cancelled.id, reason: reason.trim() },
+                  { onSettled: flight.end },
+                );
+            }}
+            onCancel={close}
+          >
+            <TextField
+              label="Reason"
+              value={reason}
+              maxLength={1000}
+              autoComplete="off"
+              onChange={(e) => setReason(e.target.value)}
+              error={reasonError}
+            />
+          </ConfirmPanel>
+        </>
+      )}
+      <DataTable
+        caption="Sales"
+        columns={columns}
+        rows={data ? rowsOf(data) : []}
+        rowKey={(s) => String(s.id)}
+        state={list.isPending ? 'loading' : list.isError && !data ? 'error' : 'ready'}
+        errorMessage={list.isError ? describeError(list.error).title : undefined}
+        onRetry={() => void list.refetch()}
+        empty={
+          <EmptyState
+            icon={ShoppingCart}
+            title="No sales match"
+            description="Change the status or the payment method."
+          />
+        }
+        pagination={
+          data && data.count > data.page_size
+            ? {
+                page: data.page,
+                pageCount: Math.ceil(data.count / data.page_size),
+                onPageChange: setPage,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }
