@@ -8,6 +8,7 @@ import {
   BulkActionBar,
   Card,
   CommandPalette,
+  CompactBar,
   LinkButton,
   Button,
   Checkbox,
@@ -35,6 +36,7 @@ import {
   Tabs,
   ToastProvider,
   Toolbar,
+  ProfilePanel,
   Topbar,
   useToast,
   widthStyle,
@@ -389,11 +391,35 @@ function ShellDemo() {
         onClose={() => setPalette(false)}
         label="Search or jump to"
         items={[
-          { id: '/', label: 'Home', icon: Home },
-          { id: '/items', label: 'Items', hint: 'Menu', icon: Boxes },
+          { id: '/', label: 'Home', group: 'Menu', icon: Home },
+          { id: '/items', label: 'Items', group: 'Menu', icon: Boxes },
+          {
+            id: 'bell',
+            label: 'Notifications',
+            group: 'Account',
+            disabled: 'No notifications yet',
+          },
         ]}
         onSelect={() => setPalette(false)}
       />
+      <h2 className="text-title">Phone bar and profile panel</h2>
+      <div className="max-w-sm overflow-hidden rounded-lg border border-line">
+        <CompactBar search={{ label: 'Search or jump to…', onOpen: () => setPalette(true) }} />
+      </div>
+      <Card className="max-w-sm">
+        <ProfilePanel
+          user={{
+            name: 'Ama Mensah',
+            loginId: 'USR-0001',
+            role: 'Branch Admin',
+            location: 'Accra',
+          }}
+          branch={{ name: 'Accra', onSwitch: () => undefined }}
+          notificationsText="No notifications yet"
+          onChangePassword={() => undefined}
+          onLogout={() => undefined}
+        />
+      </Card>
       <Card className="flex flex-col gap-3">
         <h3 className="text-title">Card</h3>
         <LinkButton to="/design-system" icon={Home} variant="secondary">
