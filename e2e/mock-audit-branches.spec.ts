@@ -1,16 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { LOGINS, openNav, signIn } from './mock-helpers';
+import { goTo, LOGINS, openNav, signIn } from './mock-helpers';
 
 test('Audit Logs has its own tab and is not on the dashboard (Super Admin)', async ({ page }) => {
   await signIn(page, LOGINS.super_admin);
   await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Recent activity' })).toHaveCount(0);
   await expect(page.getByRole('table')).toHaveCount(0);
-  await openNav(page);
-  await page
-    .getByRole('navigation', { name: 'Main' })
-    .getByRole('link', { name: 'Audit Logs' })
-    .click();
+  await goTo(page, 'Audit Logs');
   await expect(page.getByRole('heading', { level: 1, name: 'Audit Logs' })).toBeVisible();
   await expect(page.getByRole('table', { name: 'Audit log' })).toBeVisible();
   await expect(page.getByText('User created')).toBeVisible();
@@ -23,20 +19,16 @@ test('Audit Logs has its own tab and is not on the dashboard (Super Admin)', asy
 
 test('Front Staff has no Audit Logs item', async ({ page }) => {
   await signIn(page, LOGINS.front_staff);
-  await openNav(page);
-  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Audit Logs' })).toHaveCount(0);
+  const nav = await openNav(page);
+  await expect(nav).toBeVisible();
+  await expect(nav.getByText('Audit Logs')).toHaveCount(0);
 });
 
 test('a Normal Branch can be created; a second Warehouse is refused on the Branch Type field', async ({
   page,
 }) => {
   await signIn(page, LOGINS.super_admin);
-  await openNav(page);
-  await page
-    .getByRole('navigation', { name: 'Main' })
-    .getByRole('link', { name: 'Branches' })
-    .click();
+  await goTo(page, 'Branches');
   await expect(page.getByRole('heading', { level: 1, name: 'Branches' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Add a branch' }).click();

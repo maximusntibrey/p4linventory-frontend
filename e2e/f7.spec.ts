@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import type { components } from '../src/api/schema';
+import { openFilters } from './mock-helpers';
 import { sideways, stubAuth, stubData } from './stub';
 
 type S = components['schemas'];
@@ -166,6 +167,8 @@ test('audit logs: filters and events, no sideways scroll at 360 px', async ({ pa
   await expect(page.getByRole('heading', { level: 1, name: 'Audit Logs' })).toBeVisible();
   await expect(page.getByText('TRF-000003')).toBeVisible();
   await expect(page.getByText('Self-approved')).toBeVisible();
+  await openFilters(page);
+  await page.getByRole('button', { name: 'Filter', exact: true }).click();
   for (const l of ['Action', 'Module', 'From date', 'To date']) {
     const box = await page.getByLabel(l, { exact: true }).boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(44);
