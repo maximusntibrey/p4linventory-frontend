@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../mocks/server';
 import { mockSession } from '../mocks/handlers';
-import { api, ApiError, newIdempotencyKey } from './client';
+import { api, ApiError, networkFailure, newIdempotencyKey } from './client';
 
 const catchError = async (p: Promise<unknown>) => {
   try {
@@ -94,6 +94,45 @@ describe('api client', () => {
   it('reports a network failure', async () => {
     server.use(http.get('/health/', () => HttpResponse.error()));
     expect(await catchError(api('get', '/health/'))).toMatchObject({ kind: 'network' });
+  });
+
+  it('says a blocked cross-origin request is not a lost connection, and logs method and URL', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    // The server answers the no-cors health probe, so the failure is a CORS/preflight block.
+    server.use(http.get('http://backend.test/health/', () => HttpResponse.json({ status: 'ok' })));
+    const e = await networkFailure('POST', new URL('http://backend.test/api/v1/items/?q=secret'));
+    expect(e).toMatchObject({ status: 0, kind: 'cors', code: 'cors_blocked' });
+    expect(e.message).not.toMatch(/could not reach/i);
+    const line = String(warn.mock.calls[0]?.[0]);
+    expect(line).toContain('POST http://backend.test/api/v1/items/');
+    expect(line).not.toContain('secret');
+    warn.mockRestore();
+  });
+
+  it('reports a true network failure when the server does not answer at all', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    server.use(http.get('http://backend.test/health/', () => HttpResponse.error()));
+    const e = await networkFailure('GET', new URL('http://backend.test/api/v1/items/'));
+    expect(e).toMatchObject({ status: 0, kind: 'network' });
+    expect(e.message).toMatch(/could not reach the server/i);
+    warn.mockRestore();
+  });
+
+  it('names a non-JSON success reply instead of throwing a parse error', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    server.use(http.get('/health/', () => new HttpResponse('<html>hi</html>', { status: 200 })));
+    const e = await catchError(api('get', '/health/'));
+    expect(e).toMatchObject({ status: 200, kind: 'server', code: 'invalid_response' });
+    expect(e.message).toContain('HTTP 200');
+    warn.mockRestore();
+  });
+
+  it('puts the HTTP status in the message of a non-JSON error reply', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    server.use(http.get('/health/', () => new HttpResponse('<html>bad</html>', { status: 502 })));
+    const e = await catchError(api('get', '/health/'));
+    expect(e.message).toContain('HTTP 502');
+    warn.mockRestore();
   });
 
   it('sends the Idempotency-Key header', async () => {

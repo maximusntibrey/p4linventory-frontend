@@ -24,6 +24,7 @@ export type ApiErrorKind =
   | 'too_large'
   | 'rate_limited'
   | 'server'
+  | 'cors'
   | 'network';
 
 const kindByStatus: Record<number, ApiErrorKind> = {
@@ -104,19 +105,70 @@ export const resetCsrfCache = () => {
   csrfInFlight = undefined;
 };
 
-async function toApiError(res: Response): Promise<ApiError> {
+/** Debug trail for failures with no standard body: method and URL only, never headers, bodies or the query string. */
+function warnFailed(method: string, url: URL, what: string, status?: number) {
+  console.warn(
+    `API request failed (${what}${status ? ` ${status}` : ''}): ${method} ${url.origin}${url.pathname}`,
+  );
+}
+
+/**
+ * fetch() threw. The browser gives the same TypeError for "server down" and for a CORS/preflight block,
+ * so ask once whether the server answers at all (a no-cors request is allowed whatever the CORS rules).
+ * Answers: it is a blocked request, not a lost connection.
+ */
+export async function networkFailure(method: string, url: URL): Promise<ApiError> {
+  let serverAnswers = false;
+  // Same-origin requests cannot be blocked by CORS: no need to ask.
+  if (url.origin !== globalThis.location.origin) {
+    try {
+      await fetch(new URL('/health/', url.origin), { mode: 'no-cors', cache: 'no-store' });
+      serverAnswers = true;
+    } catch {
+      // the server really is not reachable
+    }
+  }
+  warnFailed(method, url, serverAnswers ? 'blocked by the browser (CORS)' : 'network');
+  return serverAnswers
+    ? new ApiError(
+        0,
+        'cors',
+        'cors_blocked',
+        'The browser blocked this request to the server (cross-origin rule). The server is up, so this is a setup problem, not your connection. Tell support.',
+      )
+    : new ApiError(
+        0,
+        'network',
+        'network_error',
+        'Could not reach the server. Check your connection and try again.',
+      );
+}
+
+async function toApiError(res: Response, method = 'GET'): Promise<ApiError> {
   let err: Partial<ApiErrorBody> = {};
+  let standard = true;
   try {
     err = (await res.json()) as Partial<ApiErrorBody>;
   } catch {
     // not the standard body (for example a proxy error page)
+    standard = false;
+    warnFailed(
+      method,
+      new URL(res.url || globalThis.location.href),
+      'not a JSON reply',
+      res.status,
+    );
   }
   const retry = Number(res.headers.get('Retry-After'));
   return new ApiError(
     res.status,
     kindByStatus[res.status] ?? 'server',
     typeof err.code === 'string' ? err.code : 'unknown',
-    typeof err.message === 'string' ? err.message : 'Something went wrong.',
+    typeof err.message === 'string'
+      ? err.message
+      : standard
+        ? 'Something went wrong.'
+        : `The server sent an unexpected reply (HTTP ${res.status}). Try again; if it keeps happening, tell support.`,
     Array.isArray(err.errors)
       ? err.errors.filter((e) => typeof e === 'object' && e !== null && !Array.isArray(e))
       : [],
@@ -148,10 +200,10 @@ export async function api<P extends keyof paths, M extends Method & keyof paths[
   if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
 
   const send = async (token?: string): Promise<Response> => {
+    const requestUrl = isMockMode
+      ? new URL(url, globalThis.location.origin)
+      : new URL(url, apiUrl || globalThis.location.origin);
     try {
-      const requestUrl = isMockMode
-        ? new URL(url, globalThis.location.origin)
-        : new URL(url, apiUrl || globalThis.location.origin);
       return await fetch(requestUrl, {
         method: method.toUpperCase(),
         headers: token ? { ...headers, 'X-CSRFToken': token } : headers,
@@ -161,22 +213,38 @@ export async function api<P extends keyof paths, M extends Method & keyof paths[
       });
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') throw e;
-      throw new ApiError(0, 'network', 'network_error', 'Could not reach the server.');
+      throw await networkFailure(method.toUpperCase(), requestUrl);
     }
   };
 
   let token = unsafe.has(method) ? await csrfToken() : undefined;
   let res = await send(token);
-  let failure = res.ok ? undefined : await toApiError(res);
+  let failure = res.ok ? undefined : await toApiError(res, method.toUpperCase());
   // A stale token is the one failure worth one automatic retry: refresh the token, send again.
   if (token && failure?.status === 403 && failure.code === 'csrf_failed') {
     csrfFallback = undefined;
     token = await fetchCsrfToken();
     res = await send(token);
-    failure = res.ok ? undefined : await toApiError(res);
+    failure = res.ok ? undefined : await toApiError(res, method.toUpperCase());
   }
   if (failure) throw failure;
-  return (res.status === 204 ? undefined : await res.json()) as Ok<paths[P][M]>;
+  if (res.status === 204) return undefined as Ok<paths[P][M]>;
+  try {
+    return (await res.json()) as Ok<paths[P][M]>;
+  } catch {
+    warnFailed(
+      method.toUpperCase(),
+      new URL(res.url || url, globalThis.location.href),
+      'not a JSON reply',
+      res.status,
+    );
+    throw new ApiError(
+      res.status,
+      'server',
+      'invalid_response',
+      `The server sent an unexpected reply (HTTP ${res.status}). Try again; if it keeps happening, tell support.`,
+    );
+  }
 }
 
 export type CsvExport = { text: string; truncated: boolean };
@@ -192,14 +260,15 @@ export async function apiCsv(
   }
   const target = `${path}${qs.size ? `?${qs}` : ''}`;
   let res: Response;
+  const requestUrl = new URL(target, (!isMockMode && apiUrl) || globalThis.location.origin);
   try {
-    res = await fetch(new URL(target, (!isMockMode && apiUrl) || globalThis.location.origin), {
+    res = await fetch(requestUrl, {
       headers: { Accept: 'text/csv' },
       credentials: 'include',
     });
   } catch {
-    throw new ApiError(0, 'network', 'network_error', 'Could not reach the server.');
+    throw await networkFailure('GET', requestUrl);
   }
-  if (!res.ok) throw await toApiError(res);
+  if (!res.ok) throw await toApiError(res, 'GET');
   return { text: await res.text(), truncated: res.headers.get('X-Export-Truncated') === 'true' };
 }

@@ -8,6 +8,7 @@ import { Forbidden } from '../pages/Forbidden';
 import { useMe } from './session';
 import type { Me } from './session';
 import { Button } from '../components/ui';
+import { describeError } from '../components/ErrorSummary';
 
 const MeContext = createContext<Me | null>(null);
 
@@ -23,7 +24,7 @@ export function useCurrentMe(): Me {
  * the only place to go (`pending` marks that screen). The server still checks every request.
  */
 export function RequireAuth({ pending = false }: { pending?: boolean }) {
-  const { data: me, isPending, isError, refetch } = useMe();
+  const { data: me, isPending, isError, error, refetch } = useMe();
   const here = useLocation();
   const qc = useQueryClient();
   if (isPending) {
@@ -41,7 +42,7 @@ export function RequireAuth({ pending = false }: { pending?: boolean }) {
         sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1.5, p: 2 }}
       >
         <Box component="p" sx={{ m: 0, fontWeight: 600, color: 'error.main' }}>
-          Could not reach the server.
+          {describeError(error).title}
         </Box>
         <Button onClick={() => void refetch()}>Try again</Button>
       </Box>
