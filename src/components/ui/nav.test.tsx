@@ -93,7 +93,7 @@ describe('Topbar', () => {
 });
 
 describe('AppShell', () => {
-  it('lays out sidebar, topbar and main, with a skip link, and opens the menu drawer by keyboard-reachable button', async () => {
+  it('lays out sidebar, topbar and main, with a skip link', async () => {
     const { container } = render(
       wrap(
         <AppShell
@@ -106,10 +106,7 @@ describe('AppShell', () => {
     );
     expect(screen.getByRole('link', { name: 'Skip to content' })).toHaveAttribute('href', '#main');
     expect(screen.getByRole('main')).toHaveTextContent('page body');
-    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.getByRole('dialog', { name: 'Menu' })).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
     expect(await axe(container)).toHaveNoViolations();
   });
 });

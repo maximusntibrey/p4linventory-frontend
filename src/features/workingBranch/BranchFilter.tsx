@@ -7,6 +7,8 @@ type Filter = { branch?: number; setBranch: (id?: number) => void };
 
 /** The Super Admin's view filter (v0.1.2): none = all branches. Passed as ?branch= to the queries that accept it. */
 export const BranchFilterContext = createContext<Filter>({ setBranch: () => undefined });
+/** Set by the shell only when the API lets this user switch their working branch (a tap on the Home branch card opens the picker). */
+export const BranchSwitchContext = createContext<(() => void) | undefined>(undefined);
 export const useBranchFilter = () => useContext(BranchFilterContext);
 
 export function useFilterBranches(enabled: boolean) {
