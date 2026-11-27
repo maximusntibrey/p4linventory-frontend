@@ -21,7 +21,7 @@ function spy(method: 'post' | 'put' | 'patch', path: string) {
   return { seen, handler };
 }
 const h1 = (name: string) => screen.findByRole('heading', { level: 1, name });
-const card = (name: string) => screen.getByRole('link', { name }).closest('li')!;
+const card = (name: string) => screen.getByRole('link', { name }).closest('tr')!;
 
 /** Fills the always-shown fields of the item form with a valid laptop. */
 async function fillBasics(over: { name?: string; model?: string } = {}) {
@@ -38,7 +38,7 @@ async function fillBasics(over: { name?: string; model?: string } = {}) {
 }
 
 describe('item list', () => {
-  it('shows each item as a card with status as text + icon and cost when the API sends it; axe clean', async () => {
+  it('shows each item as a table row with status as text + icon and cost when the API sends it; axe clean', async () => {
     const { container } = renderApp('/items', { as: 'super_admin' });
     await h1('Items');
     const hp = await screen.findByRole('link', { name: 'HP 250 G9' });
@@ -48,11 +48,11 @@ describe('item list', () => {
     expect(active.querySelector('svg')).not.toBeNull();
     expect(within(active).getByText(/SKU-000001 · HP · 250 G9/)).toBeTruthy();
     expect(within(active).getByText('GHS 1250.00')).toBeTruthy();
-    expect(within(active).getByText('Average cost: GHS 900.00')).toBeTruthy();
+    expect(within(active).getByText('GHS 900.00')).toBeTruthy();
     const draft = card('Dell 65W charger');
     expect(within(draft).getByText('Draft')).toBeTruthy();
     expect(within(draft).getByText('No selling price yet')).toBeTruthy();
-    expect(within(draft).getByText('Average cost: none yet (no receipt)')).toBeTruthy();
+    expect(within(draft).getByText('none yet (no receipt)')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Add an item' })).toBeTruthy();
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -142,7 +142,7 @@ describe('item list', () => {
     await screen.findByRole('link', { name: 'HP 250 G9' });
     type('Search by name, SKU, brand, model or part number', 'no-such-thing');
     click('Search');
-    expect(await screen.findByText('No items match.')).toBeTruthy();
+    expect(await screen.findByText('No items match')).toBeTruthy();
   });
 
   it('pages through the API envelope', async () => {

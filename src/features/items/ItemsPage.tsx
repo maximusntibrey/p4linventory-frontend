@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Upload } from 'lucide-react';
-import { api, rowsOf } from '../../api';
+import { Plus, Search, Tag, Upload } from 'lucide-react';
+import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { QueryGate } from '../../components/QueryGate';
+import { describeError } from '../../components/ErrorSummary';
+import { Forbidden } from '../../pages/Forbidden';
 import {
   averageCost,
   conditionCodes,
@@ -15,10 +16,21 @@ import {
   itemStatusBadge,
   itemStatuses,
 } from './labels';
-import { Button, Card, Pager, SelectField, StatusWord, TextField } from '../../components/ui';
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  SelectField,
+  StatusWord,
+  TextField,
+} from '../../components/ui';
+import type { Column } from '../../components/ui';
 
 type S = components['schemas'];
 type Condition = S['Item']['condition'];
+type Item = S['Item'] | S['ItemWithCost'];
 type Filters = {
   q: string;
   status: S['ItemStatus'] | '';
@@ -63,29 +75,74 @@ export function ItemsPage() {
     },
   });
 
+  const data = list.data;
+  if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
+  const columns: Column<Item>[] = [
+    {
+      id: 'name',
+      header: 'Name',
+      cell: (item) => (
+        <span className="flex flex-col">
+          <Link
+            to={`/items/${item.id}`}
+            className="inline-flex min-h-target items-center font-semibold text-ink underline"
+          >
+            {item.name}
+          </Link>
+          <span className="text-sm text-muted">
+            {item.sku} · {item.brand_name ?? 'No brand'} · {item.model_name}
+          </span>
+        </span>
+      ),
+    },
+    { id: 'condition', header: 'Condition', cell: (item) => conditionLabels[item.condition] },
+    {
+      id: 'price',
+      header: 'Selling price',
+      align: 'right',
+      cell: (item) => (item.selling_price ? ghs(item.selling_price) : 'No selling price yet'),
+    },
+    ...(withCost && (data ? rowsOf(data) : []).some((i) => averageCost(i) !== undefined)
+      ? [
+          {
+            id: 'cost',
+            header: 'Average cost',
+            align: 'right' as const,
+            cell: (item: Item) =>
+              averageCost(item) !== undefined ? costText(averageCost(item) ?? null) : '',
+          },
+        ]
+      : []),
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (item) => (
+        <StatusWord
+          status={itemStatusBadge[item.status].status}
+          label={itemStatusBadge[item.status].label}
+        />
+      ),
+    },
+  ];
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-display">Items</h1>
-        {canImport && (
-          <Link
-            to="/items/import"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-control bg-canvas px-4 font-semibold text-ink no-underline hover:bg-surface"
-          >
-            <Upload aria-hidden="true" size={20} />
-            <span>Import from CSV</span>
-          </Link>
-        )}
-        {canManage && (
-          <Link
-            to="/items/new"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary-solid px-4 font-semibold text-on-primary no-underline hover:bg-primary-solid-hover"
-          >
-            <Plus aria-hidden="true" size={20} />
-            <span>Add an item</span>
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title="Items"
+        actions={
+          <>
+            {canImport && (
+              <LinkButton to="/items/import" icon={Upload} variant="secondary">
+                Import from CSV
+              </LinkButton>
+            )}
+            {canManage && (
+              <LinkButton to="/items/new" icon={Plus}>
+                Add an item
+              </LinkButton>
+            )}
+          </>
+        }
+      />
       <form
         role="search"
         className="grid gap-3 sm:grid-cols-2"
@@ -159,51 +216,31 @@ export function ItemsPage() {
           </Button>
         </div>
       </form>
-      <QueryGate query={list}>
-        {(data) => (
-          <>
-            {rowsOf(data).length === 0 ? (
-              <p className="m-0 text-muted">No items match.</p>
-            ) : (
-              <ul className="m-0 grid list-none gap-3 p-0 md:grid-cols-2">
-                {rowsOf(data).map((item) => (
-                  <li key={item.id}>
-                    <Card className="flex h-full flex-col gap-2">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <h2 className="min-w-0 break-words text-2xl">
-                          <Link
-                            to={`/items/${item.id}`}
-                            className="inline-flex min-h-11 items-center text-ink underline"
-                          >
-                            {item.name}
-                          </Link>
-                        </h2>
-                        <StatusWord
-                          status={itemStatusBadge[item.status].status}
-                          label={itemStatusBadge[item.status].label}
-                        />
-                      </div>
-                      <p className="m-0 text-sm text-muted">
-                        {item.sku} · {item.brand_name ?? 'No brand'} · {item.model_name}
-                      </p>
-                      <p className="m-0 text-sm text-muted">{conditionLabels[item.condition]}</p>
-                      <p className="m-0 font-semibold">
-                        {item.selling_price ? ghs(item.selling_price) : 'No selling price yet'}
-                      </p>
-                      {withCost && averageCost(item) !== undefined && (
-                        <p className="m-0 text-sm text-muted">
-                          Average cost: {costText(averageCost(item) ?? null)}
-                        </p>
-                      )}
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Pager page={data} onPage={setPage} />
-          </>
-        )}
-      </QueryGate>
+      <DataTable
+        caption="Items"
+        columns={columns}
+        rows={data ? rowsOf(data) : []}
+        rowKey={(i) => String(i.id)}
+        state={list.isPending ? 'loading' : list.isError && !data ? 'error' : 'ready'}
+        errorMessage={list.isError ? describeError(list.error).title : undefined}
+        onRetry={() => void list.refetch()}
+        empty={
+          <EmptyState
+            icon={Tag}
+            title="No items match"
+            description="Change the search or the filters."
+          />
+        }
+        pagination={
+          data && data.count > data.page_size
+            ? {
+                page: data.page,
+                pageCount: Math.ceil(data.count / data.page_size),
+                onPageChange: setPage,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }
