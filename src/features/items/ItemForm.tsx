@@ -88,9 +88,10 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
   } = useForm<Values>({
     defaultValues: {
       name: item?.name ?? '',
-      category: item?.category_id.toString() ?? '',
-      subtype: item?.subtype_id.toString() ?? '',
-      brand: item?.brand_id.toString() ?? '',
+      category: String(item?.category_id ?? ''),
+      // The real API sends null when an item has no subtype, although the contract says number.
+      subtype: String(item?.subtype_id ?? ''),
+      brand: String(item?.brand_id ?? ''),
       model_name: item?.model_name ?? '',
       mpn: item?.mpn ?? '',
       condition: item?.condition ?? '',

@@ -433,7 +433,8 @@ export const items: S['Item'][] = [
     sku: 'SKU-000002',
     name: 'Dell 65W charger',
     category_id: 3,
-    subtype_id: 3,
+    // The real API sends null for an item with no subtype (the contract says number): keep that shape here.
+    subtype_id: null as unknown as number,
     brand_id: 2,
     brand_name: 'Dell',
     model_name: 'LA65NM',

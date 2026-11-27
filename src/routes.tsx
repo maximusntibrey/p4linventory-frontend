@@ -8,6 +8,7 @@ import { ComingSoon } from './pages/ComingSoon';
 import { RequireAuth, RequirePermission } from './auth/guards';
 import type { Me } from './auth/session';
 import { AppShell } from './components/AppShell';
+import { RouteBoundary } from './components/ErrorBoundary';
 
 // Every screen is its own chunk: the first load carries only the shell and the screen being opened.
 const Home = lazy(() => import('./pages/Home').then((m) => ({ default: m.Home })));
@@ -86,9 +87,23 @@ export function AppRoutes() {
       }
     >
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={
+            <RouteBoundary>
+              <Login />
+            </RouteBoundary>
+          }
+        />
         <Route element={<RequireAuth pending />}>
-          <Route path="/password-change" element={<ChangePassword forced />} />
+          <Route
+            path="/password-change"
+            element={
+              <RouteBoundary>
+                <ChangePassword forced />
+              </RouteBoundary>
+            }
+          />
         </Route>
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>
