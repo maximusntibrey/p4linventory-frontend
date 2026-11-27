@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useQuery } from '@tanstack/react-query';
-import { PackageCheck } from 'lucide-react';
+import { PackageCheck } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
@@ -54,17 +55,21 @@ export function WaitingPage() {
     {
       id: 'ref',
       header: 'Reference',
-      cell: (d) => <span className="font-semibold">{d.reference}</span>,
+      cell: (d) => (
+        <Box component="span" sx={{ fontWeight: 600 }}>
+          {d.reference}
+        </Box>
+      ),
     },
     { id: 'from', header: 'From', cell: (d) => `From ${d.origin.name}` },
     {
       id: 'size',
       header: 'Size',
       cell: (d) => (
-        <span className="text-sm text-muted">
+        <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
           {unitsSent(d)} units in {d.lines.length} line{d.lines.length === 1 ? '' : 's'} · sent{' '}
           {formatAccra(d.dispatched_at)}
-        </span>
+        </Box>
       ),
     },
     { id: 'status', header: 'Status', cell: () => <StatusWord status="in-transit" /> },
@@ -83,7 +88,7 @@ export function WaitingPage() {
     },
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Receive" />
       {!own && (
         <SelectField
@@ -110,7 +115,9 @@ export function WaitingPage() {
         />
       ) : (
         <>
-          <h2 className="text-title">Waiting at {branchName ?? 'this branch'}</h2>
+          <Box component="h2" sx={{ typography: 'h4' }}>
+            Waiting at {branchName ?? 'this branch'}
+          </Box>
           <DataTable
             caption="Waiting deliveries"
             columns={columns}
@@ -138,6 +145,6 @@ export function WaitingPage() {
           />
         </>
       )}
-    </div>
+    </Box>
   );
 }

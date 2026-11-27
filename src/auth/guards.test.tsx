@@ -11,6 +11,7 @@ const where = () => screen.getByTestId('where').textContent;
 const menuLabels = () =>
   within(screen.getByRole('navigation', { name: 'Main' }))
     .getAllByRole('link')
+    .filter((a) => !a.querySelector('img')) // the logo link
     .map((a) => a.textContent);
 
 describe('route guards', () => {
@@ -93,7 +94,9 @@ describe('menu comes from the me response', () => {
     async (role, menu, more, audit) => {
       const { container } = renderApp(role === 'front_staff' ? '/stock' : '/', { as: role });
       await screen.findByRole('navigation', { name: 'Main' });
-      expect(menuLabels()).toEqual([...menu, ...more, ...(audit ? ['Audit Logs'] : [])]);
+      // Every user also has a Home, added by the app when the server menu omits it.
+      const all = [...menu, ...more, ...(audit ? ['Audit Logs'] : [])];
+      expect(menuLabels()).toEqual(menu.includes('Home') ? all : ['Home', ...all]);
       expect(meByRole[role].menu.map((m) => m.label)).toEqual(menu);
       expect(await axe(container)).toHaveNoViolations();
     },
@@ -127,16 +130,20 @@ describe('menu comes from the me response', () => {
     );
     renderApp('/', { as: 'super_admin' });
     await screen.findByRole('navigation', { name: 'Main' });
-    expect(menuLabels()).toHaveLength(7);
-    expect(screen.getByText('Menu', { selector: 'p' })).toBeInTheDocument();
+    expect(menuLabels()).toHaveLength(8); // seven server entries plus Home
+    expect(
+      within(screen.getByRole('navigation', { name: 'Main' })).getByText('Menu'),
+    ).toBeInTheDocument();
   });
 
   it('every nav entry shows its text label next to the icon', async () => {
     renderApp('/', { as: 'super_admin' });
     const nav = await screen.findByRole('navigation', { name: 'Main' });
-    for (const a of within(nav).getAllByRole('link')) {
+    for (const a of within(nav)
+      .getAllByRole('link')
+      .filter((l) => !l.querySelector('img'))) {
       expect(a.textContent?.trim().length).toBeGreaterThan(0);
-      expect(a.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+      expect(a.querySelector('[aria-hidden="true"]')).not.toBeNull();
     }
   });
 });

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
+import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'components/icons';
 import { Card } from './ui';
 
 /** Remembers the focused element when the panel opens and gives focus back when it closes. Call it before the panel's own focus effect. */
@@ -18,15 +19,23 @@ export function SuccessNotice({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLParagraphElement>(null);
   useEffect(() => ref.current?.focus(), []);
   return (
-    <p
+    <Box
+      component="p"
       ref={ref}
       tabIndex={-1}
       role="status"
-      className="m-0 flex items-center gap-2 font-semibold text-ok"
+      sx={{
+        m: 0,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        fontWeight: 600,
+        color: 'success.main',
+      }}
     >
       <CheckCircle2 aria-hidden="true" size={20} />
       <span>{children}</span>
-    </p>
+    </Box>
   );
 }
 
@@ -36,7 +45,7 @@ export function ResultCard({ children }: { children: ReactNode }) {
   useEffect(() => ref.current?.focus(), []);
   return (
     <div ref={ref} tabIndex={-1} role="status">
-      <Card className="flex flex-col gap-2">{children}</Card>
+      <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>{children}</Card>
     </div>
   );
 }

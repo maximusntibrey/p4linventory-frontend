@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { Controller, useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Plus, Power, PowerOff, Save, Store } from 'lucide-react';
+import { Pencil, Plus, Power, PowerOff, Save, Store } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
@@ -63,12 +64,15 @@ function BranchForm({ branch, onClose }: { branch?: Branch; onClose: (saved: boo
   });
   const server = save.error instanceof ApiError ? save.error : undefined;
   return (
-    <Card className="flex flex-col gap-4">
-      <h2 className="text-title">{branch ? `Edit ${branch.name}` : 'Add a branch'}</h2>
+    <Card sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box component="h2" sx={{ typography: 'h4' }}>
+        {branch ? `Edit ${branch.name}` : 'Add a branch'}
+      </Box>
       <ApiProblem error={save.error} at={save.submittedAt} />
-      <form
+      <Box
+        component="form"
         noValidate
-        className="flex flex-col gap-4"
+        sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
         onSubmit={(e) => void handleSubmit((v) => save.mutate(v))(e)}
       >
         <TextField
@@ -101,15 +105,15 @@ function BranchForm({ branch, onClose }: { branch?: Branch; onClose: (saved: boo
             />
           )}
         />
-        <div className="flex flex-wrap gap-2">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           <Button type="submit" icon={Save} disabled={save.isPending}>
             {save.isPending ? 'Saving…' : 'Save branch'}
           </Button>
           <Button variant="secondary" onClick={() => onClose(false)} disabled={save.isPending}>
             Cancel
           </Button>
-        </div>
-      </form>
+        </Box>
+      </Box>
     </Card>
   );
 }
@@ -158,7 +162,15 @@ export function BranchesPage() {
   });
 
   const columns: Column<Branch>[] = [
-    { id: 'name', header: 'Name', cell: (b) => <span className="font-semibold">{b.name}</span> },
+    {
+      id: 'name',
+      header: 'Name',
+      cell: (b) => (
+        <Box component="span" sx={{ fontWeight: 600 }}>
+          {b.name}
+        </Box>
+      ),
+    },
     { id: 'code', header: 'Code', cell: (b) => b.code },
     { id: 'type', header: 'Type', cell: (b) => <BranchTypeBadge type={b.branch_type} /> },
     {
@@ -172,7 +184,7 @@ export function BranchesPage() {
             id: 'actions',
             header: 'Actions',
             cell: (b: Branch) => (
-              <span className="flex flex-wrap gap-2">
+              <Box component="span" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 <Button
                   variant="secondary"
                   icon={Pencil}
@@ -208,7 +220,7 @@ export function BranchesPage() {
                     Activate
                   </Button>
                 )}
-              </span>
+              </Box>
             ),
           },
         ]
@@ -218,7 +230,7 @@ export function BranchesPage() {
   if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
   const data = list.data;
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader
         title="Branches"
         subtitle="Normal branches and the warehouse."
@@ -250,7 +262,7 @@ export function BranchesPage() {
       )}
       {!confirm && <ApiProblem error={toggle.error} at={toggle.submittedAt} />}
       {confirm && (
-        <div className="flex flex-col gap-2">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <ApiProblem error={toggle.error} at={toggle.submittedAt} />
           <ConfirmPanel
             title={`Deactivate ${confirm.name}? Its history is kept.`}
@@ -259,7 +271,7 @@ export function BranchesPage() {
             onConfirm={() => toggle.mutate({ branch: confirm, activate: false })}
             onCancel={() => setConfirm(null)}
           />
-        </div>
+        </Box>
       )}
       <Toolbar
         view={{
@@ -297,6 +309,6 @@ export function BranchesPage() {
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 }

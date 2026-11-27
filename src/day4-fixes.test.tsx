@@ -169,7 +169,7 @@ describe('FIX-32 stock rows keep two locations with the same name apart', () => 
       ),
     );
     renderApp('/stock', { as: 'super_admin' });
-    const cells = await screen.findAllByText('Main Branch', { selector: 'td' });
+    const cells = await screen.findAllByText('Main Branch', { selector: 'td > span:last-child' });
     expect(cells).toHaveLength(2);
     expect(cells[0].closest('tr')).not.toBe(cells[1].closest('tr'));
   });

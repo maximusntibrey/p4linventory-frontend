@@ -1,8 +1,11 @@
-import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import type { IconType } from '../icons';
 
 export type EmptyStateProps = {
-  icon?: LucideIcon;
+  icon?: IconType;
   title: string;
   description?: string;
   /** Usually one Button. */
@@ -11,15 +14,40 @@ export type EmptyStateProps = {
 
 export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-line bg-canvas p-8 text-center">
+    <Stack
+      sx={{
+        alignItems: 'center',
+        gap: 1.5,
+        textAlign: 'center',
+        p: 4,
+        border: '1px dashed',
+        borderColor: 'divider',
+        borderRadius: 1,
+      }}
+    >
       {Icon && (
-        <span aria-hidden="true" className="rounded-pill bg-primary-soft p-3 text-primary-solid">
+        <Box
+          aria-hidden="true"
+          sx={{
+            p: 1.5,
+            borderRadius: '50%',
+            bgcolor: 'primary.lighter',
+            color: 'primary.main',
+            display: 'flex',
+          }}
+        >
           <Icon size={28} />
-        </span>
+        </Box>
       )}
-      <h2 className="text-title">{title}</h2>
-      {description && <p className="m-0 max-w-prose text-muted">{description}</p>}
+      <Typography variant="h4" component="h2">
+        {title}
+      </Typography>
+      {description && (
+        <Typography color="text.secondary" sx={{ maxWidth: 480 }}>
+          {description}
+        </Typography>
+      )}
       {action}
-    </div>
+    </Stack>
   );
 }

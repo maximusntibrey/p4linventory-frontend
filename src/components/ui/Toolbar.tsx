@@ -1,14 +1,17 @@
-import { Download, Filter, Plus, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import Box from '@mui/material/Box';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import InputAdornment from '@mui/material/InputAdornment';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
+import { Download, Filter, Plus, Search, SlidersHorizontal } from '../icons';
 import { Button } from './Button';
 import { Drawer } from './Drawer';
-import { SearchInput } from './SearchInput';
 import { SegmentedControl } from './SegmentedControl';
 import type { SegmentOption } from './SegmentedControl';
-import { Select } from './Select';
-import { FormField } from './FormField';
-import { Switch } from './Switch';
+import { SelectField } from './SelectField';
 import { useCompact } from './useCompact';
 
 export type ToolbarProps<V extends string = string> = {
@@ -23,11 +26,11 @@ export type ToolbarProps<V extends string = string> = {
   view?: { label: string; value: V; options: SegmentOption<V>[]; onChange: (v: V) => void };
   statistics?: { checked: boolean; onChange: (v: boolean) => void };
   primary?: { label: string; onClick: () => void };
-  /** Extra controls (for example the column-visibility menu). */
+  /** Extra controls. */
   children?: ReactNode;
 };
 
-/** Every control is optional: pass only what the screen allows. The primary action carries a leading +. */
+/** Every control is optional: pass only what the screen allows. On phones everything but search and the primary action sits in a Filters drawer. */
 export function Toolbar<V extends string = string>({
   search,
   onFilter,
@@ -40,7 +43,6 @@ export function Toolbar<V extends string = string>({
 }: ToolbarProps<V>) {
   const compact = useCompact();
   const [open, setOpen] = useState(false);
-  // Phones: search and the primary action stay; everything else sits behind one Filters button.
   const closeThen = (fn?: () => void) => fn && (() => (setOpen(false), fn()));
   const filter = onFilter && (
     <Button variant="secondary" icon={Filter} onClick={compact ? closeThen(onFilter) : onFilter}>
@@ -53,19 +55,19 @@ export function Toolbar<V extends string = string>({
     </Button>
   );
   const sortField = sort && (
-    <div className={compact ? undefined : 'w-40'}>
-      <FormField label="Sort by">
-        {(c) => (
-          <Select {...c} value={sort.value} onChange={(e) => sort.onChange(e.target.value)}>
-            {sort.options.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        )}
-      </FormField>
-    </div>
+    <Box sx={{ width: compact ? undefined : 160 }}>
+      <SelectField
+        label="Sort by"
+        value={sort.value}
+        onChange={(e) => sort.onChange(e.target.value)}
+      >
+        {sort.options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </SelectField>
+    </Box>
   );
   const viewControl = view && (
     <SegmentedControl
@@ -76,29 +78,46 @@ export function Toolbar<V extends string = string>({
     />
   );
   const stats = statistics && (
-    <Switch
+    <FormControlLabel
       label="Show Statistics"
-      checked={statistics.checked}
-      onCheckedChange={statistics.onChange}
+      control={
+        <Switch
+          checked={statistics.checked}
+          onChange={(e) => statistics.onChange(e.target.checked)}
+        />
+      }
     />
   );
   const searchBox = search && (
-    <SearchInput
-      label={search.label}
-      value={search.value}
-      onValueChange={search.onChange}
-      className="min-w-0 flex-1 basis-56"
-    />
+    <Box sx={{ minWidth: 0, flex: '1 1 224px' }}>
+      <OutlinedInput
+        fullWidth
+        size="small"
+        type="search"
+        value={search.value}
+        onChange={(e) => search.onChange(e.target.value)}
+        placeholder={search.label}
+        inputProps={{ 'aria-label': search.label }}
+        startAdornment={
+          <InputAdornment position="start">
+            <Search size={16} />
+          </InputAdornment>
+        }
+      />
+    </Box>
   );
   const primaryBtn = primary && (
-    <Button icon={Plus} onClick={primary.onClick} className="ml-auto">
-      {primary.label}
-    </Button>
+    <Box sx={{ ml: 'auto' }}>
+      <Button icon={Plus} onClick={primary.onClick}>
+        {primary.label}
+      </Button>
+    </Box>
   );
+  const rowSx = { flexWrap: 'wrap', alignItems: 'flex-end', gap: 1 } as const;
   if (compact) {
     const hasMore = onFilter || sort || onExport || view || statistics || children;
     return (
-      <div role="toolbar" aria-label="Table tools" className="flex flex-wrap items-end gap-2">
+      <Stack role="toolbar" aria-label="Table tools" direction="row" sx={rowSx}>
         {searchBox}
         {hasMore && (
           <Button variant="secondary" icon={SlidersHorizontal} onClick={() => setOpen(true)}>
@@ -107,20 +126,20 @@ export function Toolbar<V extends string = string>({
         )}
         {primaryBtn}
         <Drawer open={open} onClose={() => setOpen(false)} title="Filters">
-          <div className="flex flex-col items-stretch gap-3 *:w-full">
+          <Stack sx={{ gap: 1.5, '& > *': { width: '100%' } }}>
             {filter}
             {sortField}
             {viewControl}
             {stats}
             {children}
             {exportBtn}
-          </div>
+          </Stack>
         </Drawer>
-      </div>
+      </Stack>
     );
   }
   return (
-    <div role="toolbar" aria-label="Table tools" className="flex flex-wrap items-end gap-2">
+    <Stack role="toolbar" aria-label="Table tools" direction="row" sx={rowSx}>
       {searchBox}
       {filter}
       {sortField}
@@ -129,6 +148,6 @@ export function Toolbar<V extends string = string>({
       {stats}
       {children}
       {primaryBtn}
-    </div>
+    </Stack>
   );
 }

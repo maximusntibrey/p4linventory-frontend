@@ -1,14 +1,15 @@
 import { useForm, useWatch } from 'react-hook-form';
+import Box from '@mui/material/Box';
 import type { UseFormRegister } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
-import { Save } from 'lucide-react';
+import { Save } from 'components/icons';
 import { api, ApiError } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import type { components } from '../../api';
 import { QueryGate } from '../../components/QueryGate';
 import { twoDecimals } from '../../lib/money';
 import { conditionCodes, conditionLabels } from './labels';
-import { Button, SelectField, TextField } from '../../components/ui';
+import { Button, SelectField, TextField, CheckField } from '../../components/ui';
 
 type S = components['schemas'];
 type Def = S['ItemFieldDefinition'];
@@ -170,14 +171,19 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
     const reg = (register as UseFormRegister<Values>)(name, formatRule(def));
     if (def.type === 'boolean') {
       return (
-        <div key={def.key} className="flex flex-col gap-1">
-          <label className="flex min-h-target items-center gap-3 font-semibold">
-            <input type="checkbox" className="size-5 accent-primary-solid" {...reg} />
-            <span>{def.label}</span>
-          </label>
-          {hint && <p className="text-sm text-muted">{hint}</p>}
-          {message && <p className="text-sm font-semibold text-bad">{message}</p>}
-        </div>
+        <Box key={def.key} sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <CheckField label={def.label} {...reg} />
+          {hint && (
+            <Box component="p" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+              {hint}
+            </Box>
+          )}
+          {message && (
+            <Box component="p" sx={{ fontSize: '0.875rem', fontWeight: 600, color: 'error.main' }}>
+              {message}
+            </Box>
+          )}
+        </Box>
       );
     }
     if (def.type === 'choice') {
@@ -206,7 +212,12 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
   };
 
   return (
-    <form noValidate className="flex flex-col gap-4" onSubmit={(e) => void submit(e)}>
+    <Box
+      component="form"
+      noValidate
+      sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+      onSubmit={(e) => void submit(e)}
+    >
       <TextField
         label="Name"
         autoComplete="off"
@@ -306,24 +317,40 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
         <QueryGate query={defs} inline>
           {() =>
             [...sections].map(([group, list]) => (
-              <details key={group} open className="rounded-lg border border-line p-3">
-                <summary className="flex min-h-target cursor-pointer items-center text-2xl">
+              <Box
+                component="details"
+                key={group}
+                open
+                sx={{ borderRadius: 1, border: '1px solid', borderColor: 'divider', p: 1.5 }}
+              >
+                <Box
+                  component="summary"
+                  sx={{
+                    display: 'flex',
+                    minHeight: 44,
+                    cursor: 'pointer',
+                    alignItems: 'center',
+                    typography: 'h4',
+                  }}
+                >
                   {group}
-                </summary>
-                <div className="mt-2 flex flex-col gap-4">{list.map(dynamic)}</div>
-              </details>
+                </Box>
+                <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {list.map(dynamic)}
+                </Box>
+              </Box>
             ))
           }
         </QueryGate>
       )}
       {(categories.isError || brands.isError) && (
-        <p role="alert" className="m-0 font-semibold text-bad">
+        <Box component="p" role="alert" sx={{ m: 0, fontWeight: 600, color: 'error.main' }}>
           The categories or brands could not be loaded. Reload the page to try again.
-        </p>
+        </Box>
       )}
       <Button type="submit" icon={Save} disabled={pending || ready === 'loading'}>
         {pending ? 'Saving…' : submitLabel}
       </Button>
-    </form>
+    </Box>
   );
 }

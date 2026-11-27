@@ -28,12 +28,17 @@ describe('receive stock screen (F5.1)', () => {
   it('shows the form with labelled, 44 px controls and no axe violations', async () => {
     const { container } = renderApp('/goods-receipts', { as: 'warehouse_admin' });
     await h1();
-    expect((screen.getByLabelText('Supplier') as HTMLInputElement).className).toMatch(
-      /min-h-(11|target)/,
-    );
-    expect(screen.getByRole('button', { name: 'Review receipt' }).className).toMatch(
-      /min-h-(11|target)/,
-    );
+    expect(
+      parseFloat(
+        getComputedStyle(screen.getByLabelText('Supplier').closest('.MuiInputBase-root')!)
+          .minHeight,
+      ),
+    ).toBeGreaterThanOrEqual(44);
+    expect(
+      parseFloat(
+        getComputedStyle(screen.getByRole('button', { name: 'Review receipt' })).minHeight,
+      ),
+    ).toBeGreaterThanOrEqual(44);
     expect(await axe(container)).toHaveNoViolations();
   });
 

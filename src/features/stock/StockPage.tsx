@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useQuery } from '@tanstack/react-query';
-import { Boxes, Search } from 'lucide-react';
+import { Boxes, Search } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
@@ -64,10 +65,14 @@ export function StockPage() {
       id: 'item',
       header: 'Item',
       cell: (r) => (
-        <span className="flex flex-col">
-          <span className="font-semibold">{r.item_name}</span>
-          <span className="text-sm text-muted">{r.sku}</span>
-        </span>
+        <Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Box component="span" sx={{ fontWeight: 600 }}>
+            {r.item_name}
+          </Box>
+          <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+            {r.sku}
+          </Box>
+        </Box>
       ),
     },
     { id: 'location', header: 'Location', cell: (r) => r.location_name },
@@ -92,7 +97,7 @@ export function StockPage() {
     },
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Stock" subtitle="By item and location." />
       <form
         role="search"
@@ -109,7 +114,7 @@ export function StockPage() {
           }}
         >
           {canPickLocation && (
-            <div className="w-full sm:w-48">
+            <Box sx={{ width: { xs: '100%', sm: 192 } }}>
               <SelectField
                 label="Location"
                 value={draft.location}
@@ -122,7 +127,7 @@ export function StockPage() {
                   </option>
                 ))}
               </SelectField>
-            </div>
+            </Box>
           )}
           <Button type="button" variant="secondary" icon={Search} onClick={apply}>
             Search
@@ -154,6 +159,6 @@ export function StockPage() {
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 }

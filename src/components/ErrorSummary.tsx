@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { AlertCircle } from 'lucide-react';
+import Box from '@mui/material/Box';
+import { AlertCircle } from 'components/icons';
 import { ApiError } from '../api';
 
 export type ErrorParts = { title: string; items: string[] };
@@ -28,23 +29,33 @@ export function ErrorSummary({ title, items }: ErrorParts) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => ref.current?.focus(), []);
   return (
-    <div
+    <Box
       ref={ref}
       role="alert"
       tabIndex={-1}
-      className="rounded-lg border border-bad bg-bad-bg p-3 text-bad"
+      sx={{
+        borderRadius: 1,
+        border: '1px solid',
+        borderColor: 'error.main',
+        bgcolor: 'error.lighter',
+        p: 1.5,
+        color: 'error.main',
+      }}
     >
-      <p className="m-0 flex items-start gap-2 font-semibold">
-        <AlertCircle aria-hidden="true" size={20} className="mt-0.5 shrink-0" />
+      <Box
+        component="p"
+        sx={{ m: 0, display: 'flex', alignItems: 'flex-start', gap: 1, fontWeight: 600 }}
+      >
+        <AlertCircle aria-hidden="true" size={20} />
         <span>{title}</span>
-      </p>
+      </Box>
       {items.length > 0 && (
-        <ul className="m-0 mt-1 list-disc pl-10 text-sm">
+        <Box component="ul" sx={{ m: 0, mt: 0.5, listStyle: 'disc', pl: 5, fontSize: '0.875rem' }}>
           {items.map((m, i) => (
             <li key={i}>{m}</li>
           ))}
-        </ul>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

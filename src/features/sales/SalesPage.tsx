@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, ShoppingCart } from 'lucide-react';
+import { Ban, ShoppingCart } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import type { components } from '../../api';
@@ -20,6 +21,7 @@ import {
   LinkButton,
   PageHeader,
   SelectField,
+  Toolbar,
   StatusWord,
   TextField,
 } from '../../components/ui';
@@ -31,11 +33,19 @@ type Sale = S['Sale'];
 function StatusOf({ status }: { status: S['SaleStatus'] }) {
   if (status === 'completed') return <StatusWord status="completed" />;
   if (status === 'cancelled') return <StatusWord status="cancelled" />;
-  return <span className="font-semibold">{saleStatusLabels[status]}</span>;
+  return (
+    <Box component="span" sx={{ fontWeight: 600 }}>
+      {saleStatusLabels[status]}
+    </Box>
+  );
 }
 
 /** Sales at the branch the API lets this user see. Cancel is offered on completed sales; the server decides who may and answers 403 or 404 otherwise. */
+import { useBranchFilter } from '../workingBranch/BranchFilter';
+import { BranchScope } from '../workingBranch/BranchScope';
+
 export function SalesPage() {
+  const { branch } = useBranchFilter();
   const canCancel = useCurrentMe().permissions.includes('sales.cancel');
   const qc = useQueryClient();
   const keys = useIdempotencyKey();
@@ -48,11 +58,12 @@ export function SalesPage() {
   const [notice, setNotice] = useState<{ text: string; at: number } | null>(null);
   const list = useQuery({
     placeholderData: (prev) => prev,
-    queryKey: ['sales', 'list', filters, page],
+    queryKey: ['sales', 'list', filters, page, branch],
     queryFn: () =>
       api('get', '/api/v1/sales/', {
         query: {
           page,
+          branch,
           status: (filters.status || undefined) as S['SaleStatus'] | undefined,
           payment_method: (filters.payment || undefined) as S['PaymentMethodCode'] | undefined,
         },
@@ -90,50 +101,61 @@ export function SalesPage() {
     {
       id: 'ref',
       header: 'Reference',
-      cell: (s) => <span className="font-semibold">{s.reference}</span>,
+      cell: (s) => (
+        <Box component="span" sx={{ fontWeight: 600 }}>
+          {s.reference}
+        </Box>
+      ),
     },
     {
       id: 'details',
       header: 'Details',
       cell: (s) => (
-        <span className="text-sm text-muted">
+        <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
           {s.location.name} · {formatAccra(s.sold_at)} · {s.staff} ·{' '}
           {paymentLabel(s.payment_method)}
-        </span>
+        </Box>
       ),
     },
     {
       id: 'items',
       header: 'Items',
       cell: (s) => (
-        <span className="flex flex-col">
+        <Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
           {s.lines.map((l) => (
             <span key={l.id}>
               {l.quantity} × {l.item_name} at {ghs(l.unit_price)}
             </span>
           ))}
-        </span>
+        </Box>
       ),
     },
     {
       id: 'total',
       header: 'Total',
       align: 'right',
-      cell: (s) => <span className="font-semibold">Total {ghs(s.total)}</span>,
+      cell: (s) => (
+        <Box component="span" sx={{ fontWeight: 600 }}>
+          Total {ghs(s.total)}
+        </Box>
+      ),
     },
     {
       id: 'status',
       header: 'Status',
       cell: (s) => (
-        <span className="flex flex-col items-start gap-1">
+        <Box
+          component="span"
+          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.5 }}
+        >
           <StatusOf status={s.status} />
           {s.cancellation && (
-            <span className="text-sm">
+            <Box component="span" sx={{ fontSize: '0.875rem' }}>
               Cancelled by {s.cancellation.cancelled_by} on{' '}
               {formatAccra(s.cancellation.cancelled_at)}. Reason: {s.cancellation.reason}
-            </span>
+            </Box>
           )}
-        </span>
+        </Box>
       ),
     },
     ...(canCancel
@@ -164,7 +186,7 @@ export function SalesPage() {
       : []),
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader
         title="Sales"
         actions={
@@ -173,35 +195,40 @@ export function SalesPage() {
           </LinkButton>
         }
       />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <SelectField
-          label="Status"
-          value={filters.status}
-          onChange={(e) => {
-            setFilters({ ...filters, status: e.target.value });
-            setPage(1);
-          }}
-        >
-          <option value="">All</option>
-          <option value="completed">{saleStatusLabels.completed}</option>
-          <option value="cancelled">{saleStatusLabels.cancelled}</option>
-        </SelectField>
-        <SelectField
-          label="Payment method"
-          value={filters.payment}
-          onChange={(e) => {
-            setFilters({ ...filters, payment: e.target.value });
-            setPage(1);
-          }}
-        >
-          <option value="">All</option>
-          {paymentCodes.map((c) => (
-            <option key={c} value={c}>
-              {paymentLabel(c)}
-            </option>
-          ))}
-        </SelectField>
-      </div>
+      <Toolbar>
+        <BranchScope />
+        <Box sx={{ width: { xs: '100%', sm: 192 } }}>
+          <SelectField
+            label="Status"
+            value={filters.status}
+            onChange={(e) => {
+              setFilters({ ...filters, status: e.target.value });
+              setPage(1);
+            }}
+          >
+            <option value="">All</option>
+            <option value="completed">{saleStatusLabels.completed}</option>
+            <option value="cancelled">{saleStatusLabels.cancelled}</option>
+          </SelectField>
+        </Box>
+        <Box sx={{ width: { xs: '100%', sm: 192 } }}>
+          <SelectField
+            label="Payment method"
+            value={filters.payment}
+            onChange={(e) => {
+              setFilters({ ...filters, payment: e.target.value });
+              setPage(1);
+            }}
+          >
+            <option value="">All</option>
+            {paymentCodes.map((c) => (
+              <option key={c} value={c}>
+                {paymentLabel(c)}
+              </option>
+            ))}
+          </SelectField>
+        </Box>
+      </Toolbar>
       {notice && <SuccessNotice key={notice.at}>{notice.text}</SuccessNotice>}
       {!cancelling && <ApiProblem error={cancel.error} at={cancel.submittedAt} />}
       {cancelled && (
@@ -261,6 +288,6 @@ export function SalesPage() {
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 }

@@ -27,62 +27,78 @@ export async function go(page: Page, path: string) {
   }, path);
 }
 
-/** Phones have no sidebar or menu: navigation is the command palette. */
-export const isPhone = (page: Page) =>
-  page.getByRole('button', { name: /Search or jump to/ }).isVisible();
+/** Below the Mantis `lg` breakpoint (1266 px) the drawer is temporary and opens from the hamburger. */
+export const isPhone = async (page: Page) => (page.viewportSize()?.width ?? 1280) < 1266;
 
-/** Opens the place a user navigates from: the palette sheet on phones (grouped like the sidebar), the sidebar on desktop. */
+/** Opens the place a user navigates from: the temporary drawer below lg, the permanent drawer above. */
 export async function openNav(page: Page) {
-  if (!(await isPhone(page))) return page.getByRole('navigation', { name: 'Main' });
-  const palette = page.getByRole('dialog', { name: 'Search or jump to' });
-  await expect(async () => {
-    if (!(await palette.isVisible())) {
-      await page.getByRole('button', { name: /Search or jump to/ }).click();
-    }
-    await expect(palette).toBeVisible({ timeout: 1000 });
-  }).toPass();
-  return palette;
+  if (await isPhone(page)) {
+    const link = page.getByRole('link', { name: 'Payless4Laptops home' });
+    if (!(await link.isVisible())) await page.getByRole('button', { name: 'open drawer' }).click();
+    await expect(link).toBeVisible();
+    return page.getByRole('presentation').filter({ has: link }).first();
+  }
+  const nav = page.getByRole('navigation', { name: 'Main' });
+  // Mini drawer (lg to xl, or collapsed by the user): expand it so the labels show.
+  if (!(await nav.getByText('Items', { exact: true }).first().isVisible())) {
+    await page.getByRole('button', { name: 'open drawer' }).click();
+  }
+  return nav;
 }
 
 /** Opens a destination by its label from whichever navigation this screen has. */
 export async function goTo(page: Page, label: string) {
   const nav = await openNav(page);
-  const target = (await isPhone(page))
-    ? nav.getByRole('button', { name: new RegExp(`^${label}`) })
-    : nav.getByRole('link', { name: label });
-  await target.click();
+  await nav.getByRole('link', { name: label, exact: true }).click();
 }
 
-/** Phones: opens the palette and unfolds its Profile section. Returns the palette. */
+/** Opens the profile menu in the header (on phones through the "more" menu). Returns the header. */
 export async function openProfile(page: Page) {
-  const palette = await openNav(page);
-  const region = palette.getByRole('region', { name: 'Working branch' });
-  if (!(await region.isVisible())) await palette.getByText('Profile', { exact: true }).click();
-  await expect(region).toBeVisible();
-  return palette;
+  const header = page.getByRole('banner').first();
+  const profile = header.getByRole('button', { name: 'Open profile menu' });
+  const more = header.getByRole('button', { name: 'open more menu' });
+  await expect(async () => {
+    if (!(await profile.isVisible())) await more.click();
+    await expect(profile).toBeVisible({ timeout: 1500 });
+  }).toPass();
+  await profile.click();
+  await expect(header.getByRole('button', { name: 'Log out' })).toBeVisible();
+  return header;
 }
 
-/** The working branch name: in the top bar on desktop, in the palette's Profile section on phones. */
+/** The working branch is shown (and switched) in one place: the profile menu. */
 export async function expectBranch(page: Page, text: string | RegExp) {
+  const header = page.getByRole('banner').first();
+  // The menu may close while /me refreshes after a switch: reopen it until the text shows.
+  await expect(async () => {
+    if (!(await header.getByRole('button', { name: 'Log out' }).isVisible()))
+      await openProfile(page);
+    await expect(header.getByText(text, { exact: typeof text === 'string' }).first()).toBeVisible({
+      timeout: 1500,
+    });
+  }).toPass();
+  // Close it again (on phones the "more" menu may already have closed with it).
+  const profile = header.getByRole('button', { name: 'Open profile menu' });
   if (await isPhone(page)) {
-    const palette = await openProfile(page);
-    await expect(palette.getByRole('region', { name: 'Working branch' })).toContainText(text);
-    await page.keyboard.press('Escape');
-  } else {
-    await expect(
-      page.getByRole('banner').getByText(text, { exact: typeof text === 'string' }),
-    ).toBeVisible();
-  }
+    // The menus are click-away popovers: tap an empty spot low on the screen to close them.
+    await page.mouse.click(5, (page.viewportSize()?.height ?? 740) - 5);
+    await expect(header.getByRole('button', { name: 'Log out' })).toBeHidden();
+  } else if (await profile.isVisible()) await profile.click();
 }
 
-/** Starts the branch switch: the Switch branch button on desktop, Profile > Switch working branch on phones. */
+/** Starts the branch switch from the profile menu. */
 export async function startSwitch(page: Page) {
-  if (await isPhone(page)) {
-    const palette = await openProfile(page);
-    await palette.getByRole('button', { name: 'Switch working branch' }).click();
-  } else {
-    await page.getByRole('button', { name: 'Switch branch' }).click();
-  }
+  const header = page.getByRole('banner').first();
+  // The menu animates open: retry the whole open-and-click until the picker page shows.
+  await expect(async () => {
+    const item = header.getByRole('button', { name: 'Switch working branch' });
+    if (!(await item.isVisible())) await openProfile(page);
+    await page.waitForTimeout(300);
+    await item.click({ timeout: 2000 });
+    await expect(page.getByRole('heading', { level: 1, name: 'Switch branch' })).toBeVisible({
+      timeout: 2000,
+    });
+  }).toPass();
 }
 
 /** Phones collapse two or more page actions into one Actions button; desktop shows them. */

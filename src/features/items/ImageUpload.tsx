@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
+import Box from '@mui/material/Box';
 import { useMutation } from '@tanstack/react-query';
-import { ImageUp } from 'lucide-react';
+import { ImageUp } from 'components/icons';
 import { api } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
@@ -73,56 +74,66 @@ export function ImageUpload({
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {item.image_url && !broken ? (
-        <img
+        <Box
+          component="img"
           src={item.image_url}
           alt={item.name}
           onError={() => setBroken(true)}
-          className="max-h-64 max-w-full self-start rounded-lg border border-line"
+          sx={{
+            alignSelf: 'flex-start',
+            borderRadius: 1,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
         />
       ) : (
-        <p className="m-0 text-muted">
+        <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
           {item.image_url ? 'The picture could not be loaded.' : 'No picture yet.'}
-        </p>
+        </Box>
       )}
       {saved && <SuccessNotice>Picture saved.</SuccessNotice>}
       {canManage && (
-        <div className="flex flex-col gap-2">
-          <label htmlFor={inputId} className="font-semibold">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Box component="label" htmlFor={inputId} sx={{ fontWeight: 600 }}>
             {item.image_url ? 'Replace the picture' : 'Add a picture'}
-          </label>
-          <p className="m-0 text-sm text-muted">JPEG, PNG or WebP, up to 5 MB.</p>
-          <input
+          </Box>
+          <Box component="p" sx={{ m: 0, fontSize: '0.875rem', color: 'text.secondary' }}>
+            JPEG, PNG or WebP, up to 5 MB.
+          </Box>
+          <Box
+            component="input"
             key={round}
             id={inputId}
             type="file"
             accept={types.join(',')}
             aria-invalid={problem ? true : undefined}
             aria-describedby={problem ? `${inputId}-problem` : undefined}
-            className="min-h-target text-base"
+            sx={{ minHeight: 44, fontSize: '1rem' }}
             onChange={(e) => choose(e.target.files?.[0])}
           />
           {problem && (
-            <p
+            <Box
+              component="p"
               id={`${inputId}-problem`}
               role="alert"
-              className="m-0 text-sm font-semibold text-bad"
+              sx={{ m: 0, fontSize: '0.875rem', fontWeight: 600, color: 'error.main' }}
             >
               {problem}
-            </p>
+            </Box>
           )}
           <ApiProblem error={upload.error} at={upload.submittedAt} />
           <Button
             icon={ImageUp}
             disabled={!file || upload.isPending}
             onClick={() => file && upload.mutate(file)}
-            className="self-start"
+            sx={{ alignSelf: 'flex-start' }}
           >
             {upload.isPending ? 'Uploading…' : 'Upload picture'}
           </Button>
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

@@ -1,12 +1,13 @@
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Rows3 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Rows3 } from '../icons';
+import { Field } from '../Field';
 import { Button } from './Button';
 import { Drawer } from './Drawer';
-import { cx } from './cx';
-import { FormField } from './FormField';
-import { Input } from './Input';
-import { Select } from './Select';
+import { SelectField } from './SelectField';
 import { useCompact } from './useCompact';
 
 export type PaginationProps = {
@@ -51,22 +52,28 @@ export function Pagination({
     setGoTo('');
   };
   const sizeSelect = pageSize !== undefined && onPageSizeChange && (
-    <FormField label="Rows per page">
-      {(c) => (
-        <Select {...c} value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))}>
-          {pageSizeOptions.map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </Select>
-      )}
-    </FormField>
+    <SelectField
+      label="Rows per page"
+      value={pageSize}
+      onChange={(e) => onPageSizeChange(Number(e.target.value))}
+    >
+      {pageSizeOptions.map((n) => (
+        <option key={n} value={n}>
+          {n}
+        </option>
+      ))}
+    </SelectField>
   );
+
   // Phones: previous, a page indicator and next; rows per page sits in a drawer.
   if (compact) {
     return (
-      <nav aria-label="Pagination" className="flex items-center justify-between gap-2">
+      <Stack
+        component="nav"
+        aria-label="Pagination"
+        direction="row"
+        sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}
+      >
         <Button
           variant="secondary"
           icon={ChevronLeft}
@@ -75,9 +82,9 @@ export function Pagination({
         >
           Previous
         </Button>
-        <span aria-current="page" className="text-sm font-semibold">
+        <Typography aria-current="page" variant="subtitle1" component="span" noWrap>
           Page {page} of {pageCount}
-        </span>
+        </Typography>
         <Button
           variant="secondary"
           icon={ChevronRight}
@@ -96,31 +103,22 @@ export function Pagination({
             </Drawer>
           </>
         )}
-      </nav>
+      </Stack>
     );
   }
   return (
-    <nav aria-label="Pagination" className="flex flex-wrap items-end justify-between gap-3">
-      {pageSize !== undefined && onPageSizeChange && (
-        <div className="w-36">
-          <FormField label="Rows per page">
-            {(c) => (
-              <Select
-                {...c}
-                value={pageSize}
-                onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              >
-                {pageSizeOptions.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </FormField>
-        </div>
-      )}
-      <ul className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
+    <Stack
+      component="nav"
+      aria-label="Pagination"
+      direction="row"
+      sx={{ flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 1.5 }}
+    >
+      {sizeSelect && <Box sx={{ width: 144 }}>{sizeSelect}</Box>}
+      <Stack
+        component="ul"
+        direction="row"
+        sx={{ m: 0, p: 0, listStyle: 'none', flexWrap: 'wrap', alignItems: 'center', gap: 0.5 }}
+      >
         <li>
           <Button
             size="sm"
@@ -145,25 +143,25 @@ export function Pagination({
         </li>
         {pageWindow(page, pageCount).map((n, i) =>
           n === null ? (
-            <li key={`gap-${i}`} aria-hidden="true" className="px-1 text-muted">
+            <Box
+              component="li"
+              key={`gap-${i}`}
+              aria-hidden="true"
+              sx={{ px: 0.5, color: 'text.secondary' }}
+            >
               …
-            </li>
+            </Box>
           ) : (
             <li key={n}>
-              <button
-                type="button"
+              <Button
+                size="sm"
+                variant={n === page ? 'primary' : 'secondary'}
                 aria-label={`Page ${n}`}
                 aria-current={n === page ? 'page' : undefined}
                 onClick={() => go(n)}
-                className={cx(
-                  'min-h-target min-w-target rounded-md border px-2 font-semibold',
-                  n === page
-                    ? 'border-transparent bg-primary-solid text-on-primary'
-                    : 'border-line bg-canvas text-ink hover:bg-surface',
-                )}
               >
                 {n}
-              </button>
+              </Button>
             </li>
           ),
         )}
@@ -189,27 +187,28 @@ export function Pagination({
             Last
           </Button>
         </li>
-      </ul>
-      <form onSubmit={submit} className="flex items-end gap-2">
-        <div className="w-24">
-          <FormField label="Go to page">
-            {(c) => (
-              <Input
-                {...c}
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={pageCount}
-                value={goTo}
-                onChange={(e) => setGoTo(e.target.value)}
-              />
-            )}
-          </FormField>
-        </div>
+      </Stack>
+      <Stack
+        component="form"
+        direction="row"
+        onSubmit={submit}
+        sx={{ alignItems: 'flex-end', gap: 1 }}
+      >
+        <Box sx={{ width: 96 }}>
+          <Field
+            label="Go to page"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={pageCount}
+            value={goTo}
+            onChange={(e) => setGoTo(e.target.value)}
+          />
+        </Box>
         <Button type="submit" variant="secondary">
           Go
         </Button>
-      </form>
-    </nav>
+      </Stack>
+    </Stack>
   );
 }

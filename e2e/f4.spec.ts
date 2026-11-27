@@ -141,7 +141,13 @@ test('item list: cards, cost from the API, labelled actions, no sideways scroll'
   await openActions(page);
   await tall(page.getByRole('link', { name: 'Add an item' }));
   await page.keyboard.press('Escape');
-  await tall(page.getByRole('button', { name: 'Search', exact: true }));
+  // Desktop has a Search button; phones have the Filters button beside the search field (Enter searches).
+  const search = page.getByRole('button', { name: 'Search', exact: true });
+  await tall(
+    (await search.isVisible())
+      ? search
+      : page.getByRole('button', { name: 'Filters', exact: true }),
+  );
   await tall(page.getByRole('link', { name: 'HP 250 G9' }));
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });

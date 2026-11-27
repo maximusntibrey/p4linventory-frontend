@@ -9,8 +9,9 @@ import { renderApp } from '../../test/renderApp';
 
 const h1 = () => screen.findByRole('heading', { level: 1, name: 'Stock' });
 /** First table row of a location. */
-const section = (name: string) => screen.getAllByText(name, { selector: 'td' })[0].closest('tr')!;
-const at = (name: string) => screen.findAllByText(name, { selector: 'td' });
+const section = (name: string) =>
+  screen.getAllByText(name, { selector: 'td > span:last-child' })[0].closest('tr')!;
+const at = (name: string) => screen.findAllByText(name, { selector: 'td > span:last-child' });
 
 describe('stock screen', () => {
   it('groups the balances by location with the four quantities and a stock word + icon; axe clean', async () => {
@@ -23,7 +24,7 @@ describe('stock screen', () => {
     expect(wh.getByText('In stock')).toBeTruthy();
     const cells = within(section('Central Warehouse'))
       .getAllByRole('cell')
-      .map((c) => c.textContent);
+      .map((c) => c.lastElementChild?.textContent);
     expect(cells.slice(2, 6)).toEqual(['12', '10', '2', '0']);
     // low_stock is the server's call: Accra is flagged, the warehouse (also with a level) is not
     const accra = within(section('Accra Branch'));
@@ -77,9 +78,13 @@ describe('stock screen', () => {
     type('Location', '3');
     click('Search');
     await waitFor(() =>
-      expect(screen.queryAllByText('Accra Branch', { selector: 'td' })).toHaveLength(0),
+      expect(
+        screen.queryAllByText('Accra Branch', { selector: 'td > span:last-child' }),
+      ).toHaveLength(0),
     );
-    expect(screen.getAllByText('Kumasi Branch', { selector: 'td' }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText('Kumasi Branch', { selector: 'td > span:last-child' }).length,
+    ).toBeGreaterThan(0);
     expect(seen.some((s) => s.includes('location_id=3'))).toBe(true);
 
     type('Search by item name or SKU', 'no-such-item');
@@ -92,7 +97,9 @@ describe('stock screen', () => {
     renderApp('/stock', { as: 'front_staff' });
     await h1();
     expect(await at('Accra Branch')).toBeTruthy();
-    expect(screen.queryAllByText('Central Warehouse', { selector: 'td' })).toHaveLength(0);
+    expect(
+      screen.queryAllByText('Central Warehouse', { selector: 'td > span:last-child' }),
+    ).toHaveLength(0);
     expect(screen.queryByLabelText('Location')).toBeNull();
   });
 

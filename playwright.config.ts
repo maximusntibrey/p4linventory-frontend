@@ -46,7 +46,7 @@ export default defineConfig({
     },
     {
       name: 'mock-phone-360',
-      testMatch: /mock-(audit|compact|routes).*\.spec\.ts/,
+      testMatch: /mock-(audit|compact|routes|branch|links|landing).*\.spec\.ts/,
       use: { browserName: 'chromium', viewport: { width: 360, height: 740 }, baseURL: MOCK },
     },
   ],

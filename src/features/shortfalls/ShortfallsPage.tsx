@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClipboardCheck } from 'lucide-react';
+import { ClipboardCheck } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
@@ -17,6 +18,7 @@ import {
   EmptyState,
   PageHeader,
   SelectField,
+  Toolbar,
   StatusWord,
   TextField,
 } from '../../components/ui';
@@ -108,13 +110,15 @@ export function ShortfallsPage() {
       id: 'item',
       header: 'Item',
       cell: (s) => (
-        <span className="flex flex-col">
-          <span className="font-semibold">{s.item_name}</span>
-          <span className="text-sm text-muted">
+        <Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Box component="span" sx={{ fontWeight: 600 }}>
+            {s.item_name}
+          </Box>
+          <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
             {s.sku} · {s.dispatch_reference} · {s.origin.name} to {s.destination.name}
             {s.received_at && ` · received ${formatAccra(s.received_at)}`}
-          </span>
-        </span>
+          </Box>
+        </Box>
       ),
     },
     {
@@ -123,7 +127,10 @@ export function ShortfallsPage() {
       cell: (s) => (
         <span>
           Sent {s.qty_sent} · Accepted {s.qty_accepted} · Missing {s.shortfall} · Resolved{' '}
-          {s.resolved_quantity} · <span className="font-semibold">Remaining {s.remaining}</span>
+          {s.resolved_quantity} ·{' '}
+          <Box component="span" sx={{ fontWeight: 600 }}>
+            Remaining {s.remaining}
+          </Box>
         </span>
       ),
     },
@@ -134,7 +141,7 @@ export function ShortfallsPage() {
         s.resolutions.length === 0 ? (
           ''
         ) : (
-          <ul className="m-0 list-none p-0 text-sm">
+          <Box component="ul" sx={{ m: 0, listStyle: 'none', p: 0, fontSize: '0.875rem' }}>
             {s.resolutions.map((r) => (
               <li key={r.reference}>
                 {r.reference}: {resolutionLabels[r.action]} {r.quantity} by {r.resolved_by} on{' '}
@@ -147,7 +154,7 @@ export function ShortfallsPage() {
                 )}
               </li>
             ))}
-          </ul>
+          </Box>
         ),
     },
     {
@@ -177,20 +184,24 @@ export function ShortfallsPage() {
     },
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Shortfalls" />
-      <SelectField
-        label="Status"
-        value={status}
-        onChange={(e) => {
-          setStatus(e.target.value as typeof status);
-          setPage(1);
-        }}
-      >
-        <option value="open">Open</option>
-        <option value="resolved">Resolved</option>
-        <option value="">All</option>
-      </SelectField>
+      <Toolbar>
+        <Box sx={{ width: { xs: '100%', sm: 192 } }}>
+          <SelectField
+            label="Status"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as typeof status);
+              setPage(1);
+            }}
+          >
+            <option value="open">Open</option>
+            <option value="resolved">Resolved</option>
+            <option value="">All</option>
+          </SelectField>
+        </Box>
+      </Toolbar>
       {notice && <SuccessNotice key={notice.at}>{notice.text}</SuccessNotice>}
       {opened === null && <ApiProblem error={resolve.error} at={resolve.submittedAt} />}
       {current && (
@@ -266,6 +277,6 @@ export function ShortfallsPage() {
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 }

@@ -55,7 +55,7 @@ Tick a box only when the step is done, tested, reviewed and pushed to git.
 - Timestamps are timezone-aware and shown in Africa/Accra time (storing in UTC is proposed, see `SKILLS.md`). Currency is GHS.
 - Frontend: 360 px width with no sideways scroll, tap targets at least 44 px, every icon has a text label, status never shown by colour alone, keyboard navigation works.
 - Do not mark a step done on partial work. If blocked, leave it unticked and note the blocker under "Open questions".
-- Design rule (frontend): All UI must use the design-system tokens and components. No ad-hoc styles. Any new component is added to the library first.
+- Design rule (frontend): The UI is Mantis-based MUI. Use the shared theme and the shared components. No ad-hoc styles, no raw colors, and no new UI libraries. New screens are composed from existing Mantis patterns; new components are added to the shared library first.
 
 ### 0.4 Honesty and safety rules
 
@@ -687,7 +687,7 @@ Branches: `sprint/9-phase2-complete` in both repos. Tag at end: `v2.4.0` on `mai
 
 ## DESIGN SYSTEM (frontend, cross-sprint)
 
-Rule: all UI uses the design-system tokens and components; no ad-hoc styles; new components go to the library first (see [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) and `AGENTS.md`).
+Superseded by Part UI below (Mantis-based MUI). The DS.* history is kept as a record; see [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) and `AGENTS.md`.
 
 - [x] DS.1 Design tokens: `src/styles/tokens.css`, AA contrast verified numerically in `src/styles/tokens.test.ts`
 - [x] DS.2 Component library in `src/components/ui/` (component, vitest-axe and keyboard tests); placeholder logo (real logo file not available)
@@ -873,3 +873,139 @@ Add a line here whenever a rule is missing, unclear or contradicted (rule 0.2). 
 | Version | Environment | Backup verified | Migrations run | Smoke tests passed | Rollback ready | Approved by owner |
 |---|---|---|---|---|---|---|
 | (first entry goes here) | | | | | | |
+
+
+---
+
+## Part UI: Mantis-based MUI migration (owner decision, final)
+
+Rule: the app must look and behave like the Mantis Free dashboard (`reference/mantis/vite/`, MIT; gitignored, local only) with only brand colours, logo and our own content changed. Template-first: copy Mantis layout, theme and components as they are, then move our features into them. Dark mode is out of scope. Run plan: run 1 foundation, theme, shell, auth pages, screenshots; later runs migrate screens; the last run removes Tailwind, `components/ui`, `lucide-react` and `styles/tokens.css` so one UI system remains.
+
+### UI baseline (before run 1)
+
+- `npm run check` green. 44 test files, 629 tests. Bundle: `index-*.js` 513.80 kB (153.77 kB gzip), `index-*.css` 26.34 kB (6.32 kB gzip), `DesignSystem-*.js` 12.97 kB.
+
+### UI result (after run 1 and the migration batches)
+
+- `npm run check` green: 37 test files, 560 tests (the old custom-library tests were replaced by `src/components/ui/ui.test.tsx` and the screen tests; shell, command palette, toast and modal tests went with the components they covered). Bundle: before the migration one `index-*.js` of 514 kB (154 kB gzip) and 26 kB CSS. After the lazy-loading step the first load is `index` 381 kB (124 gzip) + `mui` 215 kB (62 gzip) + `app-vendor` 82 kB (26 gzip) + `icons` 81 kB (23 gzip), about 760 kB (235 kB gzip) in total with the sign-in and password screens kept eager; every page is its own chunk (2 to 13 kB) and `charts` (482 kB, 148 gzip) loads after the cards paint. Before the lazy step the single main file was 1,002 kB (307 kB gzip).
+
+- `npm run e2e` green: 100 passed, 3 skipped (project-specific skips). The profile-menu branch specs were occasionally flaky under load; the helpers now reopen the menu while polling.
+
+### Frontend inventory
+
+| Topic | Today |
+|---|---|
+| Build tool | Vite 8.3.8 (Rolldown), `@vitejs/plugin-react`; `vitest` (jsdom, MSW) for tests; Playwright for e2e |
+| Router | `react-router-dom` 7 (`BrowserRouter` + `Routes`), guards in `src/auth/guards.tsx` (`RequireAuth`, `RequirePermission`) |
+| Data layer | TanStack Query 5; typed `api()` client from the OpenAPI contract (`src/api/client.ts`, generated `schema.d.ts`); MSW mocks (`src/mocks`) used in dev and tests |
+| Language | TypeScript strict for all our code; Mantis template files are vendored JS/JSX (`allowJs`) |
+| Env vars | `VITE_API_URL`, `VITE_API_MODE` (`mock` or real), `VITE_BACKEND_URL` (dev proxy target); read in `src/config/index.ts` and `vite.config.ts` |
+| Forms | react-hook-form (+ zod) |
+| UI libs | Mantis theme on MUI 9 (`@mui/material`, emotion, `@ant-design/icons`, SimpleBar). Legacy until their run: Tailwind 4 utilities, `src/components/ui/*`, `lucide-react` |
+| Deploy | Railway: `railway.json`, `Dockerfile` (build, then Caddy), `Caddyfile`; unchanged by this work |
+
+### Route table (all routes are on the Mantis/MUI shared library; verified by unit tests, axe, `e2e/mock-routes.spec.ts` and `e2e/mock-links.spec.ts`)
+
+| Route | Screen | Guard | UI status |
+|---|---|---|---|
+| `/login` | Login | public | run 1: Mantis auth layout, MUI form |
+| `/password-change` | ChangePassword (forced) | pending-change session | run 1: Mantis auth layout, MUI form |
+| `/` | Home | signed in | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/account/password` | ChangePassword | signed in | run 1: MainCard + MUI form |
+| `/warehouse` | ComingSoon | `stock.view` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/audit-logs` (`/activity` redirects) | AuditLogsPage | `activity.view` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/shortfalls` | ShortfallsPage | `shortfalls.resolve` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/sell` | SellPage | `sales.record` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/sell/sales` | SalesPage | `sales.record` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/items` | ItemsPage | `items.view` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/items/new` | ItemNew | `items.manage` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/items/:id` | ItemDetail | `items.view` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/items/import` | ImportPage | `items.import` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/find` | FindPage | `find.use` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/goods-receipts` | GoodsReceiptPage | `goods_receipts.manage` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/dispatches` | DispatchesPage | `dispatches.view` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/dispatches/new` | DispatchNew | `dispatches.create` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/receive` | WaitingPage | `dispatches.waiting` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/receive/:id` | ReceiveDispatch | `dispatches.waiting` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/stock` | StockPage | `stock.view` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/branches` | BranchesPage | `branches.view` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/users` | UsersPage | `users.view` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/users/new` | UserNew | `users.manage` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/users/:id` | UserDetail | `users.view` | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+| `/design-system` | DesignSystem showcase | `design_system.view` | removed (the theme and DESIGN-SYSTEM.md replace it; the address is a 404) |
+| `*` | NotFound | signed in | migrated (shared MUI library: PageHeader, DataTable, FilterForm, Card, fields) |
+
+Shell pieces done in run 1: drawer, header, profile menu, branch chip, notification placeholder. The working-branch picker body is not migrated.
+
+### UI steps
+
+- [x] UI.1 Baseline, inventory and the new design rule (this section, `AGENTS.md`)
+- [x] UI.2 Reference screenshots of the public Mantis Free demo in `docs/ui-reference/` (script `scripts/ui-reference.mjs`)
+- [x] UI.3 Foundation: Mantis dependencies (exact versions), theme, layout, components, contexts, hooks, utils vendored into `src/`; `tsconfig` `baseUrl` and Vite `resolve.tsconfigPaths`; entry with `ThemeCustomization` and `ConfigProvider`; our logic unchanged
+- [x] UI.4 Navigation: drawer menu built from `/me` (`src/menu-items/index.ts`), Mantis drawer behaviours kept, header with search, branch chip, notification placeholder and our user menu
+- [x] UI.5 Brand theme (`src/themes/**` only) and numeric AA contrast tests (`src/themes/palette.test.ts`)
+- [x] UI.6 Logo in drawer and auth layout; favicon
+- [x] UI.7 `design:check` updated for the theme and vendored files; Tailwind coexists without preflight (transition only)
+- [x] UI.8 `docs/DESIGN-SYSTEM.md` rewrite and `NOTICE`
+- [x] UI.9 Screenshots of our app in `docs/ui-verification/` (login, dashboard, drawer open, every route at 360 and 390 px) compared with `docs/ui-reference/`; script `scripts/ui-verification.mjs` reports sideways overflow and tap targets under 44 px per route
+- [x] UI.10 Every screen on the shared MUI library (`src/components/ui/*` rewritten on MUI with the same props, Tailwind `className` strings converted to `sx`); Tailwind, `lucide-react`, `styles/tokens.css`, the old shell components and the `/design-system` showcase removed; `scripts/design-token-baseline.json` is empty
+
+### Open questions (UI)
+
+- Fonts DECIDED by the owner: Bebas Neue (headings, brand, big numbers) and Inter (body, forms, tables, ids, prices), self-hosted via `@fontsource`, set only in `src/themes/typography.js` (Mantis sizes, weights and spacing otherwise kept). `@fontsource/public-sans` is not used.
+- Mantis icon buttons (drawer toggle, bell, profile, more) are icon-only with an `aria-label` and a tooltip, no visible text. The workspace rule says every icon needs a visible text label. Followed Mantis here; confirm the exception or ask for visible labels.
+- Tap targets are 44 px (theme `TouchTargets`), a deliberate deviation from Mantis (about 40 px) to keep the workspace rule.
+- Bundle: main JS is larger than before (MUI, icons, charts). The charts load only with Home.
+- Native checkboxes and radios in a few forms (user roles, item attributes) are still native inputs with the brand accent colour, not MUI controls.
+
+### Dashboard backend needs (frontend is built; the backend is not changed here)
+
+Cards that render "Not available yet" and the data each one waits for. Live cards and sources are in `docs/DESIGN-SYSTEM.md` (Dashboard card catalogue).
+
+| Card | Backend data needed |
+|---|---|
+| Stock value at cost (SA, WA) | A stock value total (cost x quantity), scoped to what the role may see cost for; today only per-row `GET /costed-stock/` exists |
+| Items without a selling price (SA, WA) | A count (and list link) of active items with no selling price |
+| Top selling items | Sales totals per item for a period (from the sales API) |
+| Cancelled sales today | Cancelled sales for the day with reasons, or a `status=cancelled` filter summary |
+| Today's sales and Sales last 7 days (live, limited) | A daily sales summary (date, count, total). Today the cards read one page of 100 sales; with more sales in 7 days they show "Not available yet" instead of partial numbers |
+| Units in stock, Stock by location, donut (Branch Admin) | `stock_per_location` is returned for SA and WA only; Branch Admin gets no figure |
+| Trend chips (all stat cards) | Prior-period figures; no chips are shown without them |
+| Front Staff dashboard | Front Staff has no Home tab and no `dashboard.view` (403), so Quick actions, Waiting receipts and Low stock list are not shown to them; a Front Staff view needs `dashboard.view` or a scoped summary |
+
+- [x] UI.11 Role-aware dashboard rebuilt from Mantis patterns (`src/features/dashboard/`), card catalogue in `docs/DESIGN-SYSTEM.md`
+- [x] UI.12 Branch placement: no branch chip, filter or switch button in the header; working branch shown and switched in the profile menu only; Super Admin filter inside Home, Users and Sales (`BranchScope`); placement map in `docs/DESIGN-SYSTEM.md`; `e2e/mock-branch-placement.spec.ts` per role at desktop and 360 px
+- [x] UI.13 Link audit: `e2e/mock-links.spec.ts` (all four roles, desktop and 360 px) follows every internal link found on every reachable screen, visits every route of `src/routes.tsx` and asserts a real page, no blank page, no console error, 403 for a role without the permission, `/activity` redirect and 404
+
+### Broken links audit (UI.13)
+
+Checked: drawer and menu items from `/me` (all roles), header search, profile menu items, dashboard card links and Quick actions, table row links, "View all" links, auth links (login, forced password change, change password), redirects (`/activity` to `/audit-logs`), 404 and 403 pages, and every hard-coded `to`, `href` and `navigate()` target in `src` (all point to routes that exist).
+
+| Finding | Fix |
+|---|---|
+| No dead links, wrong paths or missing pages were found in the app; every menu, card, quick action and row link lands on a real route for all four roles | none needed |
+| Mantis breadcrumbs duplicated every page title (three headings named Home) | breadcrumbs switched off per menu item until a screen is built on them |
+| Item detail rendered a status chip (div) inside a paragraph (invalid HTML, console error) | status chip renders as a span |
+| The old `/design-system` showcase route | removed; it is an ordinary 404 now |
+| A role without a permission reaching a gated route | confirmed 403 for every gated route and role by the spec |
+| Front Staff has no Home dashboard (`Home` is not in their menu, the API gives 403) | by design; Home redirects to their first menu entry |
+
+### Mobile audit (UI.9, 360 and 390 px, 768 for layout)
+
+Defects found by looking at the screenshots and by `scripts/ui-verification.mjs`, and fixed:
+
+- Inputs, selects, buttons and icon buttons were about 40 px: theme override `TouchTargets` sets 44 px (buttons, icon buttons, list buttons, menu items, tabs, checkboxes, radios, switches, inputs).
+- Dashboard card links were 32 px tall and the profile button 36 px: now 44 px.
+- Tables: on phones every row is a card with each column name drawn in the cell (a hidden-from-assistive-tech element, so cell names stay clean); right-aligned cells no longer reverse the label order.
+- Toolbars, page actions, pagination "rows per page" and the Items filters use bottom-sheet drawers on phones ("Filters", "Actions", "Rows").
+- Header fits 360 px: hamburger, bell and the "more" menu (search and profile inside); no branch chip.
+- Dashboard: stat cards 2 per row, charts and lists full width, titles in the display face.
+- No sideways page scroll on any route at 360 or 390 px (script output: "no issues").
+
+### design_system.view
+
+The `design_system.view` permission (contract 0.7.0) is no longer used by the frontend: the `/design-system` showcase and its route gate are removed, and the mocks no longer grant it. The backend can drop it from the contract when convenient.
+
+- [x] UI.14 Front Staff Home from the endpoints they may call (sales list, dispatches waiting, quick actions); Home is in every menu and `/` is every role's landing page (`e2e/mock-landing.spec.ts`)
+- [x] UI.15 Dashboard card polish, branch filter behind Filters on phones and on the Home header right side, tablet table cards (no overflow at 768 px), one filter pattern on every list (Toolbar or FilterForm), MUI checkbox and radio fields
+- [x] UI.16 Bundle: every page lazy, vendor chunks (mui, icons, app-vendor), charts load after the cards paint

@@ -5,6 +5,8 @@ import { createQueryClient } from '../api/queryClient';
 import { mockSession } from '../mocks/handlers';
 import type { MockRole } from '../mocks/data';
 import { AppRoutes } from '../routes';
+import { ConfigProvider } from '../contexts/ConfigContext';
+import ThemeCustomization from '../themes';
 
 function Where() {
   return (
@@ -23,10 +25,14 @@ export function renderApp(path: string, opts: { as?: MockRole } = {}) {
   const client = createQueryClient({ defaultOptions: { queries: { retry: false } } });
   const view = render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[path]}>
-        <AppRoutes />
-        <Where />
-      </MemoryRouter>
+      <ConfigProvider>
+        <ThemeCustomization>
+          <MemoryRouter initialEntries={[path]}>
+            <AppRoutes />
+            <Where />
+          </MemoryRouter>
+        </ThemeCustomization>
+      </ConfigProvider>
     </QueryClientProvider>,
   );
   return { ...view, client };

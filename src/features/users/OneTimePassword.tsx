@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy } from 'lucide-react';
+import Box from '@mui/material/Box';
+import { Copy } from 'components/icons';
 import { useReturnFocus } from '../../components/focus';
 import { formatAccra } from '../../lib/time';
 import { Button, Card } from '../../components/ui';
@@ -31,39 +32,51 @@ export function OneTimePassword({ loginId, password, expiresAt, onDone }: Props)
   }
 
   return (
-    <Card className="flex flex-col gap-3 border-primary-line bg-primary-soft">
-      <h2 ref={heading} tabIndex={-1} className="text-2xl">
+    <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: 'primary.lighter' }}>
+      <Box component="h2" ref={heading} tabIndex={-1} sx={{ fontSize: '1.5rem' }}>
         One-time password
-      </h2>
-      <p className="m-0 font-semibold">
+      </Box>
+      <Box component="p" sx={{ m: 0, fontWeight: 600 }}>
         This is shown only once. Copy it or write it down now; it cannot be shown again.
-      </p>
-      <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-        <dt className="font-semibold">Login ID</dt>
-        <dd className="m-0 break-all">{loginId}</dd>
-        <dt className="font-semibold">Password</dt>
-        <dd className="m-0 break-all">
-          <code className="text-lg font-semibold">{password}</code>
-        </dd>
-        <dt className="font-semibold">Valid until</dt>
-        <dd className="m-0">{formatAccra(expiresAt)}</dd>
-      </dl>
-      <p className="m-0 text-sm text-muted">
+      </Box>
+      <Box component="dl" sx={{ m: 0, display: 'grid', columnGap: 1.5, rowGap: 0.5 }}>
+        <Box component="dt" sx={{ fontWeight: 600 }}>
+          Login ID
+        </Box>
+        <Box component="dd" sx={{ m: 0, wordBreak: 'break-all' }}>
+          {loginId}
+        </Box>
+        <Box component="dt" sx={{ fontWeight: 600 }}>
+          Password
+        </Box>
+        <Box component="dd" sx={{ m: 0, wordBreak: 'break-all' }}>
+          <Box component="code" sx={{ fontSize: '1.125rem', fontWeight: 600 }}>
+            {password}
+          </Box>
+        </Box>
+        <Box component="dt" sx={{ fontWeight: 600 }}>
+          Valid until
+        </Box>
+        <Box component="dd" sx={{ m: 0 }}>
+          {formatAccra(expiresAt)}
+        </Box>
+      </Box>
+      <Box component="p" sx={{ m: 0, fontSize: '0.875rem', color: 'text.secondary' }}>
         The person must choose their own password the first time they sign in.
-      </p>
+      </Box>
       {copy && (
-        <p role="status" className="m-0 font-semibold">
+        <Box component="p" role="status" sx={{ m: 0, fontWeight: 600 }}>
           {copy === 'ok'
             ? 'Password copied.'
             : 'Could not copy. Select the password above and copy it by hand.'}
-        </p>
+        </Box>
       )}
-      <div className="flex flex-wrap gap-2">
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
         <Button variant="secondary" icon={Copy} onClick={() => void copyPassword()}>
           Copy password
         </Button>
         <Button onClick={onDone}>I have saved it</Button>
-      </div>
+      </Box>
     </Card>
   );
 }

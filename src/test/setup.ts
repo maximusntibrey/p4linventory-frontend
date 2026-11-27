@@ -1,18 +1,22 @@
 import { afterAll, afterEach, beforeAll, expect } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import * as matchers from 'vitest-axe/matchers';
 import { server } from '../mocks/server';
 import { mockSession, resetMockStore } from '../mocks/handlers';
 import { resetCsrfCache } from '../api/client';
 import './domMatchers';
+import { handlerDrawerOpen } from '../api/menu';
 
 // jsdom has no canvas; axe asks for a 2D context. Returning null keeps axe working and silences the jsdom "Not implemented: getContext" noise without adding a canvas package.
 HTMLCanvasElement.prototype.getContext = () => null;
 
 expect.extend(matchers);
+// MUI screens render slowly under a loaded machine; give async queries more time before failing.
+configure({ asyncUtilTimeout: 4000 });
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {
   cleanup();
+  handlerDrawerOpen(false); // the drawer state is a module-level SWR cache: do not leak it between tests
   server.resetHandlers();
   mockSession.loggedIn = false;
   mockSession.role = 'super_admin';

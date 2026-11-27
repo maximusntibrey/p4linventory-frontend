@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'components/icons';
 import { api } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
@@ -37,13 +38,13 @@ export function UserNew() {
     });
 
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title={created ? 'User created' : 'Add a user'} />
       {created ? (
         <>
-          <p role="status" className="m-0 font-semibold">
+          <Box component="p" role="status" sx={{ m: 0, fontWeight: 600 }}>
             {created.full_name} was created. Their login ID is {created.login_id}.
-          </p>
+          </Box>
           <OneTimePassword
             loginId={created.login_id}
             password={created.one_time_password}
@@ -73,15 +74,24 @@ export function UserNew() {
               }
             />
           </Card>
-          <Link
+          <Box
+            component={Link}
             to="/users"
-            className="inline-flex min-h-target items-center gap-2 font-semibold text-primary-solid underline"
+            sx={{
+              display: 'inline-flex',
+              minHeight: 44,
+              alignItems: 'center',
+              gap: 1,
+              fontWeight: 600,
+              color: 'primary.main',
+              textDecoration: 'underline',
+            }}
           >
             <ArrowLeft aria-hidden="true" size={20} />
             <span>Back to users</span>
-          </Link>
+          </Box>
         </>
       )}
-    </div>
+    </Box>
   );
 }

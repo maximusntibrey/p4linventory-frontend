@@ -1,7 +1,8 @@
 import { useDeferredValue, useState } from 'react';
+import Box from '@mui/material/Box';
 import type { FormEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Download, Filter, ScrollText } from 'lucide-react';
+import { Download, Filter, ScrollText } from 'components/icons';
 import { api, apiCsv, ApiError, rowsOf } from '../../api';
 import type { components, paths } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
@@ -48,10 +49,14 @@ const columns: Column<Event>[] = [
     header: 'User',
     sortValue: (e) => e.user_login_id,
     cell: (e) => (
-      <span className="flex flex-col">
-        <span className="font-semibold">{e.user_login_id}</span>
-        <span className="text-sm text-muted">{humanise(e.user_role)}</span>
-      </span>
+      <Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
+        <Box component="span" sx={{ fontWeight: 600 }}>
+          {e.user_login_id}
+        </Box>
+        <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+          {humanise(e.user_role)}
+        </Box>
+      </Box>
     ),
   },
   {
@@ -64,27 +69,39 @@ const columns: Column<Event>[] = [
     id: 'module',
     header: 'Module',
     cell: (e) => (
-      <span className="flex flex-col">
+      <Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
         <span>{humanise(e.target_type)}</span>
-        <span className="text-sm break-all text-muted">{e.target_ref}</span>
-      </span>
+        <Box
+          component="span"
+          sx={{ fontSize: '0.875rem', wordBreak: 'break-all', color: 'text.secondary' }}
+        >
+          {e.target_ref}
+        </Box>
+      </Box>
     ),
   },
   {
     id: 'details',
     header: 'Details',
     cell: (e) => (
-      <span className="flex flex-col items-start gap-1">
+      <Box
+        component="span"
+        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.5 }}
+      >
         <span>{e.branch_name ?? 'No branch'}</span>
         {e.is_self_approval && <StatusBadge tone="warning">Self-approved</StatusBadge>}
-      </span>
+      </Box>
     ),
   },
   {
     id: 'timestamp',
     header: 'Time',
     sortValue: (e) => e.occurred_at,
-    cell: (e) => <span className="whitespace-nowrap">{formatAccra(e.occurred_at)}</span>,
+    cell: (e) => (
+      <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
+        {formatAccra(e.occurred_at)}
+      </Box>
+    ),
   },
 ];
 
@@ -158,7 +175,7 @@ export function AuditLogsPage() {
   const failed = list.isError && !data;
 
   return (
-    <div className="flex flex-col gap-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader
         title="Audit Logs"
         subtitle="Who did what, where and when. Metadata only."
@@ -175,10 +192,21 @@ export function AuditLogsPage() {
       />
       <ApiProblem error={download.error} at={download.submittedAt} />
       {download.data?.truncated && (
-        <p role="status" className="m-0 flex flex-wrap items-center gap-2 font-semibold">
+        <Box
+          component="p"
+          role="status"
+          sx={{
+            m: 0,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+            fontWeight: 600,
+          }}
+        >
           <StatusBadge tone="warning">Export cut</StatusBadge>
           Only the first 5000 rows were exported. Narrow the filters to get the rest.
-        </p>
+        </Box>
       )}
       <Toolbar
         search={{
@@ -193,7 +221,12 @@ export function AuditLogsPage() {
       />
       {/* User, branch, action, module and dates live in the Toolbar's Filter drawer, like every other list. */}
       <Drawer open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filters">
-        <form onSubmit={apply} className="grid gap-3" aria-label="Audit log filters">
+        <Box
+          component="form"
+          onSubmit={apply}
+          sx={{ display: 'grid', gap: 1.5 }}
+          aria-label="Audit log filters"
+        >
           {people.data && (
             <SelectField label="User" value={draft.user_id} onChange={set('user_id')}>
               <option value="">All users</option>
@@ -243,12 +276,12 @@ export function AuditLogsPage() {
             error={dateError}
             onChange={set('date_to')}
           />
-          <div className="flex items-end">
+          <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
             <Button type="submit" icon={Filter}>
               Apply filters
             </Button>
-          </div>
-        </form>
+          </Box>
+        </Box>
       </Drawer>
       {/* A rejected filter (for example a backwards date range) is listed in words above the table. */}
       {rejected && <ApiProblem error={list.error} at={list.errorUpdatedAt} />}
@@ -288,6 +321,6 @@ export function AuditLogsPage() {
             : undefined
         }
       />
-    </div>
+    </Box>
   );
 }
