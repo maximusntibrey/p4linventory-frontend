@@ -33,6 +33,7 @@ const SALES_NEED = 'a daily sales summary from the sales API';
 const quickActions: { perm: Perm; to: string; label: string }[] = [
   { perm: 'sales.record', to: '/sell', label: 'Sell' },
   { perm: 'find.use', to: '/find', label: 'Find an item' },
+  { perm: 'items.view', to: '/items', label: 'Items' },
   { perm: 'dispatches.waiting', to: '/receive', label: 'Receive stock' },
   { perm: 'dispatches.create', to: '/dispatches/new', label: 'New dispatch' },
   { perm: 'goods_receipts.manage', to: '/goods-receipts', label: 'Goods receipt' },
@@ -154,17 +155,17 @@ export function Dashboard() {
         need={SALES_NEED}
       />,
     );
-  if (has('dispatches.waiting') && has('dashboard.view'))
+  if (has('dispatches.waiting'))
     add(
       'waiting',
       <StatCard
         title="Waiting receipts"
-        value={d?.waiting_dispatches}
+        value={d ? d.waiting_dispatches : q.waiting.data?.count}
         caption="Dispatches to receive here"
         to="/receive"
         linkLabel="Receive"
-        state={dState}
-        query={q.dashboard}
+        state={has('dashboard.view') ? dState : stateOf(q.waiting)}
+        query={has('dashboard.view') ? q.dashboard : q.waiting}
       />,
     );
   if (has('shortfalls.resolve'))

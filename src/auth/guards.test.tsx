@@ -94,7 +94,9 @@ describe('menu comes from the me response', () => {
     async (role, menu, more, audit) => {
       const { container } = renderApp(role === 'front_staff' ? '/stock' : '/', { as: role });
       await screen.findByRole('navigation', { name: 'Main' });
-      expect(menuLabels()).toEqual([...menu, ...more, ...(audit ? ['Audit Logs'] : [])]);
+      // Every user also has a Home, added by the app when the server menu omits it.
+      const all = [...menu, ...more, ...(audit ? ['Audit Logs'] : [])];
+      expect(menuLabels()).toEqual(menu.includes('Home') ? all : ['Home', ...all]);
       expect(meByRole[role].menu.map((m) => m.label)).toEqual(menu);
       expect(await axe(container)).toHaveNoViolations();
     },
@@ -128,7 +130,7 @@ describe('menu comes from the me response', () => {
     );
     renderApp('/', { as: 'super_admin' });
     await screen.findByRole('navigation', { name: 'Main' });
-    expect(menuLabels()).toHaveLength(7);
+    expect(menuLabels()).toHaveLength(8); // seven server entries plus Home
     expect(
       within(screen.getByRole('navigation', { name: 'Main' })).getByText('Menu'),
     ).toBeInTheDocument();

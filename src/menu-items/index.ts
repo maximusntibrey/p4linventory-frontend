@@ -50,7 +50,7 @@ export type MenuGroup = { id: string; title: string; type: 'group'; children: Me
 const menuItem: { items: MenuGroup[] } = { items: [] };
 
 export function buildMenu(me: Pick<Me, 'menu' | 'home_links'>): MenuGroup[] {
-  return navGroups(me).map((g) => ({
+  const groups: MenuGroup[] = navGroups(me).map((g) => ({
     id: `group-${g.label.toLowerCase()}`,
     title: g.label,
     type: 'group',
@@ -63,6 +63,18 @@ export function buildMenu(me: Pick<Me, 'menu' | 'home_links'>): MenuGroup[] {
       breadcrumbs: false, // legacy screens carry their own page title; enabled per screen when migrated
     })),
   }));
+  // Every signed-in user has a Home (it shows only what their permissions allow), even when the server menu omits it.
+  const hasHome = groups.some((g) => g.children.some((c) => c.url === '/'));
+  if (!hasHome && groups.length)
+    groups[0].children.unshift({
+      id: 'home',
+      title: 'Home',
+      type: 'item',
+      url: '/',
+      icon: byKey.home,
+      breadcrumbs: false,
+    });
+  return groups;
 }
 
 export function setMenu(items: MenuGroup[]) {

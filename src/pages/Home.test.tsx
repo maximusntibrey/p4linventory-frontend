@@ -110,8 +110,23 @@ describe('dashboard cards (Mantis stat, chart and list cards)', () => {
     expect(called).toBe(0);
   });
 
-  it('Front Staff, who has no dashboard, is sent to the first menu entry', async () => {
+  it('Front Staff has a Home: quick actions, today sales and waiting receipts, with no dashboard request', async () => {
+    let dashboardCalls = 0;
+    server.use(
+      http.get('/api/v1/dashboard/', () => {
+        dashboardCalls++;
+        return apiError(403, 'forbidden', 'No.');
+      }),
+    );
     renderApp('/', { as: 'front_staff' });
-    expect(await screen.findByRole('heading', { level: 1, name: 'Sell' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy();
+    expect(await screen.findByText("Today's sales")).toBeTruthy();
+    expect(screen.getByText('Waiting receipts')).toBeTruthy();
+    const quick = card('Quick actions');
+    expect(within(quick).getByRole('link', { name: 'Sell' })).toBeTruthy();
+    expect(within(quick).getByRole('link', { name: 'Find an item' })).toBeTruthy();
+    expect(screen.queryByText('Low stock items')).toBeNull();
+    expect(dashboardCalls).toBe(0);
+    expect(screen.queryByText('Not allowed for your account.')).toBeNull();
   });
 });

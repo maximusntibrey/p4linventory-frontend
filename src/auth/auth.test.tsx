@@ -141,9 +141,9 @@ describe('forced password change (one-time password)', () => {
     type('New password', 'a-brand-new-pass');
     type('Confirm new password', 'a-brand-new-pass');
     click('Save new password');
-    // Front Staff has no Home entry, so the first menu entry opens.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Sell' })).toBeTruthy();
-    expect(where()).toBe('/sell');
+    // Every user lands on Home; Front Staff's Home is built from the endpoints they may call.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy();
+    expect(where()).toBe('/');
     expect(mockSession.mustChange).toBe(false);
   });
 

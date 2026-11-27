@@ -34,6 +34,12 @@ export function useDashboardData(has: Has, branch: number | undefined) {
       }),
     enabled: has('sales.record'),
   });
+  // Users without the dashboard (Front Staff) get the waiting count from the dispatches API they may call.
+  const waiting = useQuery({
+    queryKey: ['dashboard-card', 'waiting'],
+    queryFn: () => api('get', '/api/v1/dispatches/waiting/', { query: { page_size: 1 } }),
+    enabled: has('dispatches.waiting') && !has('dashboard.view'),
+  });
   const dispatches = useQuery({
     queryKey: ['dashboard-card', 'dispatches-recent'],
     queryFn: () => api('get', '/api/v1/dispatches/', { query: { page_size: 5 } }),
@@ -49,5 +55,5 @@ export function useDashboardData(has: Has, branch: number | undefined) {
       ),
     enabled: has('dashboard.view') && has('branches.view'),
   });
-  return { dashboard, shortfalls, sales, dispatches, warehouses };
+  return { dashboard, shortfalls, sales, waiting, dispatches, warehouses };
 }
