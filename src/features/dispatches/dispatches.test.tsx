@@ -9,7 +9,7 @@ import { apiError, capture, click, type } from '../../test/helpers';
 import { renderApp } from '../../test/renderApp';
 
 const h1 = (name: string) => screen.findByRole('heading', { level: 1, name });
-const card = (reference: string) => screen.getByText(reference).closest('li')!;
+const card = (reference: string) => screen.getByText(reference).closest('tr')!;
 
 async function chooseBranchAndAddHp(quantity: string) {
   await h1('Dispatch to a branch');
@@ -44,7 +44,7 @@ describe('dispatch status list (F5.2)', () => {
     expect(await screen.findByText('TRF-000002')).toBeTruthy();
     await waitFor(() => expect(screen.queryByText('TRF-000001')).toBeNull());
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'rejected' } });
-    expect(await screen.findByText('No dispatches match.')).toBeTruthy();
+    expect(await screen.findByText('No dispatches match')).toBeTruthy();
   });
 
   it('offers New dispatch only with dispatches.create (route is guarded by it as well)', async () => {
