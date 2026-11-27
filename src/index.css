@@ -1,18 +1,25 @@
-@import '@fontsource/bebas-neue/latin-400.css';
-@import '@fontsource/inter/latin-400.css';
-@import '@fontsource/inter/latin-600.css';
-@import 'tailwindcss';
+/* Tailwind coexists TEMPORARILY for screens not yet moved to the Mantis/MUI theme: theme + utilities only, no preflight. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
 @import './styles/tokens.css';
 
+/* Minimal reset the legacy Tailwind screens rely on (what preflight did). Removed with Tailwind in the last UI run. */
 @layer base {
-  html {
-    background: var(--color-canvas);
-    color: var(--color-ink);
-    font-family: var(--font-sans);
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+    border: 0 solid;
   }
-  body {
-    margin: 0;
-    overflow-x: hidden;
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    background: transparent;
   }
   h1,
   h2,
@@ -22,8 +29,7 @@
     letter-spacing: 0.02em;
     margin: 0;
   }
-  :focus-visible {
-    outline: var(--focus-ring-width) solid var(--focus-ring-color);
-    outline-offset: var(--focus-ring-offset);
+  p {
+    margin: 0;
   }
 }

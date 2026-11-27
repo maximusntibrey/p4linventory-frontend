@@ -11,6 +11,8 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "isolatedModules": true,
+    "allowJs": true,
+    "baseUrl": "src",
     "noEmit": true,
     "types": ["vite/client", "node"]
   },

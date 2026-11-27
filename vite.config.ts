@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => {
   const target = env.VITE_API_URL || env.VITE_BACKEND_URL;
   return {
     plugins: [react(), tailwindcss(), dropMockWorker()],
+    // Mantis import style: bare paths from src/ (tsconfig baseUrl), e.g. 'components/MainCard'.
+    resolve: { tsconfigPaths: true },
     server: { proxy: { '/api': target, '/media': target, '/health': target } },
     test: {
       environment: 'jsdom',

@@ -9,6 +9,7 @@ export default tseslint.config(
     ignores: [
       'dist',
       'reference',
+      'src/**/*.{js,jsx}', // vendored Mantis template files (JS), see NOTICE
       'docs',
       'public/mockServiceWorker.js',
       'src/api/schema.d.ts',
