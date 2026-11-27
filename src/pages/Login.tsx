@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { LogIn } from 'lucide-react';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import LoginOutlined from '@ant-design/icons/LoginOutlined';
 import { api, ApiError } from '../api';
 import { fetchMe, meKey, useMe } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
 import { describeError, ErrorSummary } from '../components/ErrorSummary';
 import type { ErrorParts } from '../components/ErrorSummary';
-import { Button, TextField } from '../components/ui';
+import { Field } from '../components/Field';
 
 type Values = { login_id: string; password: string };
 
@@ -21,7 +24,7 @@ export function Login() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<Values>();
+  } = useForm<Values>({ shouldFocusError: false }); // the error summary owns focus
   const [failure, setFailure] = useState<{ error: unknown; n: number }>();
   const [invalidN, setInvalidN] = useState(0);
 
@@ -65,14 +68,15 @@ export function Login() {
   return (
     <AuthLayout title="Sign in">
       {state?.reason === 'expired' && (
-        <p role="status" className="m-0 font-semibold">
+        <Typography role="status" variant="subtitle1" component="p">
           Your session has ended. Sign in again.
-        </p>
+        </Typography>
       )}
       {summary && <ErrorSummary key={summary.n} title={summary.title} items={summary.items} />}
-      <form
+      <Stack
+        component="form"
         noValidate
-        className="flex flex-col gap-4"
+        sx={{ gap: 2 }}
         onSubmit={(e) => {
           setFailure(undefined);
           void handleSubmit(
@@ -81,7 +85,7 @@ export function Login() {
           )(e);
         }}
       >
-        <TextField
+        <Field
           label="Login ID"
           hint="For example SA-0001 or USR-0001."
           autoComplete="username"
@@ -90,17 +94,24 @@ export function Login() {
           error={errors.login_id?.message ?? server?.fieldError('login_id')}
           {...register('login_id', { required: 'Enter your login ID.' })}
         />
-        <TextField
+        <Field
           label="Password"
           type="password"
           autoComplete="current-password"
           error={errors.password?.message ?? server?.fieldError('password')}
           {...register('password', { required: 'Enter your password.' })}
         />
-        <Button type="submit" icon={LogIn} disabled={login.isPending}>
+        <Button
+          type="submit"
+          variant="contained"
+          size="large"
+          fullWidth
+          startIcon={<LoginOutlined aria-hidden />}
+          disabled={login.isPending}
+        >
           {login.isPending ? 'Signing in…' : 'Sign in'}
         </Button>
-      </form>
+      </Stack>
     </AuthLayout>
   );
 }

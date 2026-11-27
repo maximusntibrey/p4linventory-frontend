@@ -271,32 +271,27 @@ describe('CommandPalette profile section', () => {
   });
 });
 
-describe('the signed-in app on a phone', () => {
-  it('has no sidebar, Menu or profile button; the profile and every route are in the palette', async () => {
+describe('the signed-in app on a phone (Mantis: temporary drawer, hamburger, more menu)', () => {
+  it('opens the menu from the hamburger and keeps the profile and branch controls in the header menus', async () => {
     renderApp('/', { as: 'branch_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Home' });
-    expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Open profile/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Switch branch' })).toBeNull();
     const bar = screen.getAllByRole('banner')[0];
-    expect(within(bar).getAllByRole('button')).toHaveLength(1);
-    fireEvent.click(within(bar).getByRole('button', { name: /Search or jump to/ }));
-    const palette = await screen.findByRole('dialog', { name: 'Search or jump to' });
-    const profile = within(palette).getByRole('group', { hidden: true }) ?? palette;
-    expect(profile).toBeTruthy();
-    expect(
-      within(palette).getByRole('region', { name: 'Working branch', hidden: true }),
-    ).toBeTruthy();
-    expect(within(palette).getByText('No notifications yet')).toBeInTheDocument();
-    fireEvent.click(within(palette).getByRole('button', { name: 'Change password' }));
+    // Phones: the branch controls are not in the header itself, they live in the profile menu.
+    expect(within(bar).queryByRole('button', { name: 'Switch branch' })).toBeNull();
+    fireEvent.click(within(bar).getByRole('button', { name: 'open more menu' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open profile menu' }));
+    expect(await screen.findByRole('button', { name: 'Log out' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/account/password'));
+    fireEvent.click(
+      within(screen.getAllByRole('banner')[0]).getByRole('button', { name: 'open drawer' }),
+    );
+    expect(await screen.findByRole('link', { name: 'Stock' })).toBeInTheDocument();
   });
-  it('Home is the compact dashboard: branch card, quick links, stats', async () => {
+  it('Home on a phone shows the stat cards and quick actions', async () => {
     renderApp('/', { as: 'branch_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Home' });
-    expect(await screen.findByRole('list', { name: 'Quick links' })).toBeInTheDocument();
-    expect(await screen.findByText('Active items')).toBeInTheDocument();
-    expect(screen.getByText('Welcome')).toBeInTheDocument();
+    expect(await screen.findByText('Quick actions')).toBeInTheDocument();
+    expect(await screen.findByText('Low stock items')).toBeInTheDocument();
   });
 });

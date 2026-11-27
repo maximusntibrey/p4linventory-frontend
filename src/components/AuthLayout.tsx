@@ -1,15 +1,18 @@
 import type { ReactNode } from 'react';
-import { Card, Logo } from './ui';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import AuthWrapper from 'sections/auth/AuthWrapper';
 
-/** Centred page for screens shown before the app shell (sign-in, forced password change). */
+/** Page for screens shown before the app shell (sign-in, forced password change): the Mantis auth layout in brand colours. */
 export function AuthLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-4">
-      <Logo />
-      <Card className="flex flex-col gap-4">
-        <h1 className="text-display">{title}</h1>
+    <AuthWrapper>
+      <Stack sx={{ gap: 2.5 }}>
+        <Typography variant="h3" component="h1">
+          {title}
+        </Typography>
         {children}
-      </Card>
-    </main>
+      </Stack>
+    </AuthWrapper>
   );
 }

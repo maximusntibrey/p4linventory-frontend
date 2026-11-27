@@ -112,7 +112,7 @@ describe('working branch: switching', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Switch branch' }));
     await screen.findByRole('heading', { level: 1, name: 'Switch branch' });
     await screen.findByRole('button', { name: /Accra Branch/ });
-    const list = within(within(screen.getByRole('main')).getByRole('list'));
+    const list = within(within(screen.getByRole('main')).getAllByRole('list').at(-1)!);
     for (const b of list.getAllByRole('button')) {
       expect(b.getAttribute('tabindex')).toBeNull();
       expect(b.className).toMatch(/min-h-(11|target)/);
@@ -125,7 +125,7 @@ describe('Super Admin works across all branches (v0.1.2)', () => {
     const put = capture('put', '/api/v1/working-branch/', () => apiError(403, 'forbidden', 'No.'));
     server.use(put.handler);
     const { container } = renderApp('/', { as: 'super_admin' });
-    await screen.findByText('Active items');
+    await screen.findByText('Low stock items');
     expect(banner().getByText('All branches', { selector: 'span' })).toBeTruthy();
     expect(banner().getByLabelText('Filter by branch')).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Choose your branch' })).toBeNull();

@@ -279,7 +279,7 @@ describe('Audit Logs has its own tab, not the dashboard', () => {
 
   it('the dashboard no longer carries recent activity or an audit list', async () => {
     renderApp('/', { as: 'super_admin' });
-    await screen.findByText('Active items');
+    await screen.findByText('Low stock items');
     expect(screen.queryByRole('heading', { name: 'Recent activity' })).toBeNull();
     expect(screen.queryByText(/User created/)).toBeNull();
   });

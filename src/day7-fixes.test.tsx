@@ -75,15 +75,13 @@ describe('FIX-50 dashboard says when the low-stock list is cut', () => {
     renderApp('/', { as: 'super_admin' });
     expect(await screen.findByText('Showing 10 of 12')).toBeTruthy();
     expect(
-      within(
-        screen.getByRole('heading', { level: 2, name: 'Low stock' }).parentElement!,
-      ).getAllByRole('listitem').length,
+      within(screen.getByRole('list', { name: 'Low stock items' })).getAllByRole('listitem').length,
     ).toBe(10);
   });
 
   it('is not shown when every low row is listed', async () => {
     renderApp('/', { as: 'super_admin' });
-    await screen.findByText('1 to reorder');
+    await screen.findByText('Low stock items');
     expect(screen.queryByText(/Showing/)).toBeNull();
   });
 });
