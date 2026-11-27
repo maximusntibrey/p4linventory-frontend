@@ -135,8 +135,8 @@ test('item list: cards, cost from the API, labelled actions, no sideways scroll'
   await page.goto('/items');
   await expect(page.getByRole('heading', { level: 1, name: 'Items' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'HP 250 G9' })).toBeVisible();
-  await expect(page.getByText('Average cost: GHS 900.00')).toBeVisible();
-  await expect(page.getByRole('listitem').getByText('Active', { exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'GHS 900.00' })).toBeVisible();
+  await expect(page.getByRole('row').getByText('Active', { exact: true })).toBeVisible();
   await tall(page.getByRole('link', { name: 'Add an item' }));
   await tall(page.getByRole('button', { name: 'Search', exact: true }));
   await tall(page.getByRole('link', { name: 'HP 250 G9' }));
@@ -212,7 +212,7 @@ test('stock screen: grouped by location, stock words with icons, no sideways scr
   await setup(page);
   await page.goto('/stock');
   await expect(page.getByRole('heading', { level: 1, name: 'Stock' })).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Central Warehouse' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Central Warehouse' }).first()).toBeVisible();
   await expect(page.getByText('Low', { exact: true })).toBeVisible();
   await expect(page.getByText('Out of stock')).toBeVisible();
   await tall(page.getByRole('button', { name: 'Search', exact: true }));

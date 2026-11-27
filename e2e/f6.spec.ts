@@ -180,7 +180,7 @@ test('sales list: cancel needs a reason and a confirm, then shows the Cancelled 
     return r.fulfill({ json: sale });
   });
   await page.goto('/sell/sales');
-  await expect(page.getByRole('heading', { level: 2, name: 'SAL-000007' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'SAL-000007', exact: true })).toBeVisible();
   await expect(page.locator('span', { hasText: /^Completed$/ }).last()).toBeVisible();
   const open = page.getByRole('button', { name: 'Cancel sale SAL-000007' });
   expect((await open.boundingBox())!.height).toBeGreaterThanOrEqual(44);

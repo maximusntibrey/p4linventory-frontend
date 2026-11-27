@@ -84,6 +84,9 @@ All accept typed props. Every control keeps a 44 px tap target, a visible focus 
 | `Topbar` | Either a global `SearchInput` or `commandSearch` (a button that opens a `CommandPalette`; Ctrl+K or Cmd+K opens it). Global `SearchInput` (Ctrl+K or Cmd+K focuses it from anywhere), round notification bell (`unavailable` makes it a non-interactive button whose label says why), user pill (Avatar, name, email). | |
 | `CommandPalette` | Modal search-and-jump list. The caller passes only the places the user may open; Enter opens the first match. | Searching data (use a screen search). |
 | `Card` | Bordered surface that groups content; layout classes come from the caller. | Page sections that need a heading only (use `PageHeader`). |
+| `LinkButton` | A real link (it navigates) that wears the Button look. | Actions (use `Button`). |
+| `TextField`, `SelectField` | `FormField` plus `Input` or `Select` in one component, with react-hook-form `register` friendly props. | Custom layouts (use `FormField`). |
+| `StatusWord` | The SKILLS status words (In stock, Low, Active, In transit, Completed, ...) as a `StatusBadge` with icon and text. | Other statuses (use `StatusBadge`). |
 | `AppShell` | Layout: sidebar column from md up, menu drawer on phones, skip link, `<main id="main">`. Presentational only; it never decides what the user may see. `embedded` is for the showcase. | Put role checks in it. |
 | `Logo` | `variant="full"` or `"mark"` (collapsed sidebar). **Placeholder artwork** in `src/assets/logo.svg` and `logo-mark.svg` (laptop outline, three pixel squares, wordmark "payless4laptop", tagline). The real logo file was not available; replace the two SVGs only. | |
 

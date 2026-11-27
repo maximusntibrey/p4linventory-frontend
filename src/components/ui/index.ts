@@ -34,4 +34,3 @@ export { widthStyle } from './dynamicStyle';
 export * from './TextField';
 export * from './SelectField';
 export * from './StatusWord';
-export * from './Pager';

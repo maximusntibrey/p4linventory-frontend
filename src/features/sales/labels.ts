@@ -27,7 +27,3 @@ export const toCents = (m: string) => {
 };
 export const fromCents = (c: number) =>
   `${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`;
-
-/** Link that looks like a button (min 44 px). */
-export const linkButton =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-control bg-white px-4 font-semibold text-ink no-underline hover:bg-surface';

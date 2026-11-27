@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, ListChecks, ShoppingCart, Trash2 } from 'lucide-react';
 import { api, ApiError, rowsOf } from '../../api';
@@ -13,8 +12,8 @@ import { ItemPicker } from '../../components/ItemPicker';
 import type { Candidate } from '../../components/ItemPicker';
 import { BranchPicker } from '../workingBranch/BranchPicker';
 import { ghs } from '../items/labels';
-import { fromCents, linkButton, paymentCodes, paymentLabel, toCents } from './labels';
-import { Button, Card, PageHeader, SelectField, TextField } from '../../components/ui';
+import { fromCents, paymentCodes, paymentLabel, toCents } from './labels';
+import { Button, Card, PageHeader, SelectField, TextField, LinkButton } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string; price: string | null };
@@ -165,10 +164,14 @@ export function SellPage() {
           <Button icon={ShoppingCart} onClick={reset} className="w-full sm:w-auto">
             Sell again
           </Button>
-          <Link to="/sell/sales" className={`${linkButton} w-full sm:w-auto`}>
-            <ListChecks aria-hidden="true" size={20} />
-            <span>Sales list</span>
-          </Link>
+          <LinkButton
+            to="/sell/sales"
+            icon={ListChecks}
+            variant="secondary"
+            className="w-full sm:w-auto"
+          >
+            Sales list
+          </LinkButton>
         </div>
       </div>
     );
@@ -178,10 +181,9 @@ export function SellPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <PageHeader title="Sell" />
-        <Link to="/sell/sales" className={linkButton}>
-          <ListChecks aria-hidden="true" size={20} />
-          <span>Sales list</span>
-        </Link>
+        <LinkButton to="/sell/sales" icon={ListChecks} variant="secondary">
+          Sales list
+        </LinkButton>
       </div>
       <p className="m-0 text-muted">
         Selling at <strong className="text-ink">{where.name}</strong>

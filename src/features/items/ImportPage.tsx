@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileCheck, Info, Upload } from 'lucide-react';
 import { api, rowsOf } from '../../api';
@@ -9,8 +8,7 @@ import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { ResultCard } from '../../components/focus';
-import { linkButton } from '../sales/labels';
-import { Button, Card, PageHeader, SelectField, TextField } from '../../components/ui';
+import { Button, Card, PageHeader, SelectField, TextField, LinkButton } from '../../components/ui';
 
 type S = components['schemas'];
 
@@ -108,9 +106,9 @@ export function ImportPage() {
           <Button icon={Upload} onClick={again}>
             Import another file
           </Button>
-          <Link to="/items" className={linkButton}>
-            <span>Back to items</span>
-          </Link>
+          <LinkButton to="/items" variant="secondary">
+            Back to items
+          </LinkButton>
         </div>
       </div>
     );
