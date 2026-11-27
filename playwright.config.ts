@@ -28,6 +28,12 @@ export default defineConfig({
       use: { browserName: 'chromium', viewport: { width: 360, height: 740 } },
     },
     {
+      // First width on the desktop side of the breakpoint (md = 768 px): sidebar layout must still fit.
+      name: 'tablet-768',
+      testMatch: /(shell|design-system)\.spec\.ts/,
+      use: { browserName: 'chromium', viewport: { width: 768, height: 1024 } },
+    },
+    {
       name: 'desktop',
       testIgnore: /mock-.*\.spec\.ts/,
       use: { browserName: 'chromium', viewport: { width: 1280, height: 800 } },
@@ -35,11 +41,12 @@ export default defineConfig({
     {
       name: 'mock-desktop',
       testMatch: /mock-.*\.spec\.ts/,
+      testIgnore: /mock-compact\.spec\.ts/,
       use: { browserName: 'chromium', viewport: { width: 1280, height: 800 }, baseURL: MOCK },
     },
     {
       name: 'mock-phone-360',
-      testMatch: /mock-audit.*\.spec\.ts/,
+      testMatch: /mock-(audit|compact|routes).*\.spec\.ts/,
       use: { browserName: 'chromium', viewport: { width: 360, height: 740 }, baseURL: MOCK },
     },
   ],

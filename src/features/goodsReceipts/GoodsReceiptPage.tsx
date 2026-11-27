@@ -12,11 +12,17 @@ import type { Candidate } from '../../components/ItemPicker';
 import { amountPattern, twoDecimals } from '../../lib/money';
 import { formatAccra } from '../../lib/time';
 import { ghs } from '../items/labels';
-import { Button, Card, PageHeader, TextField } from '../../components/ui';
+import { Button, Card, PageHeader, SelectField, TextField } from '../../components/ui';
+import { useWarehouses } from '../branches/useWarehouses';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string; cost: string };
-type Problems = { supplier?: string; lines?: string; rows: { quantity?: string; cost?: string }[] };
+type Problems = {
+  warehouse?: string;
+  supplier?: string;
+  lines?: string;
+  rows: { quantity?: string; cost?: string }[];
+};
 
 const findItems = async (q: string): Promise<Candidate[]> =>
   rowsOf(
@@ -26,7 +32,12 @@ const findItems = async (q: string): Promise<Candidate[]> =>
   ).map((i) => ({ item_id: i.id, sku: i.sku, name: i.name, note: i.brand_name ?? undefined }));
 
 /** Format checks only. Whether the receipt is allowed (active items, no duplicates) is the server's call. */
-function check(supplier: string, lines: Line[]): Problems | null {
+function check(
+  supplier: string,
+  lines: Line[],
+  needWarehouse: boolean,
+  warehouse: string,
+): Problems | null {
   const p: Problems = {
     rows: lines.map((l) => ({
       quantity: /^[1-9]\d*$/.test(l.quantity.trim())
@@ -35,9 +46,10 @@ function check(supplier: string, lines: Line[]): Problems | null {
       cost: amountPattern.test(l.cost.trim()) ? undefined : 'Enter a cost such as 900.00.',
     })),
   };
+  if (needWarehouse && !warehouse) p.warehouse = 'Choose a warehouse.';
   if (!supplier.trim()) p.supplier = 'Enter the supplier name.';
   if (lines.length === 0) p.lines = 'Add at least one item.';
-  const bad = p.supplier || p.lines || p.rows.some((r) => r.quantity || r.cost);
+  const bad = p.warehouse || p.supplier || p.lines || p.rows.some((r) => r.quantity || r.cost);
   return bad ? p : null;
 }
 
@@ -46,6 +58,8 @@ export function GoodsReceiptPage() {
   const qc = useQueryClient();
   const keys = useIdempotencyKey();
   const flight = useSingleFlight();
+  const warehouses = useWarehouses();
+  const [warehouse, setWarehouse] = useState('');
   const [supplier, setSupplier] = useState('');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<Line[]>([]);
@@ -54,6 +68,7 @@ export function GoodsReceiptPage() {
   const [done, setDone] = useState<S['GoodsReceipt'] | null>(null);
 
   const body = (): S['GoodsReceiptCreate'] => ({
+    ...(warehouses.choose && { warehouse_id: Number(warehouse) }),
     supplier_name: supplier.trim(),
     ...(notes.trim() && { notes: notes.trim() }),
     lines: lines.map((l) => ({
@@ -68,6 +83,9 @@ export function GoodsReceiptPage() {
         body: b,
         idempotencyKey: keys.forAction(JSON.stringify(b)),
       }),
+    onError: (e) => {
+      if (e instanceof ApiError && e.fieldError('warehouse_id')) setReviewing(false);
+    },
     onSuccess: async (receipt) => {
       keys.done();
       setDone(receipt);
@@ -75,9 +93,11 @@ export function GoodsReceiptPage() {
     },
   });
   const server = create.error instanceof ApiError ? create.error : undefined;
+  const warehouseName = warehouses.list.find((w) => String(w.id) === warehouse)?.name;
   const setLine = (id: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l) => (l.item_id === id ? { ...l, ...patch } : l)));
   const reset = () => {
+    setWarehouse('');
     setSupplier('');
     setNotes('');
     setLines([]);
@@ -120,6 +140,11 @@ export function GoodsReceiptPage() {
       {reviewing ? (
         <Card className="flex flex-col gap-3">
           <h2 className="text-3xl">Review</h2>
+          {warehouses.choose && (
+            <p className="m-0">
+              Warehouse: <strong>{warehouseName}</strong>
+            </p>
+          )}
           <p className="m-0">
             Supplier: <strong>{supplier.trim()}</strong>
           </p>
@@ -143,6 +168,21 @@ export function GoodsReceiptPage() {
       ) : (
         <>
           <Card className="flex flex-col gap-4">
+            {warehouses.choose && (
+              <SelectField
+                label="Warehouse"
+                value={warehouse}
+                onChange={(e) => setWarehouse(e.target.value)}
+                error={problems?.warehouse ?? server?.fieldError('warehouse_id')}
+              >
+                <option value="">Choose a warehouse…</option>
+                {warehouses.list.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+              </SelectField>
+            )}
             <TextField
               label="Supplier"
               value={supplier}
@@ -220,7 +260,7 @@ export function GoodsReceiptPage() {
             icon={ClipboardCheck}
             className="w-full sm:w-auto sm:self-start"
             onClick={() => {
-              const p = check(supplier, lines);
+              const p = check(supplier, lines, warehouses.choose, warehouse);
               setProblems(p);
               if (!p) setReviewing(true);
             }}

@@ -92,7 +92,7 @@ function PermissionsForm({
       <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
         <legend className="mb-1 p-0 text-muted">Extra things this person may do.</legend>
         {permissionCodes.map((code) => (
-          <label key={code} className="flex min-h-11 items-center gap-3">
+          <label key={code} className="flex min-h-target items-center gap-3">
             <input
               type="checkbox"
               className="size-5 accent-primary-solid"
@@ -305,7 +305,7 @@ export function UserDetail() {
       <QueryGate query={query}>{(u) => <UserView user={u} canManage={canManage} />}</QueryGate>
       <Link
         to="/users"
-        className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
+        className="inline-flex min-h-target items-center gap-2 font-semibold text-primary-solid underline"
       >
         <ArrowLeft aria-hidden="true" size={20} />
         <span>Back to users</span>

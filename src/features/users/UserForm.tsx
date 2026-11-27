@@ -97,7 +97,7 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
         <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
           <legend className="mb-1 p-0 font-semibold">{canMulti ? 'Roles' : 'Role'}</legend>
           {roleCodes.map((code) => (
-            <label key={code} className="flex min-h-11 items-center gap-3">
+            <label key={code} className="flex min-h-target items-center gap-3">
               <input
                 type={canMulti ? 'checkbox' : 'radio'}
                 value={code}

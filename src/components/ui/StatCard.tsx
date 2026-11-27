@@ -38,7 +38,7 @@ export function DeltaChip({ delta }: { delta: Delta }) {
 /** One cell of a StatsStrip: label, optional info icon, big number, small delta chip. */
 export function StatCard({ label, value, info, delta }: StatCardProps) {
   return (
-    <div className="flex flex-col gap-1 bg-canvas p-4">
+    <div className="flex flex-col gap-1 bg-canvas p-(--density-card)">
       <dt className="flex items-center gap-1 text-sm font-semibold text-muted">
         <span>{label}</span>
         {info && (
@@ -68,8 +68,8 @@ export function StatCard({ label, value, info, delta }: StatCardProps) {
 
 const stripColumns = {
   2: 'grid-cols-2',
-  3: 'grid-cols-1 sm:grid-cols-3',
-  4: 'grid-cols-2 md:grid-cols-4',
+  3: 'grid-cols-2 sm:grid-cols-3 max-sm:[&>:last-child:nth-child(odd)]:col-span-2',
+  4: 'grid-cols-2 md:grid-cols-4 max-md:[&>:last-child:nth-child(odd)]:col-span-2',
 } as const;
 
 /** One bordered container split into cells. `columns` is the cell count on wide screens, so no empty cell shows (default 4: 2 per row on phones). */

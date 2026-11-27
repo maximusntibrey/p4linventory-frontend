@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 import type { components } from '../src/api/schema';
+import { openFilters } from './mock-helpers';
 import { branches, sideways, stubAuth, stubData } from './stub';
 
 type S = components['schemas'];
@@ -228,7 +229,9 @@ test('dispatch: status list, a new dispatch to a branch, one request on a double
   await expect(page.getByText('TRF-000001')).toBeVisible();
   await expect(page.getByRole('row').getByText('In transit').first()).toBeVisible();
   await tall(page.getByRole('link', { name: 'New dispatch' }));
+  await openFilters(page);
   await tall(page.getByLabel('Status'));
+  await page.keyboard.press('Escape');
   await flat(page);
 
   await page.getByRole('link', { name: 'New dispatch' }).click();

@@ -15,6 +15,7 @@ import {
   PageHeader,
   SelectField,
   StatusWord,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 
@@ -102,38 +103,43 @@ export function DispatchesPage() {
           )
         }
       />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <SelectField
-          label="Status"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">All statuses</option>
-          {dispatchStatuses.map((s) => (
-            <option key={s} value={s}>
-              {dispatchStatusBadge[s].label}
-            </option>
-          ))}
-        </SelectField>
-        <SelectField
-          label="Branch"
-          value={branch}
-          onChange={(e) => {
-            setBranch(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">All branches</option>
-          {(branches.data ? rowsOf(branches.data) : []).map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </SelectField>
-      </div>
+      {/* Status and branch are filters: they sit in the Toolbar (the Filters drawer on phones). */}
+      <Toolbar>
+        <div className="w-full sm:w-48">
+          <SelectField
+            label="Status"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All statuses</option>
+            {dispatchStatuses.map((s) => (
+              <option key={s} value={s}>
+                {dispatchStatusBadge[s].label}
+              </option>
+            ))}
+          </SelectField>
+        </div>
+        <div className="w-full sm:w-48">
+          <SelectField
+            label="Branch"
+            value={branch}
+            onChange={(e) => {
+              setBranch(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All branches</option>
+            {(branches.data ? rowsOf(branches.data) : []).map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </SelectField>
+        </div>
+      </Toolbar>
       <DataTable
         caption="Dispatches"
         columns={columns}

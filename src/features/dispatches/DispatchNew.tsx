@@ -10,23 +10,35 @@ import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { ResultCard } from '../../components/focus';
 import { ItemPicker } from '../../components/ItemPicker';
 import type { Candidate } from '../../components/ItemPicker';
+import { useWarehouses } from '../branches/useWarehouses';
 import { QueryGate } from '../../components/QueryGate';
 import { Button, Card, PageHeader, SelectField, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string };
-type Problems = { destination?: string; lines?: string; rows: (string | undefined)[] };
+type Problems = {
+  warehouse?: string;
+  destination?: string;
+  lines?: string;
+  rows: (string | undefined)[];
+};
 
 /** Format checks only. Whether the stock is there is the server's call (409). */
-function check(destination: string, lines: Line[]): Problems | null {
+function check(
+  destination: string,
+  lines: Line[],
+  needWarehouse: boolean,
+  warehouse: string,
+): Problems | null {
   const p: Problems = {
     rows: lines.map((l) =>
       /^[1-9]\d*$/.test(l.quantity.trim()) ? undefined : 'Enter a whole number, 1 or more.',
     ),
   };
+  if (needWarehouse && !warehouse) p.warehouse = 'Choose a warehouse.';
   if (!destination) p.destination = 'Choose a branch.';
   if (lines.length === 0) p.lines = 'Add at least one item.';
-  return p.destination || p.lines || p.rows.some(Boolean) ? p : null;
+  return p.warehouse || p.destination || p.lines || p.rows.some(Boolean) ? p : null;
 }
 
 /** Dispatch warehouse stock to a branch: branch, lines (each shows what is available), review, confirm. */
@@ -34,6 +46,8 @@ export function DispatchNew() {
   const qc = useQueryClient();
   const keys = useIdempotencyKey();
   const flight = useSingleFlight();
+  const warehouses = useWarehouses();
+  const [warehouse, setWarehouse] = useState('');
   const [destination, setDestination] = useState('');
   const [lines, setLines] = useState<Line[]>([]);
   const [problems, setProblems] = useState<Problems | null>(null);
@@ -50,6 +64,9 @@ export function DispatchNew() {
         body: b,
         idempotencyKey: keys.forAction(JSON.stringify(b)),
       }),
+    onError: (e) => {
+      if (e instanceof ApiError && e.fieldError('warehouse_id')) setReviewing(false);
+    },
     onSuccess: async (d) => {
       keys.done();
       setDone(d);
@@ -61,6 +78,7 @@ export function DispatchNew() {
   const setQuantity = (id: number, quantity: string) =>
     setLines((ls) => ls.map((l) => (l.item_id === id ? { ...l, quantity } : l)));
   const reset = () => {
+    setWarehouse('');
     setDestination('');
     setLines([]);
     setProblems(null);
@@ -72,7 +90,7 @@ export function DispatchNew() {
   const back = (
     <Link
       to="/dispatches"
-      className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
+      className="inline-flex min-h-target items-center gap-2 font-semibold text-primary-solid underline"
     >
       <ArrowLeft aria-hidden="true" size={20} />
       <span>Back to dispatches</span>
@@ -111,11 +129,13 @@ export function DispatchNew() {
         {(page) => {
           const all = rowsOf(page);
           const branches = all.filter((b) => b.kind === 'branch');
-          const warehouse = all.find((b) => b.kind === 'warehouse');
+          const origin = warehouses.choose
+            ? warehouses.list.find((w) => String(w.id) === warehouse)
+            : warehouses.only;
           const find = async (q: string): Promise<Candidate[]> =>
             rowsOf(
               await api('get', '/api/v1/stock/', {
-                query: { location_id: warehouse?.id, q: q || undefined, page_size: 20 },
+                query: { location_id: origin?.id, q: q || undefined, page_size: 20 },
               }),
             ).map((r) => ({
               item_id: r.item_id,
@@ -129,6 +149,11 @@ export function DispatchNew() {
             return (
               <Card className="flex flex-col gap-3">
                 <h2 className="text-3xl">Review</h2>
+                {warehouses.choose && (
+                  <p className="m-0">
+                    From: <strong>{origin?.name}</strong>
+                  </p>
+                )}
                 <p className="m-0">
                   To: <strong>{to?.name}</strong>
                 </p>
@@ -148,6 +173,7 @@ export function DispatchNew() {
                     flight.start() &&
                     create.mutate(
                       {
+                        ...(warehouses.choose && { warehouse_id: Number(warehouse) }),
                         destination_id: Number(destination),
                         lines: lines.map((l) => ({
                           item_id: l.item_id,
@@ -164,7 +190,22 @@ export function DispatchNew() {
           }
           return (
             <>
-              <Card>
+              <Card className="flex flex-col gap-4">
+                {warehouses.choose && (
+                  <SelectField
+                    label="Warehouse"
+                    value={warehouse}
+                    onChange={(e) => setWarehouse(e.target.value)}
+                    error={problems?.warehouse ?? server?.fieldError('warehouse_id')}
+                  >
+                    <option value="">Choose a warehouse…</option>
+                    {warehouses.list.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </SelectField>
+                )}
                 <SelectField
                   label="Destination branch"
                   value={destination}
@@ -183,7 +224,7 @@ export function DispatchNew() {
                 <h2 className="text-3xl">Items</h2>
                 <ItemPicker
                   label="Find an item in the warehouse"
-                  queryKey={['dispatch', 'find', warehouse?.id]}
+                  queryKey={['dispatch', 'find', origin?.id]}
                   find={find}
                   added={lines.map((l) => l.item_id)}
                   onAdd={(c) => setLines((ls) => [...ls, { ...c, quantity: '' }])}
@@ -236,7 +277,7 @@ export function DispatchNew() {
                 icon={Send}
                 className="w-full sm:w-auto sm:self-start"
                 onClick={() => {
-                  const p = check(destination, lines);
+                  const p = check(destination, lines, warehouses.choose, warehouse);
                   setProblems(p);
                   if (!p) setReviewing(true);
                 }}

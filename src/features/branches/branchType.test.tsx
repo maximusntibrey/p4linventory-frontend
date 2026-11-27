@@ -86,19 +86,16 @@ describe('branch type (contract 0.6.0)', () => {
     expect(screen.getAllByText('A warehouse already exists.').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('mock server end to end: a second warehouse is refused on the field, a normal branch is then added', async () => {
+  it('mock server end to end: a missing type is refused on the field, a second warehouse is then added', async () => {
     renderApp('/branches', { as: 'super_admin' });
     await screen.findByRole('heading', { level: 1, name: 'Branches' });
     await screen.findByRole('cell', { name: 'Central Warehouse' });
     click('Add a branch');
     type('Code', 'W2');
     type('Name', 'Second warehouse');
-    pick('Warehouse');
     click('Save branch');
-    expect(
-      (await screen.findAllByText('A warehouse already exists.')).length,
-    ).toBeGreaterThanOrEqual(2);
-    pick('Normal Branch');
+    expect(await screen.findByText('Choose a branch type.')).toBeTruthy();
+    pick('Warehouse');
     click('Save branch');
     expect((await screen.findByRole('status')).textContent).toContain('Branch saved.');
     expect(await screen.findByRole('cell', { name: 'Second warehouse' })).toBeTruthy();

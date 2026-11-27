@@ -19,6 +19,8 @@ export type OverlayProps = {
   /** Set for ConfirmDialog: role="alertdialog". */
   alert?: boolean;
   describedBy?: string;
+  /** Phones: fill the screen instead of a bottom sheet (command palette, profile). Wider screens are unchanged. */
+  fullOnPhone?: boolean;
 };
 
 /** Shared engine for Modal, Drawer and ConfirmDialog: focus trap, Escape, scroll lock, focus return. */
@@ -31,6 +33,7 @@ export function Overlay({
   footer,
   alert,
   describedBy,
+  fullOnPhone,
 }: OverlayProps) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -94,7 +97,7 @@ export function Overlay({
         className={cx(
           'flex max-h-full w-full flex-col gap-4 overflow-y-auto bg-canvas p-4 shadow-float',
           placement === 'center'
-            ? 'rounded-t-xl sm:max-w-lg sm:rounded-xl'
+            ? cx('sm:max-w-lg sm:rounded-xl', fullOnPhone ? 'h-full sm:h-auto' : 'rounded-t-xl')
             : 'h-full max-w-md border-l border-line',
         )}
       >

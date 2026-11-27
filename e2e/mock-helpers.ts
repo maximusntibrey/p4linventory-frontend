@@ -27,13 +27,72 @@ export async function go(page: Page, path: string) {
   }, path);
 }
 
-/** On phones the sidebar lives in the Menu drawer; on desktop it is always there. Retries, because a redirect right after sign-in closes the drawer. */
+/** Phones have no sidebar or menu: navigation is the command palette. */
+export const isPhone = (page: Page) =>
+  page.getByRole('button', { name: /Search or jump to/ }).isVisible();
+
+/** Opens the place a user navigates from: the palette sheet on phones (grouped like the sidebar), the sidebar on desktop. */
 export async function openNav(page: Page) {
-  const menu = page.getByRole('button', { name: 'Menu', exact: true });
-  if (!(await menu.isVisible())) return;
-  const drawer = page.getByRole('dialog', { name: 'Menu' });
+  if (!(await isPhone(page))) return page.getByRole('navigation', { name: 'Main' });
+  const palette = page.getByRole('dialog', { name: 'Search or jump to' });
   await expect(async () => {
-    if (!(await drawer.isVisible())) await menu.click();
-    await expect(drawer).toBeVisible({ timeout: 1000 });
+    if (!(await palette.isVisible())) {
+      await page.getByRole('button', { name: /Search or jump to/ }).click();
+    }
+    await expect(palette).toBeVisible({ timeout: 1000 });
   }).toPass();
+  return palette;
+}
+
+/** Opens a destination by its label from whichever navigation this screen has. */
+export async function goTo(page: Page, label: string) {
+  const nav = await openNav(page);
+  const target = (await isPhone(page))
+    ? nav.getByRole('button', { name: new RegExp(`^${label}`) })
+    : nav.getByRole('link', { name: label });
+  await target.click();
+}
+
+/** Phones: opens the palette and unfolds its Profile section. Returns the palette. */
+export async function openProfile(page: Page) {
+  const palette = await openNav(page);
+  const region = palette.getByRole('region', { name: 'Working branch' });
+  if (!(await region.isVisible())) await palette.getByText('Profile', { exact: true }).click();
+  await expect(region).toBeVisible();
+  return palette;
+}
+
+/** The working branch name: in the top bar on desktop, in the palette's Profile section on phones. */
+export async function expectBranch(page: Page, text: string | RegExp) {
+  if (await isPhone(page)) {
+    const palette = await openProfile(page);
+    await expect(palette.getByRole('region', { name: 'Working branch' })).toContainText(text);
+    await page.keyboard.press('Escape');
+  } else {
+    await expect(
+      page.getByRole('banner').getByText(text, { exact: typeof text === 'string' }),
+    ).toBeVisible();
+  }
+}
+
+/** Starts the branch switch: the Switch branch button on desktop, Profile > Switch working branch on phones. */
+export async function startSwitch(page: Page) {
+  if (await isPhone(page)) {
+    const palette = await openProfile(page);
+    await palette.getByRole('button', { name: 'Switch working branch' }).click();
+  } else {
+    await page.getByRole('button', { name: 'Switch branch' }).click();
+  }
+}
+
+/** Phones collapse two or more page actions into one Actions button; desktop shows them. */
+export async function openActions(page: Page) {
+  const b = page.getByRole('button', { name: 'Actions', exact: true });
+  if (await b.isVisible()) await b.click();
+}
+
+/** Phones keep filters, sort and extras behind one Filters button in the Toolbar; desktop shows them. */
+export async function openFilters(page: Page) {
+  const b = page.getByRole('button', { name: 'Filters', exact: true });
+  if (await b.isVisible()) await b.click();
 }

@@ -130,7 +130,7 @@ export function DataTable<Row>({
     body = Array.from({ length: SKELETON_ROWS }, (_, i) => (
       <tr key={i}>
         {Array.from({ length: colSpan }, (_, j) => (
-          <td key={j} className="p-3">
+          <td key={j} className="p-(--density-cell)">
             <Skeleton />
           </td>
         ))}
@@ -170,7 +170,10 @@ export function DataTable<Row>({
             </td>
           )}
           {cols.map((c) => (
-            <td key={c.id} className={cx('p-3 align-middle', c.align === 'right' && 'text-right')}>
+            <td
+              key={c.id}
+              className={cx('p-(--density-cell) align-middle', c.align === 'right' && 'text-right')}
+            >
               {c.cell(row)}
             </td>
           ))}
@@ -232,13 +235,13 @@ export function DataTable<Row>({
                       <button
                         type="button"
                         onClick={() => cycle(c.id)}
-                        className="inline-flex min-h-target w-full items-center gap-1 px-3 font-semibold"
+                        className="inline-flex min-h-target w-full items-center gap-1 px-(--density-cell) font-semibold"
                       >
                         <span>{c.header}</span>
                         <Icon aria-hidden="true" size={14} />
                       </button>
                     ) : (
-                      <span className="block px-3 py-3">{c.header}</span>
+                      <span className="block p-(--density-cell)">{c.header}</span>
                     )}
                   </th>
                 );

@@ -1,26 +1,28 @@
-import { Menu } from 'lucide-react';
-import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Button } from './Button';
 import { cx } from './cx';
-import { Drawer } from './Drawer';
+import { useCompact } from './useCompact';
 
 export type AppShellProps = {
-  /** A <Sidebar>. Drawn as a column from md up and inside a drawer on phones. */
+  /** A <Sidebar>. A column from md up; phones have none (navigation is the command palette). */
   sidebar: ReactNode;
-  /** A <Topbar>. */
+  /** A <Topbar>. Drawn from md up only. */
   topbar?: ReactNode;
+  /** A <CompactBar>. Drawn on phones only, in place of the sidebar and the top bar. */
+  compactBar?: ReactNode;
   children: ReactNode;
   /** Showcase use: no <main> landmark, skip link or full-height layout, so it can sit inside another page. */
   embedded?: boolean;
 };
 
 /** Presentational layout. It knows nothing about the API; the caller passes the already-allowed menu. */
-export function AppShell({ sidebar, topbar, children, embedded = false }: AppShellProps) {
-  const { pathname } = useLocation();
-  // Open for one path only, so following a link closes the drawer without an effect.
-  const [openFor, setOpenFor] = useState<string | null>(null);
+export function AppShell({
+  sidebar,
+  topbar,
+  compactBar,
+  children,
+  embedded = false,
+}: AppShellProps) {
+  const compact = useCompact();
   const Main = embedded ? 'div' : 'main';
   return (
     <div className={cx('flex', embedded ? 'h-full' : 'min-h-screen')}>
@@ -32,23 +34,18 @@ export function AppShell({ sidebar, topbar, children, embedded = false }: AppShe
           Skip to content
         </a>
       )}
-      <aside className={cx('hidden shrink-0 md:block', !embedded && 'sticky top-0 h-screen')}>
-        {sidebar}
-      </aside>
+      {!compact && (
+        <aside className={cx('shrink-0', !embedded && 'sticky top-0 h-screen')}>{sidebar}</aside>
+      )}
       <div className="flex min-w-0 flex-1 flex-col">
-        {topbar}
-        <div className="px-4 pt-2 md:hidden">
-          <Button variant="secondary" icon={Menu} onClick={() => setOpenFor(pathname)}>
-            Menu
-          </Button>
-        </div>
-        <Main {...(embedded ? {} : { id: 'main', tabIndex: -1 })} className="min-w-0 flex-1 p-4">
+        {compact ? compactBar : topbar}
+        <Main
+          {...(embedded ? {} : { id: 'main', tabIndex: -1 })}
+          className="min-w-0 flex-1 p-(--density-page)"
+        >
           {children}
         </Main>
       </div>
-      <Drawer open={openFor === pathname} onClose={() => setOpenFor(null)} title="Menu">
-        {sidebar}
-      </Drawer>
     </div>
   );
 }

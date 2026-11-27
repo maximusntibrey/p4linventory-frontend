@@ -6,7 +6,10 @@ export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       {...rest}
-      className={cx('rounded-xl border border-line bg-canvas p-4 shadow-card', className)}
+      className={cx(
+        'rounded-xl border border-line bg-canvas p-(--density-card) shadow-card',
+        className,
+      )}
     />
   );
 }
