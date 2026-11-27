@@ -1,6 +1,10 @@
 import { lazy, Suspense } from 'react';
 import Box from '@mui/material/Box';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { Login } from './pages/Login';
+import { ChangePassword } from './pages/ChangePassword';
+import { NotFound } from './pages/NotFound';
+import { ComingSoon } from './pages/ComingSoon';
 import { RequireAuth, RequirePermission } from './auth/guards';
 import type { Me } from './auth/session';
 import { AppShell } from './components/AppShell';
@@ -66,14 +70,6 @@ const UserNew = lazy(() =>
 const UsersPage = lazy(() =>
   import('./features/users/UsersPage').then((m) => ({ default: m.UsersPage })),
 );
-const ChangePassword = lazy(() =>
-  import('./pages/ChangePassword').then((m) => ({ default: m.ChangePassword })),
-);
-const ComingSoon = lazy(() =>
-  import('./pages/ComingSoon').then((m) => ({ default: m.ComingSoon })),
-);
-const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })));
-const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
 
 /** Screens a later step builds. Each is opened by one permission from the me endpoint; the server still checks every request. */
 const guardedScreens: { path: string; title: string; permission: Me['permissions'][number] }[] = [

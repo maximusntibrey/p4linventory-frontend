@@ -89,8 +89,16 @@ export async function expectBranch(page: Page, text: string | RegExp) {
 /** Starts the branch switch from the profile menu. */
 export async function startSwitch(page: Page) {
   const header = page.getByRole('banner').first();
-  if (!(await header.getByRole('button', { name: 'Log out' }).isVisible())) await openProfile(page);
-  await header.getByRole('button', { name: 'Switch working branch' }).click({ force: true });
+  // The menu animates open: retry the whole open-and-click until the picker page shows.
+  await expect(async () => {
+    const item = header.getByRole('button', { name: 'Switch working branch' });
+    if (!(await item.isVisible())) await openProfile(page);
+    await page.waitForTimeout(300);
+    await item.click({ timeout: 2000 });
+    await expect(page.getByRole('heading', { level: 1, name: 'Switch branch' })).toBeVisible({
+      timeout: 2000,
+    });
+  }).toPass();
 }
 
 /** Phones collapse two or more page actions into one Actions button; desktop shows them. */

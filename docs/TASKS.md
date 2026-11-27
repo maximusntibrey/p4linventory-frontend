@@ -887,7 +887,7 @@ Rule: the app must look and behave like the Mantis Free dashboard (`reference/ma
 
 ### UI result (after run 1 and the migration batches)
 
-- `npm run check` green: 37 test files, 560 tests (the old custom-library tests were replaced by `src/components/ui/ui.test.tsx` and the screen tests; shell, command palette, toast and modal tests went with the components they covered). Bundle: before the migration one `index-*.js` of 514 kB (154 kB gzip) and 26 kB CSS. After the lazy-loading step the first load is `index` 335 kB (108 gzip) + `mui` 215 kB (62 gzip) + `app-vendor` 82 kB (26 gzip) + `icons` 81 kB (23 gzip), about 715 kB (220 kB gzip) in total; every page is its own chunk (2 to 13 kB) and `charts` (482 kB, 148 gzip) loads after the cards paint. Before the lazy step the single main file was 1,002 kB (307 kB gzip).
+- `npm run check` green: 37 test files, 560 tests (the old custom-library tests were replaced by `src/components/ui/ui.test.tsx` and the screen tests; shell, command palette, toast and modal tests went with the components they covered). Bundle: before the migration one `index-*.js` of 514 kB (154 kB gzip) and 26 kB CSS. After the lazy-loading step the first load is `index` 381 kB (124 gzip) + `mui` 215 kB (62 gzip) + `app-vendor` 82 kB (26 gzip) + `icons` 81 kB (23 gzip), about 760 kB (235 kB gzip) in total with the sign-in and password screens kept eager; every page is its own chunk (2 to 13 kB) and `charts` (482 kB, 148 gzip) loads after the cards paint. Before the lazy step the single main file was 1,002 kB (307 kB gzip).
 
 - `npm run e2e` green: 100 passed, 3 skipped (project-specific skips). The profile-menu branch specs were occasionally flaky under load; the helpers now reopen the menu while polling.
 
