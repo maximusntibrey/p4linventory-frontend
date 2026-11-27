@@ -6,7 +6,7 @@ import type { components } from '../../api';
 import { useIdempotencyKey } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
 import { ItemForm } from './ItemForm';
-import { Card } from '../../components/ui';
+import { Card, PageHeader } from '../../components/ui';
 
 /** Add an item. It is always saved as a Draft; the item page then offers Activate. */
 export function ItemNew() {
@@ -28,7 +28,7 @@ export function ItemNew() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-display">Add an item</h1>
+      <PageHeader title="Add an item" />
       <ApiProblem error={create.error} at={create.submittedAt} />
       <Card>
         <ItemForm

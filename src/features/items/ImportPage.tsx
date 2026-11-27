@@ -10,7 +10,7 @@ import { ApiProblem } from '../../components/ApiProblem';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { ResultCard } from '../../components/focus';
 import { linkButton } from '../sales/labels';
-import { Button, Card, SelectField, TextField } from '../../components/ui';
+import { Button, Card, PageHeader, SelectField, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 
@@ -99,7 +99,7 @@ export function ImportPage() {
   if (report?.committed) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-display">Import from CSV</h1>
+        <PageHeader title="Import from CSV" />
         <ResultCard>
           <p className="m-0 text-lg font-semibold">Import {report.batch_reference} is done.</p>
           <Counts r={report} />
@@ -119,7 +119,7 @@ export function ImportPage() {
   const clean = report !== null && report.errors.length === 0;
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-display">Import from CSV</h1>
+      <PageHeader title="Import from CSV" />
       <Warning />
       <ApiProblem error={server} at={run.submittedAt} />
       <Card className="flex flex-col gap-4">

@@ -20,7 +20,7 @@ import {
   itemStatusBadge,
   withoutCost,
 } from './labels';
-import { Button, Card, StatusWord } from '../../components/ui';
+import { Button, Card, PageHeader, StatusWord } from '../../components/ui';
 
 type S = components['schemas'];
 type Warning = S['ItemWithCostAndWarnings']['warnings'][number];
@@ -102,7 +102,7 @@ function Detail({
   return (
     <>
       <div className="flex flex-col gap-2">
-        <h1 className="text-display">{item.name}</h1>
+        <PageHeader title={item.name} />
         <p className="m-0 flex flex-wrap items-center gap-2 text-muted">
           <span>{item.sku}</span>
           <span aria-hidden="true">·</span>

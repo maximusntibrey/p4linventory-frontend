@@ -12,7 +12,7 @@ import type { Candidate } from '../../components/ItemPicker';
 import { amountPattern, twoDecimals } from '../../lib/money';
 import { formatAccra } from '../../lib/time';
 import { ghs } from '../items/labels';
-import { Button, Card, TextField } from '../../components/ui';
+import { Button, Card, PageHeader, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string; cost: string };
@@ -90,7 +90,7 @@ export function GoodsReceiptPage() {
   if (done) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-display">Receive stock</h1>
+        <PageHeader title="Receive stock" />
         <ResultCard>
           <p className="m-0 text-lg font-semibold">
             Receipt {done.reference} is confirmed. The stock is in the warehouse.
@@ -115,7 +115,7 @@ export function GoodsReceiptPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-display">Receive stock</h1>
+      <PageHeader title="Receive stock" />
       <ApiProblem error={create.error} at={create.submittedAt} />
       {reviewing ? (
         <Card className="flex flex-col gap-3">

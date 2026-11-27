@@ -8,7 +8,7 @@ import { useIdempotencyKey } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
 import { OneTimePassword } from './OneTimePassword';
 import { UserForm } from './UserForm';
-import { Card } from '../../components/ui';
+import { Card, PageHeader } from '../../components/ui';
 
 type Created = components['schemas']['UserWithOneTimePassword'];
 
@@ -38,7 +38,7 @@ export function UserNew() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-display">{created ? 'User created' : 'Add a user'}</h1>
+      <PageHeader title={created ? 'User created' : 'Add a user'} />
       {created ? (
         <>
           <p role="status" className="m-0 font-semibold">

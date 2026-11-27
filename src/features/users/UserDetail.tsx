@@ -13,7 +13,7 @@ import { QueryGate } from '../../components/QueryGate';
 import { permissionCodes, permissionLabels, roleLabels, statusBadge } from './labels';
 import { OneTimePassword } from './OneTimePassword';
 import { UserForm } from './UserForm';
-import { Button, Card, StatusWord, TextField } from '../../components/ui';
+import { Button, Card, PageHeader, StatusWord, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Target = 'active' | 'suspended' | 'deactivated';
@@ -186,7 +186,7 @@ function UserView({ user, canManage }: { user: S['User']; canManage: boolean }) 
   return (
     <>
       <div className="flex flex-col gap-2">
-        <h1 className="text-display">{user.full_name}</h1>
+        <PageHeader title={user.full_name} />
         <p className="m-0 flex flex-wrap items-center gap-2 text-muted">
           <span>{user.login_id}</span>
           <span aria-hidden="true">·</span>

@@ -8,7 +8,7 @@ import { meKey, useLogout } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
 import { describeError, ErrorSummary } from '../components/ErrorSummary';
 import type { ErrorParts } from '../components/ErrorSummary';
-import { Button, Card, TextField } from '../components/ui';
+import { Button, Card, PageHeader, TextField } from '../components/ui';
 
 type Values = { current_password: string; new_password: string; confirm: string };
 
@@ -126,7 +126,7 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
     <AuthLayout title="Choose a new password">{body}</AuthLayout>
   ) : (
     <div className="flex flex-col gap-4">
-      <h1 className="text-display">Change password</h1>
+      <PageHeader title="Change password" />
       <Card className="flex flex-col gap-4">{body}</Card>
     </div>
   );

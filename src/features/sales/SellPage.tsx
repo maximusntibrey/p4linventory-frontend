@@ -14,7 +14,7 @@ import type { Candidate } from '../../components/ItemPicker';
 import { BranchPicker } from '../workingBranch/BranchPicker';
 import { ghs } from '../items/labels';
 import { fromCents, linkButton, paymentCodes, paymentLabel, toCents } from './labels';
-import { Button, Card, SelectField, TextField } from '../../components/ui';
+import { Button, Card, PageHeader, SelectField, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string; price: string | null };
@@ -137,7 +137,7 @@ export function SellPage() {
   if (!where) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-display">Sell</h1>
+        <PageHeader title="Sell" />
         <p className="m-0">Choose the branch you are selling at.</p>
         <BranchPicker onDone={() => undefined} />
       </div>
@@ -147,7 +147,7 @@ export function SellPage() {
   if (done) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-display">Sell</h1>
+        <PageHeader title="Sell" />
         <ResultCard>
           <p className="m-0 text-lg font-semibold">Sale {done.reference} is recorded.</p>
           <p className="m-0">
@@ -177,7 +177,7 @@ export function SellPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-display">Sell</h1>
+        <PageHeader title="Sell" />
         <Link to="/sell/sales" className={linkButton}>
           <ListChecks aria-hidden="true" size={20} />
           <span>Sales list</span>

@@ -11,7 +11,7 @@ import { ConfirmPanel } from '../../components/ConfirmPanel';
 import { QueryGate } from '../../components/QueryGate';
 import { formatAccra } from '../../lib/time';
 import { dispatchStatusBadge } from '../dispatches/labels';
-import { Button, Card, StatusWord, TextField } from '../../components/ui';
+import { Button, Card, PageHeader, StatusWord, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Dispatch = S['Dispatch'];
@@ -273,7 +273,7 @@ export function ReceiveDispatch() {
   });
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-display">Check delivery</h1>
+      <PageHeader title="Check delivery" />
       <QueryGate query={one}>
         {(d) =>
           d.status === 'in_transit' && canReceive ? (
