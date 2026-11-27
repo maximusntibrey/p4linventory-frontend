@@ -53,7 +53,7 @@ export const users: S['User'][] = [
   },
   {
     id: 2,
-    login_id: 'USR-0001',
+    login_id: 'USR-0002',
     full_name: 'Kofi Boateng',
     status: 'active',
     roles: ['branch_admin'],
@@ -65,7 +65,7 @@ export const users: S['User'][] = [
   },
   {
     id: 3,
-    login_id: 'USR-0002',
+    login_id: 'USR-0003',
     full_name: 'Esi Owusu',
     status: 'active',
     roles: ['front_staff'],
@@ -77,7 +77,7 @@ export const users: S['User'][] = [
   },
   {
     id: 4,
-    login_id: 'USR-0003',
+    login_id: 'USR-0001',
     full_name: 'Yaw Asante',
     status: 'active',
     roles: ['warehouse_admin'],
@@ -114,8 +114,8 @@ const menus = {
   warehouse_admin: [
     entry('home', 'Home', '/'),
     entry('items', 'Items', '/items'),
-    entry('receive_stock', 'Receive stock', '/goods-receipts'),
-    entry('dispatch', 'Dispatch', '/dispatches'),
+    entry('receive_stock', 'Receive stock', '/receive-stock'),
+    entry('dispatch', 'Dispatch', '/dispatch'),
     entry('find', 'Find', '/find'),
   ],
   branch_admin: [
@@ -130,7 +130,7 @@ const menus = {
     entry('find', 'Find', '/find'),
     entry('stock', 'Stock', '/stock'),
     entry('receive', 'Receive', '/receive'),
-    entry('sales', 'Sales', '/sell/sales'),
+    entry('sales', 'Sales', '/sales'),
   ],
 } satisfies Record<string, S['Me']['menu']>;
 
@@ -142,7 +142,7 @@ const homeLinks = {
     entry('sell', 'Sell', '/sell'),
     entry('find', 'Find', '/find'),
     entry('receive', 'Receive', '/receive'),
-    entry('sales', 'Sales', '/sell/sales'),
+    entry('sales', 'Sales', '/sales'),
   ],
   warehouse_admin: [
     entry('activity', 'Activity', '/activity'),
@@ -151,7 +151,7 @@ const homeLinks = {
   branch_admin: [
     entry('activity', 'Activity', '/activity'),
     entry('shortfalls', 'Shortfalls', '/shortfalls'),
-    entry('sales', 'Sales', '/sell/sales'),
+    entry('sales', 'Sales', '/sales'),
   ],
   front_staff: [],
 } satisfies Record<string, S['Me']['home_links']>;
@@ -509,7 +509,7 @@ export const stockMovements: S['StockMovement'][] = [
     movement_type: 'supplier_receipt',
     source_type: 'goods_receipt',
     source_ref: 'GRN-000001',
-    actor_login_id: 'USR-0001',
+    actor_login_id: 'USR-0002',
     note: '',
   },
 ];
@@ -546,7 +546,7 @@ export const goodsReceipt: S['GoodsReceipt'] = {
     },
   ],
   received_at: t,
-  received_by: 'USR-0001',
+  received_by: 'USR-0002',
 };
 
 export const dispatch: S['Dispatch'] = {
@@ -582,7 +582,7 @@ export const dispatch: S['Dispatch'] = {
     },
   ],
   dispatched_at: t,
-  dispatched_by: 'USR-0001',
+  dispatched_by: 'USR-0002',
   received_at: null,
   received_by: null,
   receive_note: null,
@@ -616,7 +616,7 @@ const dispatchShort: S['Dispatch'] = {
     },
   ],
   received_at: t,
-  received_by: 'USR-0002',
+  received_by: 'USR-0003',
   receive_note: 'Two boxes did not arrive.',
   has_open_discrepancy: true,
 };
@@ -629,7 +629,7 @@ export const sales: S['Sale'][] = [
     id: 1,
     reference: 'SAL-000001',
     location: branchA,
-    staff: 'USR-0003',
+    staff: 'USR-0001',
     status: 'completed',
     payment_method: 'cash',
     total: '1250.00',
@@ -651,7 +651,7 @@ export const sales: S['Sale'][] = [
     id: 2,
     reference: 'SAL-000002',
     location: branchA,
-    staff: 'USR-0003',
+    staff: 'USR-0001',
     status: 'cancelled',
     payment_method: 'card',
     total: '2500.00',
@@ -669,7 +669,7 @@ export const sales: S['Sale'][] = [
     ],
     cancellation: {
       reason: 'Customer changed their mind',
-      cancelled_by: 'USR-0002',
+      cancelled_by: 'USR-0003',
       cancelled_role: 'branch_admin',
       cancelled_at: t,
     },

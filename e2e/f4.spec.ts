@@ -236,7 +236,7 @@ test('Front Staff with no branch signs in and gets the branch picker, not the da
   await stubAuth(page, { frontStaff: true });
   await stubData(page);
   await page.goto('/login');
-  await page.getByLabel('Login ID').fill('USR-0003');
+  await page.getByLabel('Login ID').fill('USR-0001');
   await page.getByLabel('Password').fill('a-good-password');
   await page.getByLabel('Password').press('Enter');
   await expect(page.getByRole('heading', { level: 1, name: 'Choose your branch' })).toBeVisible();

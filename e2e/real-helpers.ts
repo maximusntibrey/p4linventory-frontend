@@ -10,7 +10,6 @@ export const ROLES = {
 } as const;
 export type Role = keyof typeof ROLES;
 
-export const API = 'http://localhost:8000';
 export const unique = () => Date.now().toString(36).toUpperCase();
 
 export type Watch = {
@@ -31,7 +30,8 @@ export function watch(page: Page): Watch {
     calls: [],
     consoleErrors: [],
     pageErrors: [],
-    expected: [],
+    // The first /me before sign-in is how the app learns it has no session.
+    expected: ['GET 401 /api/v1/auth/me/'],
     assertClean: async () => {
       const bad = w.calls.filter(
         (c) =>
@@ -52,12 +52,22 @@ export function watch(page: Page): Watch {
       );
     },
   };
-  page.on('response', (r) => {
-    if (r.url().startsWith(API))
-      w.calls.push({ method: r.request().method(), url: r.url(), status: r.status() });
+  page.on('response', async (r) => {
+    if (!r.url().includes('/api/v1/')) return;
+    w.calls.push({ method: r.request().method(), url: r.url(), status: r.status() });
+    if (process.env.E2E_TRACE)
+      console.log(`  ${r.status()} ${r.request().method()} ${new URL(r.url()).pathname}`);
+    if (r.status() >= 400) {
+      const body = await r.text().catch(() => '');
+      console.log(
+        `[${r.status()}] ${r.request().method()} ${new URL(r.url()).pathname} ${body.slice(0, 700)}`,
+      );
+    }
   });
   page.on('requestfailed', (r) => {
-    if (r.url().startsWith(API)) w.calls.push({ method: r.method(), url: r.url(), status: 0 });
+    // ERR_ABORTED = the page navigated away mid-request; not a failure of the call.
+    if (r.url().includes('/api/v1/') && r.failure()?.errorText !== 'net::ERR_ABORTED')
+      w.calls.push({ method: r.method(), url: r.url(), status: 0 });
   });
   page.on('console', (m) => {
     if (m.type() === 'error') w.consoleErrors.push(m.text());
@@ -113,4 +123,34 @@ export async function expectNotBlank(page: Page) {
   await expect(async () => {
     expect((await page.locator('main').innerText()).trim().length).toBeGreaterThan(5);
   }).toPass();
+}
+
+/** Working-branch screen: pick `name` when the app asks for it (Front Staff and Super Admin on branch screens). */
+export async function pickBranchIfAsked(page: Page, name: string) {
+  const ask = page.getByRole('heading', { name: /choose your branch|switch branch/i });
+  if (await ask.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: new RegExp(name) }).click();
+    await expect(ask).toHaveCount(0);
+  }
+}
+
+export async function openProfileItem(page: Page, name: string | RegExp) {
+  // The menu closes when the shell re-renders under it (a /me refresh): open it again until the click lands.
+  await expect(async () => {
+    await page
+      .getByRole('banner')
+      .first()
+      .getByRole('button', { name: 'Open profile menu' })
+      .click();
+    await page
+      .getByRole('menuitem', { name })
+      .or(page.getByRole('button', { name }))
+      .first()
+      .click({ timeout: 3000 });
+  }).toPass({ timeout: 30_000 });
+}
+
+export async function logOut(page: Page) {
+  await openProfileItem(page, 'Log out');
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 }

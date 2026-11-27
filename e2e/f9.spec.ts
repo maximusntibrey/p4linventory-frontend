@@ -7,7 +7,7 @@ test('UI consistency: 360 px, 44 px targets and no sideways scroll across main l
   await stubAuth(page, { signedIn: true });
   await stubData(page);
 
-  for (const path of ['/items', '/stock', '/warehouse', '/sell/sales', '/find']) {
+  for (const path of ['/items', '/stock', '/warehouse', '/sales', '/find']) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     expect(await sideways(page)).toBeLessThanOrEqual(0);

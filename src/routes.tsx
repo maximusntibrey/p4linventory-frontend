@@ -135,7 +135,10 @@ export function AppRoutes() {
                 </RequirePermission>
               }
             />
-            {/* The old address keeps working. */}
+            {/* Addresses the server's menu uses, or older ones: they land on the one real screen. */}
+            <Route path="sell/sales" element={<Navigate to="/sales" replace />} />
+            <Route path="receive-stock" element={<Navigate to="/goods-receipts" replace />} />
+            <Route path="dispatch" element={<Navigate to="/dispatches" replace />} />
             <Route path="activity" element={<Navigate to="/audit-logs" replace />} />
             <Route
               path="shortfalls"
@@ -154,7 +157,7 @@ export function AppRoutes() {
               }
             />
             <Route
-              path="sell/sales"
+              path="sales"
               element={
                 <RequirePermission permission="sales.record">
                   <SalesPage />

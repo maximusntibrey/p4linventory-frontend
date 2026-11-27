@@ -38,7 +38,7 @@ async function setup(page: Page, permissions: S['Me']['permissions'] = ['find.us
       json: {
         user: {
           id: 3,
-          login_id: 'USR-0002',
+          login_id: 'USR-0003',
           full_name: 'Esi Owusu',
           status: 'active',
           roles: ['front_staff'],
@@ -95,7 +95,7 @@ const hpSale = {
   id: 7,
   reference: 'SAL-000007',
   location: stockBranch,
-  staff: 'USR-0002',
+  staff: 'USR-0003',
   status: 'completed',
   payment_method: 'cash',
   total: '2500.00',
@@ -172,14 +172,14 @@ test('sales list: cancel needs a reason and a confirm, then shows the Cancelled 
       status: 'cancelled',
       cancellation: {
         reason: (r.request().postDataJSON() as { reason: string }).reason,
-        cancelled_by: 'USR-0002',
+        cancelled_by: 'USR-0003',
         cancelled_role: 'branch_admin',
         cancelled_at: '2026-11-24T11:00:00Z',
       },
     };
     return r.fulfill({ json: sale });
   });
-  await page.goto('/sell/sales');
+  await page.goto('/sales');
   await expect(page.getByRole('cell', { name: 'SAL-000007', exact: true })).toBeVisible();
   await expect(page.locator('span', { hasText: /^Completed$/ }).last()).toBeVisible();
   const open = page.getByRole('button', { name: 'Cancel sale SAL-000007' });

@@ -41,7 +41,15 @@ test('Super Admin: items list, search, filters; add, view, edit, picture, activa
   await page.getByLabel('Add a picture').setInputFiles(PNG);
   await page.getByRole('button', { name: 'Upload picture' }).click();
   await expect(page.getByRole('img').first()).toBeVisible();
+  // The form is rebuilt from the saved item after an upload: let that settle before typing.
+  await page.waitForLoadState('networkidle');
   await page.getByLabel('Description').fill('Edited by the e2e run');
+  // Activation needs these specs (the API says so with a 400 when they are missing).
+  await page.getByLabel('Processor').fill('Intel Core i5');
+  await page.getByLabel('RAM (GB)').fill('8');
+  await page.getByLabel('Storage (GB)').fill('256');
+  await page.getByLabel('Storage type').selectOption({ index: 1 });
+  await expect(page.getByLabel('Processor')).toHaveValue('Intel Core i5');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Changes saved.')).toBeVisible();
   await page.getByRole('button', { name: 'Activate item' }).click();

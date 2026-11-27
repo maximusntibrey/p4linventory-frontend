@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../mocks/server';
 import { mockSession } from '../mocks/handlers';
-import { api, ApiError, networkFailure, newIdempotencyKey } from './client';
+import { api, apiCsv, ApiError, networkFailure, newIdempotencyKey } from './client';
 
 const catchError = async (p: Promise<unknown>) => {
   try {
@@ -42,7 +42,7 @@ describe('api client', () => {
 
   it('turns a 400 body into field errors', async () => {
     const e = await catchError(
-      api('post', '/api/v1/auth/login/', { body: { login_id: 'USR-0001', password: '' } }),
+      api('post', '/api/v1/auth/login/', { body: { login_id: 'USR-0002', password: '' } }),
     );
     expect(e).toBeInstanceOf(ApiError);
     expect(e).toMatchObject({ status: 400, kind: 'validation', code: 'validation_error' });
@@ -78,7 +78,7 @@ describe('api client', () => {
       ),
     );
     const e = await catchError(
-      api('post', '/api/v1/auth/login/', { body: { login_id: 'USR-0001', password: 'x' } }),
+      api('post', '/api/v1/auth/login/', { body: { login_id: 'USR-0002', password: 'x' } }),
     );
     expect(e).toMatchObject({ status: 429, kind: 'rate_limited', retryAfter: 900 });
   });
@@ -135,6 +135,19 @@ describe('api client', () => {
     warn.mockRestore();
   });
 
+  it('asks for CSV with a fallback Accept so the server does not answer 406', async () => {
+    let accept = '';
+    server.use(
+      http.get('/api/v1/activity-log/export/', ({ request }) => {
+        accept = request.headers.get('Accept') ?? '';
+        return new HttpResponse('a,b', { headers: { 'Content-Type': 'text/csv' } });
+      }),
+    );
+    expect((await apiCsv('/api/v1/activity-log/export/')).text).toBe('a,b');
+    expect(accept).toContain('text/csv');
+    expect(accept).toContain('*/*');
+  });
+
   it('sends the Idempotency-Key header', async () => {
     document.cookie = 'csrftoken=abc';
     const key = newIdempotencyKey();
@@ -182,7 +195,7 @@ describe('api client', () => {
         return HttpResponse.json({});
       }),
     );
-    await api('post', '/api/v1/auth/login/', { body: { login_id: 'USR-0001', password: 'x' } });
+    await api('post', '/api/v1/auth/login/', { body: { login_id: 'USR-0002', password: 'x' } });
     expect(seen).toBe('mock-csrf-token');
   });
 

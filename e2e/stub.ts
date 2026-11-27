@@ -16,7 +16,7 @@ const user = {
 } satisfies S['User'];
 const frontStaff = {
   id: 3,
-  login_id: 'USR-0002',
+  login_id: 'USR-0003',
   full_name: 'Esi Owusu',
   status: 'active',
   roles: ['front_staff'],

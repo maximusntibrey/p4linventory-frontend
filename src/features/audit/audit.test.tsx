@@ -68,7 +68,7 @@ describe('Audit Logs screen', () => {
     renderApp('/audit-logs', { as: 'super_admin' });
     await screen.findByText('User created');
     click('Filter');
-    await screen.findByRole('option', { name: /USR-0003/ });
+    await screen.findByRole('option', { name: /USR-0001/ });
     type('User', '4');
     type('Branch', '1');
     type('Action', ' dispatch_created ');

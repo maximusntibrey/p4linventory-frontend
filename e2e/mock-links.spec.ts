@@ -13,7 +13,7 @@ const ROUTES: { path: string; perm: string | null }[] = [
   { path: '/audit-logs', perm: 'activity.view' },
   { path: '/shortfalls', perm: 'shortfalls.resolve' },
   { path: '/sell', perm: 'sales.record' },
-  { path: '/sell/sales', perm: 'sales.record' },
+  { path: '/sales', perm: 'sales.record' },
   { path: '/items', perm: 'items.view' },
   { path: '/items/new', perm: 'items.manage' },
   { path: '/items/1', perm: 'items.view' },

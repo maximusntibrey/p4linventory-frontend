@@ -263,7 +263,8 @@ export async function apiCsv(
   const requestUrl = new URL(target, (!isMockMode && apiUrl) || globalThis.location.origin);
   try {
     res = await fetch(requestUrl, {
-      headers: { Accept: 'text/csv' },
+      // The server answers 406 to a bare text/csv Accept; the fallback lets it through and it still sends CSV.
+      headers: { Accept: 'text/csv, */*;q=0.1' },
       credentials: 'include',
     });
   } catch {

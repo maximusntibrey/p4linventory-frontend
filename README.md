@@ -13,7 +13,8 @@ Or manually: `npm ci`, `copy .env.example .env`, `npm run dev`.
 Modes (set `VITE_API_MODE` in `.env`):
 
 - `mock`: MSW mock responses, no backend needed. Only in dev, and only when set explicitly; a production build is always `real`.
-- `real` (anything else, including unset): calls the API at `VITE_API_URL` (local `.env.example` defaults to `http://localhost:8000`; Railway sets the backend's public HTTPS origin before building).
+- `real` (anything else, including unset): in `npm run dev` the browser calls the same origin (http://localhost:5173) and the Vite proxy forwards `/api`, `/media` and `/health` to `VITE_BACKEND_URL` (default `http://localhost:8000`), so no CORS is involved. A production build calls `VITE_API_URL` (Railway sets the backend's public HTTPS origin before building). To test the production-style cross-origin path in dev, set `VITE_API_DIRECT=true` (then `VITE_API_URL` is used and the backend must allow the origin in its CORS settings).
+- The backend must trust the dev origin for CSRF: its `CSRF_TRUSTED_ORIGINS` has to include `http://localhost:5173` (and `http://127.0.0.1:5173` if you browse that address).
 
 ## Commands
 

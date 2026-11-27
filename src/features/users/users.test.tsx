@@ -45,7 +45,7 @@ describe('users list', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Users' })).toBeTruthy();
     expect(await screen.findByRole('link', { name: 'Kofi Boateng' })).toBeTruthy();
     const row = screen.getByRole('link', { name: 'Kofi Boateng' }).closest('tr')!;
-    expect(within(row).getByText('USR-0001')).toBeTruthy();
+    expect(within(row).getByText('USR-0002')).toBeTruthy();
     expect(within(row).getByText('Branch Admin')).toBeTruthy();
     const pending = screen.getByRole('link', { name: 'Efua Quaye' }).closest('tr')!;
     expect(within(pending).getByText('Pending activation')).toBeTruthy();
