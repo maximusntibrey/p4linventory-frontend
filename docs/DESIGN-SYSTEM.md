@@ -3,7 +3,7 @@
 Rule: **All UI must use the design-system tokens and components. No ad-hoc styles. Any new component is added to the library first.**
 
 - Tokens: `src/styles/tokens.css` (single source of truth; Tailwind 4 `@theme static` plus `:root` variables).
-- Components: `src/components/ui/` (import from `components/ui`). Living showcase: route `/design-system` (open in dev; in production only for a user the server marks as working across all branches, that is Super Admin; lazy-loaded).
+- Components: `src/components/ui/` (import from `components/ui`). Living showcase: route `/design-system` (opens only with the server's `design_system.view` permission from /me, Super Admin; no menu entry or tile; lazy-loaded).
 - Enforcement: `npm run design:check` (part of `npm run check` and CI) fails on raw hex/rgb/hsl colours and inline `style=` props. Allowed exceptions: `src/styles/tokens.css`, `src/assets/**` (logo and SVG files), test files, mocks, and the one helper `style={widthStyle(percent)}` for data-driven widths (progress bars). Offenders that existed before the library live in `scripts/design-token-baseline.json`; it holds **0** violations today and may only shrink. `node scripts/check-design-tokens.mjs --write-baseline` rewrites it (use only to ratchet down).
 - Contrast is verified numerically in `src/styles/tokens.test.ts` for every text/background pair listed below.
 

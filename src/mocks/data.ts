@@ -189,6 +189,7 @@ export const me: S['Me'] = {
     'shortfalls.resolve',
     'find.use',
     'dashboard.view',
+    'design_system.view',
   ],
   menu: menus.super_admin,
   home_links: homeLinks.super_admin,

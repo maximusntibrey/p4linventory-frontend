@@ -82,23 +82,30 @@ const paged = <T>(request: Request, rows: T[]) => {
     results: rows.slice((n - 1) * size, n * size),
   });
 };
-/** Contract: the one warehouse exists already, and a type cannot change on edit (400 on branch_type). */
-const branchTypeError = (sent: unknown, current: 'branch' | 'warehouse') => {
-  if (sent === undefined || sent === current) return null;
-  if (sent !== 'branch' && sent !== 'warehouse')
-    return invalid([{ field: 'branch_type', message: 'Choose Normal Branch or Warehouse.' }]);
-  return invalid([
-    {
-      field: 'branch_type',
-      message:
-        sent === 'warehouse'
-          ? 'A warehouse already exists.'
-          : 'The warehouse cannot become a branch.',
-    },
-  ]);
-};
+/** Contract 0.7.0: the type is required on create (`optional` on edit); an unknown type is 400. */
+const branchTypeError = (sent: unknown, optional: boolean) =>
+  (sent === undefined && optional) || sent === 'branch' || sent === 'warehouse'
+    ? null
+    : invalid([{ field: 'branch_type', message: 'Choose Normal Branch or Warehouse.' }]);
 const byId = <T extends { id: number }>(rows: T[], id: unknown) =>
   rows.find((r) => r.id === Number(id));
+
+/** Contract 0.7.0 warehouse_id on goods receipts and dispatches: default, 400 and 403 wrong_branch. */
+const resolveWarehouse = (sent: unknown): S['Branch'] | Response => {
+  const active = mockStore.branches.filter((x) => x.kind === 'warehouse' && x.is_active);
+  let w: S['Branch'] | undefined;
+  if (sent === undefined || sent === null) {
+    if (active.length !== 1)
+      return invalid([{ field: 'warehouse_id', message: 'Choose a warehouse.' }]);
+    w = active[0];
+  } else {
+    w = active.find((x) => x.id === sent);
+    if (!w) return invalid([{ field: 'warehouse_id', message: 'Choose an active warehouse.' }]);
+  }
+  if (mockSession.role === 'warehouse_admin' && w.id !== me().working_branch?.id)
+    return err(403, 'wrong_branch', 'You can only work in your own warehouse.');
+  return w;
+};
 
 /** Items made or changed during this mock session. Tests reset it after each test. */
 export const mockStore = {
@@ -519,7 +526,7 @@ export const handlers: RequestHandler[] = [
     '/api/v1/branches/',
     writeAuthed(async ({ request }) => {
       const b = await readJson(request);
-      const typeError = branchTypeError(b.branch_type, 'branch');
+      const typeError = branchTypeError(b.branch_type, false);
       if (typeError) return typeError;
       const branch_type = b.branch_type === 'warehouse' ? 'warehouse' : 'branch';
       const row = {
@@ -543,9 +550,26 @@ export const handlers: RequestHandler[] = [
       const row = byId(mockStore.branches, params.id);
       if (!row) return notFound();
       const b = await readJson(request);
-      const typeError = branchTypeError(b.branch_type, row.branch_type);
+      const typeError = branchTypeError(b.branch_type, true);
       if (typeError) return typeError;
-      Object.assign(row, { code: text(b.code, row.code), name: text(b.name, row.name) });
+      const type = (b.branch_type as S['Branch']['branch_type'] | undefined) ?? row.branch_type;
+      // A warehouse becomes a branch only while no stock, receipt or dispatch references it.
+      if (
+        row.branch_type === 'warehouse' &&
+        type === 'branch' &&
+        (mockStore.stock.some((r) => r.location_id === row.id) ||
+          mockStore.receipts.some((r) => r.location_id === row.id) ||
+          mockStore.dispatches.some((x) => x.origin.id === row.id))
+      )
+        return invalid([
+          { field: 'branch_type', message: 'This warehouse is in use and cannot become a branch.' },
+        ]);
+      Object.assign(row, {
+        code: text(b.code, row.code),
+        name: text(b.name, row.name),
+        branch_type: type,
+        kind: type,
+      });
       return HttpResponse.json(row);
     }),
   ),
@@ -554,8 +578,15 @@ export const handlers: RequestHandler[] = [
     writeAuthed(({ params }) => {
       const row = byId(mockStore.branches, params.id);
       if (!row) return notFound();
-      if (row.kind === 'warehouse') {
-        return err(409, 'invalid_status_transition', 'The warehouse cannot be deactivated.');
+      if (
+        row.kind === 'warehouse' &&
+        mockStore.branches.filter((x) => x.kind === 'warehouse' && x.is_active).length < 2
+      ) {
+        return err(
+          409,
+          'invalid_status_transition',
+          'The last active warehouse cannot be deactivated.',
+        );
       }
       return HttpResponse.json({ ...row, is_active: false });
     }),
@@ -967,17 +998,19 @@ export const handlers: RequestHandler[] = [
         if (typeof l.unit_cost !== 'string' || !/^\d+\.\d{2}$/.test(l.unit_cost))
           errors.push({ field: `lines.${i}.unit_cost`, message: 'Enter a cost such as 900.00.' });
       });
+      const wh = resolveWarehouse(b.warehouse_id);
+      if (wh instanceof Response) return errors.length && wh.status === 400 ? invalid(errors) : wh;
       if (errors.length) return invalid(errors);
       const id = mockStore.receipts.length + 1;
       const receipt: S['GoodsReceipt'] = {
         id,
         reference: `GRN-${String(id).padStart(6, '0')}`,
-        location_id: d.warehouse.id,
+        location_id: wh.id,
         supplier_name: supplier,
         notes: text(b.notes, ''),
         lines: lines.map((l, i) => {
           const item = byId(mockStore.items, l.item_id)!;
-          const row = stockRow(d.warehouse.id, item);
+          const row = stockRow(wh.id, item);
           row.on_hand += l.quantity as number;
           row.available += l.quantity as number;
           return {
@@ -1051,17 +1084,19 @@ export const handlers: RequestHandler[] = [
             message: 'Enter a whole number, 1 or more.',
           });
       });
+      const wh = resolveWarehouse(b.warehouse_id);
+      if (wh instanceof Response) return errors.length && wh.status === 400 ? invalid(errors) : wh;
       if (errors.length || !to) return invalid(errors);
       for (const l of lines) {
         const item = byId(mockStore.items, l.item_id)!;
         const have = mockStore.stock.find(
-          (r) => r.location_id === d.warehouse.id && r.item_id === item.id,
+          (r) => r.location_id === wh.id && r.item_id === item.id,
         )?.available;
         if ((have ?? 0) < (l.quantity as number)) {
           return err(
             409,
             'insufficient_stock',
-            `Not enough ${item.name} at ${d.warehouse.name}: ${have ?? 0} available.`,
+            `Not enough ${item.name} at ${wh.name}: ${have ?? 0} available.`,
           );
         }
       }
@@ -1069,12 +1104,12 @@ export const handlers: RequestHandler[] = [
       const made: S['Dispatch'] = {
         id,
         reference: `TRF-${String(id).padStart(6, '0')}`,
-        origin: d.warehouse,
+        origin: wh,
         destination: to,
         status: 'in_transit',
         lines: lines.map((l, i) => {
           const item = byId(mockStore.items, l.item_id)!;
-          const row = stockRow(d.warehouse.id, item);
+          const row = stockRow(wh.id, item);
           row.reserved += l.quantity as number;
           row.available -= l.quantity as number;
           return {

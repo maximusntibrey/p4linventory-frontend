@@ -19,3 +19,13 @@ describe('app shell', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 });
+
+describe('design-system showcase gate (design_system.view)', () => {
+  it('opens for the Super Admin only', async () => {
+    const sa = renderApp('/design-system', { as: 'super_admin' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Design system' })).toBeTruthy();
+    sa.unmount();
+    renderApp('/design-system', { as: 'warehouse_admin' });
+    expect(await screen.findByRole('heading', { level: 1, name: '403: Not allowed' })).toBeTruthy();
+  });
+});

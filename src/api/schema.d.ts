@@ -157,8 +157,7 @@ export interface paths {
         put?: never;
         /**
          * Create a branch
-         * @description `branch_type` is optional and defaults to `branch`. There is exactly one warehouse, created by seed: sending
-         *     `branch_type` = `warehouse` while one exists is 400 on `branch_type` ("A warehouse already exists.").
+         * @description `branch_type` is required (v0.7.0): missing or unknown is 400 on `branch_type`. Several warehouses may exist.
          */
         post: operations["branchesCreate"];
         delete?: never;
@@ -198,7 +197,7 @@ export interface paths {
         put?: never;
         /**
          * Deactivate a branch (history kept)
-         * @description The warehouse cannot be deactivated (409).
+         * @description The last active warehouse cannot be deactivated (409).
          */
         post: operations["branchesDeactivate"];
         delete?: never;
@@ -1081,10 +1080,11 @@ export interface components {
          *     22), `dashboard.view` (Home dashboard, row 40) and the existing `dispatches.receive` (Receive, row 31) drive the Sell, Activity, Find and
          *     Receive menu entries. v0.4.2: `sales.cancel` (cancel a sale, row 39: SA, BA) and `items.import`
          *     (CSV import, rows 19 and 20: SA, WA). v0.5.0: `shortfalls.resolve` (rows 33 to 35: SA, WA, BA). The Sales entry (row 49) is in `menu` for FS and in
-         *     `home_links` for SA and BA, whose menus already hold 5 items.
+         *     `home_links` for SA and BA, whose menus already hold 5 items. v0.7.0: `design_system.view` (row 50:
+         *     SA only) lets the frontend show the `/design-system` showcase; it has no menu entry or tile.
          * @enum {string}
          */
-        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive" | "sales.record" | "activity.view" | "find.use" | "dashboard.view" | "sales.cancel" | "items.import" | "shortfalls.resolve";
+        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive" | "sales.record" | "activity.view" | "find.use" | "dashboard.view" | "sales.cancel" | "items.import" | "shortfalls.resolve" | "design_system.view";
         /**
          * @description Code to status word (SKILLS "Item"): `draft` = Draft, `active` = Active,
          *     `discontinued` = Discontinued. Discontinued is final.
@@ -1118,10 +1118,17 @@ export interface components {
             /** Format: date-time */
             updated_at?: string;
         };
+        /** @description Create body (v0.7.0). `branch_type` is required: missing or unknown is 400 on `branch_type`. */
+        BranchCreate: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            branch_type: "branch" | "warehouse";
+        };
         /**
-         * @description Code and name required on create and unique. `branch_type` optional on create (default `branch`).
-         *     On edit a type change is refused with 400 on `branch_type`: a second warehouse cannot exist and the
-         *     warehouse cannot become a branch; sending the current type is accepted.
+         * @description Edit body (PATCH): every field optional, at least one. Code and name stay unique. A branch may become a
+         *     warehouse; a warehouse becomes a branch only while no stock balance, goods receipt or dispatch references
+         *     it, else 400 on `branch_type`. Sending the current type is accepted.
          */
         BranchWrite: {
             code?: string;
@@ -1440,6 +1447,13 @@ export interface components {
             average_cost: components["schemas"]["Money"] | null;
         };
         GoodsReceiptCreate: {
+            /**
+             * @description v0.7.0. The receiving warehouse (an active location of kind warehouse, else 400 on `warehouse_id`).
+             *     Optional only while exactly one active warehouse exists, which is then used; with several, omitting it
+             *     is 400 on `warehouse_id` ("Choose a warehouse."). Role rules are unchanged: a Warehouse Admin acts
+             *     only in their own warehouse (403 `wrong_branch` otherwise).
+             */
+            warehouse_id?: number;
             supplier_name: string;
             notes?: string;
             /** @description One line per item (duplicates are 400). */
@@ -1470,6 +1484,8 @@ export interface components {
             received_by: components["schemas"]["LoginId"];
         };
         DispatchCreate: {
+            /** @description Origin warehouse (v0.7.0). Same rule as on `GoodsReceiptCreate.warehouse_id`. */
+            warehouse_id?: number;
             /** @description An active branch (not the warehouse). */
             destination_id: number;
             /** @description One line per item (duplicates are 400). */
@@ -1974,7 +1990,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BranchWrite"];
+                "application/json": components["schemas"]["BranchCreate"];
             };
         };
         responses: {

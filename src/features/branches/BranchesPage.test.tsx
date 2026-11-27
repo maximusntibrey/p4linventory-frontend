@@ -203,7 +203,7 @@ describe('deactivate with a confirm step', () => {
       within(await screen.findByRole('group')).getByRole('button', { name: 'Yes, deactivate' }),
     );
     expect((await screen.findByRole('alert')).textContent).toContain(
-      'The warehouse cannot be deactivated.',
+      'The last active warehouse cannot be deactivated.',
     );
   });
 
