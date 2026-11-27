@@ -12,7 +12,7 @@ describe('find screen', () => {
   it('lists my branch stock; other branches only on request, by name and quantity; axe clean', async () => {
     const { container } = renderApp('/find', { as: 'front_staff' });
     await h1();
-    const card = (await screen.findByText('HP 250 G9')).closest('li')!;
+    const card = (await screen.findByText('HP 250 G9')).closest('tr')!;
     expect(within(card).getByText('Accra Branch:')).toBeTruthy();
     expect(within(card).getByText('3 available')).toBeTruthy();
     expect(within(card).getByText('Low')).toBeTruthy();
@@ -42,7 +42,7 @@ describe('find screen', () => {
     await screen.findByText('HP 250 G9');
     type('Item name or SKU', ' nothing-here ');
     click('Search');
-    expect(await screen.findByText('No items found.')).toBeTruthy();
+    expect(await screen.findByText('No items found')).toBeTruthy();
     expect(seen.some((s) => s.includes('q=nothing-here'))).toBe(true);
   });
 
@@ -53,7 +53,7 @@ describe('find screen', () => {
       ),
     );
     renderApp('/find', { as: 'front_staff' });
-    const card = (await screen.findByText('HP 250 G9')).closest('li')!;
+    const card = (await screen.findByText('HP 250 G9')).closest('tr')!;
     fireEvent.click(within(card).getByRole('button', { name: /other branches/ }));
     expect(await within(card).findByText('Your account is not allowed to see this.')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1, name: 'Find' })).toBeTruthy();
@@ -82,6 +82,6 @@ describe('find screen', () => {
     await screen.findByText('HP 250 G9');
     type('Item name or SKU', 'zzz');
     fireEvent.submit(screen.getByRole('search'));
-    expect(await screen.findByText('No items found.')).toBeTruthy();
+    expect(await screen.findByText('No items found')).toBeTruthy();
   });
 });
