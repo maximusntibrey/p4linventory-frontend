@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Payless4Laptops Inventory API
-  version: 0.6.0
+  version: 0.7.0
   description: |
     Contract-first API for Sprint 1 (B1.3). Published before the code; from B2 onward the
     drf-spectacular generated schema must match this file. Changes need owner approval.
@@ -266,8 +266,7 @@ paths:
       operationId: branchesCreate
       summary: Create a branch
       description: |
-        `branch_type` is optional and defaults to `branch`. There is exactly one warehouse, created by seed: sending
-        `branch_type` = `warehouse` while one exists is 400 on `branch_type` ("A warehouse already exists.").
+        `branch_type` is required (v0.7.0): missing or unknown is 400 on `branch_type`. Several warehouses may exist.
       x-permission: SA (table row 11)
       parameters:
         - {$ref: '#/components/parameters/IdempotencyKey'}
@@ -275,7 +274,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/BranchWrite'}
+            schema: {$ref: '#/components/schemas/BranchCreate'}
       responses:
         '201':
           description: Created.
@@ -330,7 +329,7 @@ paths:
       tags: [branches]
       operationId: branchesDeactivate
       summary: Deactivate a branch (history kept)
-      description: The warehouse cannot be deactivated (409).
+      description: The last active warehouse cannot be deactivated (409).
       x-permission: SA (table row 11)
       parameters:
         - {$ref: '#/components/parameters/Id'}
@@ -1693,7 +1692,8 @@ components:
         22), `dashboard.view` (Home dashboard, row 40) and the existing `dispatches.receive` (Receive, row 31) drive the Sell, Activity, Find and
         Receive menu entries. v0.4.2: `sales.cancel` (cancel a sale, row 39: SA, BA) and `items.import`
         (CSV import, rows 19 and 20: SA, WA). v0.5.0: `shortfalls.resolve` (rows 33 to 35: SA, WA, BA). The Sales entry (row 49) is in `menu` for FS and in
-        `home_links` for SA and BA, whose menus already hold 5 items.
+        `home_links` for SA and BA, whose menus already hold 5 items. v0.7.0: `design_system.view` (row 50:
+        SA only) lets the frontend show the `/design-system` showcase; it has no menu entry or tile.
       enum:
         - users.manage
         - users.view
@@ -1718,6 +1718,7 @@ components:
         - sales.cancel
         - items.import
         - shortfalls.resolve
+        - design_system.view
     ItemStatus:
       type: string
       description: |
@@ -1743,12 +1744,20 @@ components:
         is_active: {type: boolean}
         created_at: {type: string, format: date-time}
         updated_at: {type: string, format: date-time}
+    BranchCreate:
+      type: object
+      required: [code, name, branch_type]
+      description: "Create body (v0.7.0). `branch_type` is required: missing or unknown is 400 on `branch_type`."
+      properties:
+        code: {type: string, maxLength: 20}
+        name: {type: string, maxLength: 100}
+        branch_type: {type: string, enum: [branch, warehouse]}
     BranchWrite:
       type: object
       description: |
-        Code and name required on create and unique. `branch_type` optional on create (default `branch`).
-        On edit a type change is refused with 400 on `branch_type`: a second warehouse cannot exist and the
-        warehouse cannot become a branch; sending the current type is accepted.
+        Edit body (PATCH): every field optional, at least one. Code and name stay unique. A branch may become a
+        warehouse; a warehouse becomes a branch only while no stock balance, goods receipt or dispatch references
+        it, else 400 on `branch_type`. Sending the current type is accepted.
       properties:
         code: {type: string, maxLength: 20}
         name: {type: string, maxLength: 100}
@@ -2115,6 +2124,13 @@ components:
       type: object
       required: [supplier_name, lines]
       properties:
+        warehouse_id:
+          type: integer
+          description: |
+            v0.7.0. The receiving warehouse (an active location of kind warehouse, else 400 on `warehouse_id`).
+            Optional only while exactly one active warehouse exists, which is then used; with several, omitting it
+            is 400 on `warehouse_id` ("Choose a warehouse."). Role rules are unchanged: a Warehouse Admin acts
+            only in their own warehouse (403 `wrong_branch` otherwise).
         supplier_name: {type: string, minLength: 1, maxLength: 200}
         notes: {type: string, maxLength: 1000}
         lines:
@@ -2155,6 +2171,9 @@ components:
       type: object
       required: [destination_id, lines]
       properties:
+        warehouse_id:
+          type: integer
+          description: Origin warehouse (v0.7.0). Same rule as on `GoodsReceiptCreate.warehouse_id`.
         destination_id: {type: integer, description: An active branch (not the warehouse).}
         lines:
           type: array
