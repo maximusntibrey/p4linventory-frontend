@@ -66,8 +66,13 @@ async function setup(page: Page, permissions: S['Me']['permissions'] = ['find.us
   await page.route('**/api/v1/items/1/branch-availability/', (r) =>
     r.fulfill({
       json: [
-        { branch_id: 3, branch_name: 'Kumasi Branch', quantity: 5 },
-        { branch_id: 4, branch_name: 'Takoradi Branch With A Rather Long Name', quantity: 0 },
+        { branch_id: 3, branch_name: 'Kumasi Branch', kind: 'branch', quantity: 5 },
+        {
+          branch_id: 4,
+          branch_name: 'Takoradi Branch With A Rather Long Name',
+          kind: 'branch',
+          quantity: 0,
+        },
       ] satisfies S['BranchAvailability'][],
     }),
   );

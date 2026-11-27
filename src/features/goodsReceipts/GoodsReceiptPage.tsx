@@ -122,7 +122,8 @@ export function GoodsReceiptPage() {
           <Box component="ul" sx={{ m: 0, listStyle: 'none', p: 0 }}>
             {done.lines.map((l) => (
               <li key={l.id}>
-                {l.quantity} × {l.item_name} ({l.sku}) at {ghs(l.unit_cost)}
+                {l.quantity} × {l.item_name} ({l.sku}){' '}
+                {l.unit_cost ? ` at ${ghs(l.unit_cost)}` : ''}
               </li>
             ))}
           </Box>

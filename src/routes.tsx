@@ -30,10 +30,8 @@ const ImportPage = lazy(() =>
 const FindPage = lazy(() =>
   import('./features/find/FindPage').then((m) => ({ default: m.FindPage })),
 );
-const GoodsReceiptPage = lazy(() =>
-  import('./features/goodsReceipts/GoodsReceiptPage').then((m) => ({
-    default: m.GoodsReceiptPage,
-  })),
+const GoodsReceipts = lazy(() =>
+  import('./features/goodsReceipts/GoodsReceipts').then((m) => ({ default: m.GoodsReceipts })),
 );
 const ItemDetail = lazy(() =>
   import('./features/items/ItemDetail').then((m) => ({ default: m.ItemDetail })),
@@ -183,8 +181,8 @@ export function AppRoutes() {
             <Route
               path="goods-receipts"
               element={
-                <RequirePermission permission="goods_receipts.manage">
-                  <GoodsReceiptPage />
+                <RequirePermission permission="goods_receipts.view">
+                  <GoodsReceipts />
                 </RequirePermission>
               }
             />

@@ -20,6 +20,19 @@ export const mockSession: {
   role: 'super_admin',
   mustChange: false,
 };
+/** A reader without `items.view_cost` (the central warehouse role) gets receipt lines without the cost. */
+const receiptFor = (r: S['GoodsReceipt']): S['GoodsReceipt'] =>
+  me().permissions.includes('items.view_cost')
+    ? r
+    : {
+        ...r,
+        lines: r.lines.map((l) => {
+          const line = { ...l };
+          delete line.unit_cost;
+          return line;
+        }),
+      };
+
 const me = (): S['Me'] => {
   const base = {
     ...d.meByRole[mockSession.role],
@@ -162,7 +175,7 @@ const applyItem = (b: Record<string, unknown>, row: S['ItemWithCost']): S['ItemW
     ...row,
     name: text(b.name, row.name),
     category_id: num(b.category_id, row.category_id),
-    subtype_id: num(b.subtype_id, row.subtype_id),
+    subtype_id: typeof b.subtype_id === 'number' ? b.subtype_id : row.subtype_id,
     brand_id,
     brand_name: d.brands.find((x) => x.id === brand_id)?.name ?? row.brand_name,
     model_name: text(b.model_name, row.model_name),
@@ -967,7 +980,11 @@ export const handlers: RequestHandler[] = [
 
   http.get(
     '/api/v1/goods-receipts/',
-    authed(costed(({ request }) => paged(request, [...mockStore.receipts].reverse()))),
+    authed(({ request }) =>
+      me().permissions.includes('goods_receipts.view')
+        ? paged(request, [...mockStore.receipts].reverse().map(receiptFor))
+        : forbidden(),
+    ),
   ),
   post(
     '/api/v1/goods-receipts/',
@@ -1031,12 +1048,11 @@ export const handlers: RequestHandler[] = [
   ),
   http.get(
     '/api/v1/goods-receipts/:id/',
-    authed(
-      costed(({ params }) => {
-        const row = byId(mockStore.receipts, params.id);
-        return row ? HttpResponse.json(row) : notFound();
-      }),
-    ),
+    authed(({ params }) => {
+      if (!me().permissions.includes('goods_receipts.view')) return forbidden();
+      const row = byId(mockStore.receipts, params.id);
+      return row ? HttpResponse.json(receiptFor(row)) : notFound();
+    }),
   ),
 
   http.get(

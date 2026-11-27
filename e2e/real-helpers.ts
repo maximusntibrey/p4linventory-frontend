@@ -7,6 +7,7 @@ export const ROLES = {
   warehouse_admin: { login: 'USR-0001', env: 'E2E_WAREHOUSE_ADMIN_PASSWORD' },
   branch_admin: { login: 'USR-0002', env: 'E2E_BRANCH_ADMIN_PASSWORD' },
   front_staff: { login: 'USR-0003', env: 'E2E_FRONT_STAFF_PASSWORD' },
+  central_warehouse: { login: 'USR-0013', env: 'E2E_CENTRAL_WAREHOUSE_PASSWORD' },
 } as const;
 export type Role = keyof typeof ROLES;
 
