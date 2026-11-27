@@ -14,7 +14,7 @@ import { QueryGate } from '../../components/QueryGate';
 import { permissionCodes, permissionLabels, roleLabels, statusBadge } from './labels';
 import { OneTimePassword } from './OneTimePassword';
 import { UserForm } from './UserForm';
-import { Button, Card, PageHeader, StatusWord, TextField } from '../../components/ui';
+import { Button, Card, PageHeader, StatusWord, TextField, CheckField } from '../../components/ui';
 
 type S = components['schemas'];
 type Target = 'active' | 'suspended' | 'deactivated';
@@ -101,25 +101,16 @@ function PermissionsForm({
           Extra things this person may do.
         </Box>
         {permissionCodes.map((code) => (
-          <Box
-            component="label"
-            key={code}
-            sx={{ display: 'flex', minHeight: 44, alignItems: 'center', gap: 1.5 }}
-          >
-            <Box
-              component="input"
-              type="checkbox"
-              sx={{ width: 20, accentColor: 'primary.main' }}
-              checked={chosen.has(code)}
-              onChange={(e) => {
-                const next = new Set(chosen);
-                if (e.target.checked) next.add(code);
-                else next.delete(code);
-                setChosen(next);
-              }}
-            />
-            <span>{permissionLabels[code]}</span>
-          </Box>
+          <CheckField
+            label={permissionLabels[code]}
+            checked={chosen.has(code)}
+            onChange={(e) => {
+              const next = new Set(chosen);
+              if (e.target.checked) next.add(code);
+              else next.delete(code);
+              setChosen(next);
+            }}
+          />
         ))}
       </Box>
       {saved && <SuccessNotice>Permissions saved.</SuccessNotice>}

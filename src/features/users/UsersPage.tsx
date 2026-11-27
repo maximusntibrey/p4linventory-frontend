@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Box from '@mui/material/Box';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Users } from 'components/icons';
+import { Plus, Users } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
@@ -12,9 +12,9 @@ import { describeError } from '../../components/ErrorSummary';
 import { Forbidden } from '../../pages/Forbidden';
 import { roleLabels, statusBadge } from './labels';
 import {
-  Button,
   DataTable,
   EmptyState,
+  FilterForm,
   LinkButton,
   PageHeader,
   SelectField,
@@ -95,22 +95,20 @@ export function UsersPage() {
           )
         }
       />
-      <BranchScope />
-      <Box
-        component="form"
-        role="search"
-        sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { sm: 'repeat(3, minmax(0, 1fr))' } }}
-        onSubmit={(e) => {
-          e.preventDefault();
+      <FilterForm
+        onSubmit={() => {
           setFilters(draft);
           setPage(1);
         }}
+        search={
+          <TextField
+            label="Search by name or login ID"
+            value={draft.q}
+            onChange={(e) => setDraft({ ...draft, q: e.target.value })}
+          />
+        }
       >
-        <TextField
-          label="Search by name or login ID"
-          value={draft.q}
-          onChange={(e) => setDraft({ ...draft, q: e.target.value })}
-        />
+        <BranchScope />
         <SelectField
           label="Status"
           value={draft.status}
@@ -123,12 +121,7 @@ export function UsersPage() {
             </option>
           ))}
         </SelectField>
-        <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
-          <Button type="submit" variant="secondary" icon={Search}>
-            Search
-          </Button>
-        </Box>
-      </Box>
+      </FilterForm>
       <DataTable
         caption="Users"
         columns={columns}

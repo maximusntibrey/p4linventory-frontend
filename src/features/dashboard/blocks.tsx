@@ -68,11 +68,16 @@ export function CardBody({ state, query, need, empty, children, lines = 2 }: Bod
   if (state === 'planned')
     return (
       <Stack sx={{ gap: 0.25 }}>
-        <Typography variant="subtitle1" component="p" color="text.secondary">
+        <Typography
+          variant="subtitle1"
+          component="p"
+          color="text.secondary"
+          sx={{ overflowWrap: 'anywhere' }}
+        >
           {NOT_AVAILABLE}
         </Typography>
         {need && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
             Coming soon. Needs: {need}
           </Typography>
         )}
@@ -98,8 +103,11 @@ type StatProps = BodyProps & {
 /** Mantis stat card (MainCard, small title, big number in the display face). No trend chip: there is no prior-period data. */
 export function StatCard({ title, value, caption, to, linkLabel, ...body }: StatProps) {
   return (
-    <MainCard contentSX={{ p: 2.25 }} sx={{ height: '100%' }}>
-      <Stack sx={{ gap: 0.5 }}>
+    <MainCard
+      contentSX={{ p: 2.25, height: '100%', display: 'flex', flexDirection: 'column' }}
+      sx={{ height: '100%' }}
+    >
+      <Stack sx={{ gap: 0.5, flex: 1, minWidth: 0 }}>
         <Typography variant="h6" component="h2" sx={{ color: 'text.secondary' }}>
           {title}
         </Typography>
@@ -118,7 +126,7 @@ export function StatCard({ title, value, caption, to, linkLabel, ...body }: Stat
             component={RouterLink}
             to={to}
             size="small"
-            sx={{ alignSelf: 'flex-start', ml: -1 }}
+            sx={{ alignSelf: 'flex-start', ml: -1, mt: 'auto' }}
           >
             {linkLabel ?? 'View'}
           </Button>

@@ -21,6 +21,7 @@ import {
   LinkButton,
   PageHeader,
   SelectField,
+  Toolbar,
   StatusWord,
   TextField,
 } from '../../components/ui';
@@ -194,38 +195,40 @@ export function SalesPage() {
           </LinkButton>
         }
       />
-      <BranchScope />
-      <Box
-        sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { sm: 'repeat(2, minmax(0, 1fr))' } }}
-      >
-        <SelectField
-          label="Status"
-          value={filters.status}
-          onChange={(e) => {
-            setFilters({ ...filters, status: e.target.value });
-            setPage(1);
-          }}
-        >
-          <option value="">All</option>
-          <option value="completed">{saleStatusLabels.completed}</option>
-          <option value="cancelled">{saleStatusLabels.cancelled}</option>
-        </SelectField>
-        <SelectField
-          label="Payment method"
-          value={filters.payment}
-          onChange={(e) => {
-            setFilters({ ...filters, payment: e.target.value });
-            setPage(1);
-          }}
-        >
-          <option value="">All</option>
-          {paymentCodes.map((c) => (
-            <option key={c} value={c}>
-              {paymentLabel(c)}
-            </option>
-          ))}
-        </SelectField>
-      </Box>
+      <Toolbar>
+        <BranchScope />
+        <Box sx={{ width: { xs: '100%', sm: 192 } }}>
+          <SelectField
+            label="Status"
+            value={filters.status}
+            onChange={(e) => {
+              setFilters({ ...filters, status: e.target.value });
+              setPage(1);
+            }}
+          >
+            <option value="">All</option>
+            <option value="completed">{saleStatusLabels.completed}</option>
+            <option value="cancelled">{saleStatusLabels.cancelled}</option>
+          </SelectField>
+        </Box>
+        <Box sx={{ width: { xs: '100%', sm: 192 } }}>
+          <SelectField
+            label="Payment method"
+            value={filters.payment}
+            onChange={(e) => {
+              setFilters({ ...filters, payment: e.target.value });
+              setPage(1);
+            }}
+          >
+            <option value="">All</option>
+            {paymentCodes.map((c) => (
+              <option key={c} value={c}>
+                {paymentLabel(c)}
+              </option>
+            ))}
+          </SelectField>
+        </Box>
+      </Toolbar>
       {notice && <SuccessNotice key={notice.at}>{notice.text}</SuccessNotice>}
       {!cancelling && <ApiProblem error={cancel.error} at={cancel.submittedAt} />}
       {cancelled && (

@@ -6,7 +6,7 @@ import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
 import { roleCodes, roleLabels } from './labels';
-import { Button, SelectField, TextField } from '../../components/ui';
+import { Button, SelectField, TextField, CheckField } from '../../components/ui';
 
 type S = components['schemas'];
 type Values = {
@@ -106,24 +106,16 @@ export function UserForm({ user, pending, error, onSubmit, submitLabel }: Props)
             {canMulti ? 'Roles' : 'Role'}
           </Box>
           {roleCodes.map((code) => (
-            <Box
-              component="label"
-              key={code}
-              sx={{ display: 'flex', minHeight: 44, alignItems: 'center', gap: 1.5 }}
-            >
-              <Box
-                component="input"
-                type={canMulti ? 'checkbox' : 'radio'}
-                value={code}
-                sx={{ width: 20, accentColor: 'primary.main' }}
-                {...(canMulti
-                  ? register('roles', {
-                      validate: (v) => (v && v.length > 0) || 'Choose at least one role.',
-                    })
-                  : register('role', { required: 'Choose a role.' }))}
-              />
-              <span>{roleLabels[code]}</span>
-            </Box>
+            <CheckField
+              label={roleLabels[code]}
+              type={canMulti ? 'checkbox' : 'radio'}
+              value={code}
+              {...(canMulti
+                ? register('roles', {
+                    validate: (v) => (v && v.length > 0) || 'Choose at least one role.',
+                  })
+                : register('role', { required: 'Choose a role.' }))}
+            />
           ))}
           {roleError && (
             <Box

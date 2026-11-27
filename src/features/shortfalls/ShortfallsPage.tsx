@@ -18,6 +18,7 @@ import {
   EmptyState,
   PageHeader,
   SelectField,
+  Toolbar,
   StatusWord,
   TextField,
 } from '../../components/ui';
@@ -185,18 +186,22 @@ export function ShortfallsPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <PageHeader title="Shortfalls" />
-      <SelectField
-        label="Status"
-        value={status}
-        onChange={(e) => {
-          setStatus(e.target.value as typeof status);
-          setPage(1);
-        }}
-      >
-        <option value="open">Open</option>
-        <option value="resolved">Resolved</option>
-        <option value="">All</option>
-      </SelectField>
+      <Toolbar>
+        <Box sx={{ width: { xs: '100%', sm: 192 } }}>
+          <SelectField
+            label="Status"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as typeof status);
+              setPage(1);
+            }}
+          >
+            <option value="open">Open</option>
+            <option value="resolved">Resolved</option>
+            <option value="">All</option>
+          </SelectField>
+        </Box>
+      </Toolbar>
       {notice && <SuccessNotice key={notice.at}>{notice.text}</SuccessNotice>}
       {opened === null && <ApiProblem error={resolve.error} at={resolve.submittedAt} />}
       {current && (

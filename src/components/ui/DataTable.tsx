@@ -56,7 +56,7 @@ export type DataTableProps<Row> = {
 const SKELETON_ROWS = 5;
 // On phones each cell shows its column name. It is a real element hidden from assistive tech, so cell names stay clean.
 const cardLabel = {
-  display: { xs: 'inline', sm: 'none' },
+  display: { xs: 'inline', md: 'none' },
   fontWeight: 600,
   color: 'text.secondary',
   textAlign: 'left',
@@ -210,8 +210,8 @@ export function DataTable<Row>({
           stickyHeader={stickyHeader}
           aria-busy={state === 'loading' || undefined}
           sx={(theme) => ({
-            // Phones: each row becomes a labelled card (the header stays for assistive tech).
-            [theme.breakpoints.down('sm')]: {
+            // Phones and tablets: each row becomes a labelled card (the header stays for assistive tech).
+            [theme.breakpoints.down('md')]: {
               '& thead': {
                 position: 'absolute',
                 width: 1,
@@ -228,6 +228,7 @@ export function DataTable<Row>({
               '& tbody td': {
                 display: 'flex',
                 flexDirection: 'row',
+                alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 2,
                 textAlign: 'right',

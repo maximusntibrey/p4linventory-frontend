@@ -480,18 +480,27 @@ export function Dashboard() {
   return (
     <Grid container rowSpacing={{ xs: 2.5, md: 4.5 }} columnSpacing={spacing.columnSpacing}>
       <Grid size={12}>
-        <Typography variant="h3" component="h1">
-          Home
-        </Typography>
-        {me.all_branches ? (
-          <Box sx={{ mt: 1.5, maxWidth: 320 }}>
-            <BranchScope />
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: 1.5,
+          }}
+        >
+          <Box>
+            <Typography variant="h3" component="h1">
+              Home
+            </Typography>
+            {!me.all_branches && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Working branch: {me.working_branch?.name ?? 'No branch selected'}
+              </Typography>
+            )}
           </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Working branch: {me.working_branch?.name ?? 'No branch selected'}
-          </Typography>
-        )}
+          <BranchScope compact />
+        </Box>
       </Grid>
       {stats}
       {charts.length > 0 && (

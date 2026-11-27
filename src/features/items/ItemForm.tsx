@@ -9,7 +9,7 @@ import type { components } from '../../api';
 import { QueryGate } from '../../components/QueryGate';
 import { twoDecimals } from '../../lib/money';
 import { conditionCodes, conditionLabels } from './labels';
-import { Button, SelectField, TextField } from '../../components/ui';
+import { Button, SelectField, TextField, CheckField } from '../../components/ui';
 
 type S = components['schemas'];
 type Def = S['ItemFieldDefinition'];
@@ -172,18 +172,7 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
     if (def.type === 'boolean') {
       return (
         <Box key={def.key} sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Box
-            component="label"
-            sx={{ display: 'flex', minHeight: 44, alignItems: 'center', gap: 1.5, fontWeight: 600 }}
-          >
-            <Box
-              component="input"
-              type="checkbox"
-              sx={{ width: 20, accentColor: 'primary.main' }}
-              {...reg}
-            />
-            <span>{def.label}</span>
-          </Box>
+          <CheckField label={def.label} {...reg} />
           {hint && (
             <Box component="p" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
               {hint}
