@@ -10,6 +10,7 @@ import { describeError } from '../../components/ErrorSummary';
 import { Forbidden } from '../../pages/Forbidden';
 import { formatAccra } from '../../lib/time';
 import {
+  Drawer,
   Button,
   DataTable,
   EmptyState,
@@ -98,6 +99,7 @@ export function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [dateError, setDateError] = useState<string>();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   // shortcut: the User filter lists only the first 100 users (page_size 100), upgrade to a search box when there are more.
   const places = useQuery({
     enabled: perms.includes('branches.view'),
@@ -147,6 +149,7 @@ export function AuditLogsPage() {
     setDateError(undefined);
     setApplied(draft);
     setPage(1);
+    setFiltersOpen(false);
   };
 
   if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
@@ -186,67 +189,67 @@ export function AuditLogsPage() {
             setPage(1);
           },
         }}
+        onFilter={() => setFiltersOpen(true)}
       />
-      <form
-        onSubmit={apply}
-        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-        aria-label="Audit log filters"
-      >
-        {people.data && (
-          <SelectField label="User" value={draft.user_id} onChange={set('user_id')}>
-            <option value="">All users</option>
-            {rowsOf(people.data).map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.login_id} · {u.full_name}
-              </option>
-            ))}
-          </SelectField>
-        )}
-        {places.data && (
-          <SelectField label="Branch" value={draft.branch_id} onChange={set('branch_id')}>
-            <option value="">All branches</option>
-            {rowsOf(places.data).map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </SelectField>
-        )}
-        <TextField
-          label="Action"
-          hint="For example dispatch_created. Leave empty for all."
-          value={draft.action}
-          maxLength={60}
-          autoComplete="off"
-          onChange={set('action')}
-        />
-        <TextField
-          label="Module"
-          hint="For example dispatch or sale. Leave empty for all."
-          value={draft.target_type}
-          maxLength={40}
-          autoComplete="off"
-          onChange={set('target_type')}
-        />
-        <TextField
-          label="From date"
-          type="date"
-          value={draft.date_from}
-          onChange={set('date_from')}
-        />
-        <TextField
-          label="To date"
-          type="date"
-          value={draft.date_to}
-          error={dateError}
-          onChange={set('date_to')}
-        />
-        <div className="flex items-end">
-          <Button type="submit" icon={Filter}>
-            Apply filters
-          </Button>
-        </div>
-      </form>
+      {/* User, branch, action, module and dates live in the Toolbar's Filter drawer, like every other list. */}
+      <Drawer open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filters">
+        <form onSubmit={apply} className="grid gap-3" aria-label="Audit log filters">
+          {people.data && (
+            <SelectField label="User" value={draft.user_id} onChange={set('user_id')}>
+              <option value="">All users</option>
+              {rowsOf(people.data).map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.login_id} · {u.full_name}
+                </option>
+              ))}
+            </SelectField>
+          )}
+          {places.data && (
+            <SelectField label="Branch" value={draft.branch_id} onChange={set('branch_id')}>
+              <option value="">All branches</option>
+              {rowsOf(places.data).map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </SelectField>
+          )}
+          <TextField
+            label="Action"
+            hint="For example dispatch_created. Leave empty for all."
+            value={draft.action}
+            maxLength={60}
+            autoComplete="off"
+            onChange={set('action')}
+          />
+          <TextField
+            label="Module"
+            hint="For example dispatch or sale. Leave empty for all."
+            value={draft.target_type}
+            maxLength={40}
+            autoComplete="off"
+            onChange={set('target_type')}
+          />
+          <TextField
+            label="From date"
+            type="date"
+            value={draft.date_from}
+            onChange={set('date_from')}
+          />
+          <TextField
+            label="To date"
+            type="date"
+            value={draft.date_to}
+            error={dateError}
+            onChange={set('date_to')}
+          />
+          <div className="flex items-end">
+            <Button type="submit" icon={Filter}>
+              Apply filters
+            </Button>
+          </div>
+        </form>
+      </Drawer>
       {/* A rejected filter (for example a backwards date range) is listed in words above the table. */}
       {rejected && <ApiProblem error={list.error} at={list.errorUpdatedAt} />}
       <DataTable

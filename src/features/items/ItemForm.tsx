@@ -171,7 +171,7 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
     if (def.type === 'boolean') {
       return (
         <div key={def.key} className="flex flex-col gap-1">
-          <label className="flex min-h-11 items-center gap-3 font-semibold">
+          <label className="flex min-h-target items-center gap-3 font-semibold">
             <input type="checkbox" className="size-5 accent-primary-solid" {...reg} />
             <span>{def.label}</span>
           </label>
@@ -307,7 +307,7 @@ export function ItemForm({ item, pending, error, onSubmit, submitLabel }: Props)
           {() =>
             [...sections].map(([group, list]) => (
               <details key={group} open className="rounded-lg border border-line p-3">
-                <summary className="flex min-h-11 cursor-pointer items-center text-2xl">
+                <summary className="flex min-h-target cursor-pointer items-center text-2xl">
                   {group}
                 </summary>
                 <div className="mt-2 flex flex-col gap-4">{list.map(dynamic)}</div>

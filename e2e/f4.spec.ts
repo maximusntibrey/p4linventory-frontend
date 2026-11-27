@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 import type { components } from '../src/api/schema';
+import { expectBranch, openActions, openFilters } from './mock-helpers';
 import { sideways, stubAuth, stubData } from './stub';
 
 type S = components['schemas'];
@@ -137,7 +138,9 @@ test('item list: cards, cost from the API, labelled actions, no sideways scroll'
   await expect(page.getByRole('link', { name: 'HP 250 G9' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'GHS 900.00' })).toBeVisible();
   await expect(page.getByRole('row').getByText('Active', { exact: true })).toBeVisible();
+  await openActions(page);
   await tall(page.getByRole('link', { name: 'Add an item' }));
+  await page.keyboard.press('Escape');
   await tall(page.getByRole('button', { name: 'Search', exact: true }));
   await tall(page.getByRole('link', { name: 'HP 250 G9' }));
   expect(await sideways(page)).toBeLessThanOrEqual(0);
@@ -215,6 +218,7 @@ test('stock screen: grouped by location, stock words with icons, no sideways scr
   await expect(page.getByRole('cell', { name: 'Central Warehouse' }).first()).toBeVisible();
   await expect(page.getByText('Low', { exact: true })).toBeVisible();
   await expect(page.getByText('Out of stock')).toBeVisible();
+  await openFilters(page);
   await tall(page.getByRole('button', { name: 'Search', exact: true }));
   await tall(page.getByLabel('Location'));
   expect(await sideways(page)).toBeLessThanOrEqual(0);
@@ -230,12 +234,12 @@ test('Front Staff with no branch signs in and gets the branch picker, not the da
   await page.getByLabel('Password').fill('a-good-password');
   await page.getByLabel('Password').press('Enter');
   await expect(page.getByRole('heading', { level: 1, name: 'Choose your branch' })).toBeVisible();
-  await expect(page.getByRole('banner').getByText('No branch selected')).toBeVisible();
+  await expectBranch(page, 'No branch selected');
   expect(await sideways(page)).toBeLessThanOrEqual(0);
   const accra = page.getByRole('button', { name: 'Accra Branch' });
   await tall(accra);
   await accra.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('banner').getByText('Accra Branch')).toBeVisible();
+  await expectBranch(page, 'Accra Branch');
   await expect(page.getByRole('heading', { name: 'Choose your branch' })).toHaveCount(0);
 });

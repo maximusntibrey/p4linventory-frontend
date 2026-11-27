@@ -13,7 +13,7 @@ import {
   PageHeader,
   SelectField,
   StatusWord,
-  TextField,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 
@@ -53,6 +53,10 @@ export function StockPage() {
       }),
   });
 
+  const apply = () => {
+    setFilters(draft);
+    setPage(1);
+  };
   const data = list.data;
   if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
   const columns: Column<Row>[] = [
@@ -92,39 +96,38 @@ export function StockPage() {
       <PageHeader title="Stock" subtitle="By item and location." />
       <form
         role="search"
-        className="grid gap-3 sm:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
-          setFilters(draft);
-          setPage(1);
+          apply();
         }}
       >
-        <div className={canPickLocation ? '' : 'sm:col-span-2'}>
-          <TextField
-            label="Search by item name or SKU"
-            value={draft.q}
-            onChange={(e) => setDraft({ ...draft, q: e.target.value })}
-          />
-        </div>
-        {canPickLocation && (
-          <SelectField
-            label="Location"
-            value={draft.location}
-            onChange={(e) => setDraft({ ...draft, location: e.target.value })}
-          >
-            <option value="">All locations</option>
-            {(locations.data ? rowsOf(locations.data) : []).map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </SelectField>
-        )}
-        <div className="sm:col-span-2">
-          <Button type="submit" variant="secondary" icon={Search} className="w-full sm:w-auto">
+        <Toolbar
+          search={{
+            label: 'Search by item name or SKU',
+            value: draft.q,
+            onChange: (q) => setDraft({ ...draft, q }),
+          }}
+        >
+          {canPickLocation && (
+            <div className="w-full sm:w-48">
+              <SelectField
+                label="Location"
+                value={draft.location}
+                onChange={(e) => setDraft({ ...draft, location: e.target.value })}
+              >
+                <option value="">All locations</option>
+                {(locations.data ? rowsOf(locations.data) : []).map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+          )}
+          <Button type="button" variant="secondary" icon={Search} onClick={apply}>
             Search
           </Button>
-        </div>
+        </Toolbar>
       </form>
       <DataTable
         caption="Stock"

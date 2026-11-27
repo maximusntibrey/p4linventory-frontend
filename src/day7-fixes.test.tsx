@@ -52,6 +52,7 @@ describe('FIX-49 activity: a backwards date range is blocked before any request'
     renderApp('/activity', { as: 'super_admin' });
     await screen.findByText(/User created/);
     const before = seen.length;
+    click('Filter');
     type('From date', '2026-11-24');
     type('To date', '2026-11-23');
     click('Apply filters');

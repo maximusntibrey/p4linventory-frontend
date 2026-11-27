@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { expectBranch, isPhone, openProfile, startSwitch } from './mock-helpers';
 import { sideways, stubAuth, stubData } from './stub';
-
-const banner = (page: import('@playwright/test').Page) => page.getByRole('banner');
 
 test('branch switching: first pick, then switch with the keyboard; no sideways scroll', async ({
   page,
@@ -10,19 +9,23 @@ test('branch switching: first pick, then switch with the keyboard; no sideways s
   await stubData(page);
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1, name: 'Choose your branch' })).toBeVisible();
-  await expect(banner(page).getByText('No branch selected')).toBeVisible();
+  await expectBranch(page, 'No branch selected');
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 
   await page.getByRole('button', { name: 'Accra Branch' }).click();
-  await expect(banner(page).getByText('Accra Branch')).toBeVisible();
+  await expectBranch(page, 'Accra Branch');
   await expect(page.getByRole('heading', { name: 'Choose your branch' })).toHaveCount(0);
 
-  // Keyboard only: focus the labelled Switch branch button, open it, pick, confirm with Enter.
-  const open = page.getByRole('button', { name: 'Switch branch' });
-  await expect(open).toBeVisible();
-  await expect(open).toHaveText('Switch branch');
-  await open.focus();
-  await page.keyboard.press('Enter');
+  // Desktop: the labelled Switch branch button, by keyboard. Phones: Profile in the palette.
+  if (await isPhone(page)) {
+    await startSwitch(page);
+  } else {
+    const open = page.getByRole('button', { name: 'Switch branch' });
+    await expect(open).toBeVisible();
+    await expect(open).toHaveText('Switch branch');
+    await open.focus();
+    await page.keyboard.press('Enter');
+  }
   await expect(page.getByRole('heading', { level: 1, name: 'Switch branch' })).toBeVisible();
   const kumasi = page.getByRole('button', { name: 'Kumasi Branch' });
   await kumasi.focus();
@@ -31,7 +34,7 @@ test('branch switching: first pick, then switch with the keyboard; no sideways s
   const box = await kumasi.boundingBox();
   expect(box!.height).toBeGreaterThanOrEqual(44);
   await page.keyboard.press('Enter');
-  await expect(banner(page).getByText('Kumasi Branch')).toBeVisible();
+  await expectBranch(page, 'Kumasi Branch');
   await expect(page.getByRole('heading', { level: 1, name: 'Switch branch' })).toHaveCount(0);
 });
 
@@ -42,9 +45,18 @@ test('the Super Admin top bar has no Switch branch when /me does not allow it', 
   await stubData(page);
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Switch branch' })).toHaveCount(0);
-  await expect(banner(page).getByText('All branches', { exact: true }).first()).toBeVisible();
-  await expect(banner(page).getByLabel('Filter by branch')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Switch (working )?branch/ })).toHaveCount(0);
+  if (await isPhone(page)) {
+    const palette = await openProfile(page);
+    await expect(palette.getByText('All branches', { exact: true }).first()).toBeVisible();
+    await expect(palette.getByLabel('Filter by branch')).toBeVisible();
+    await page.keyboard.press('Escape');
+  } else {
+    await expect(
+      page.getByRole('banner').getByText('All branches', { exact: true }).first(),
+    ).toBeVisible();
+    await expect(page.getByRole('banner').getByLabel('Filter by branch')).toBeVisible();
+  }
   await expect(page.getByText('Active items')).toBeVisible();
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 });

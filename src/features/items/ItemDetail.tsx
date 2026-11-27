@@ -220,7 +220,7 @@ export function ItemDetail() {
       </QueryGate>
       <Link
         to="/items"
-        className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
+        className="inline-flex min-h-target items-center gap-2 font-semibold text-primary-solid underline"
       >
         <ArrowLeft aria-hidden="true" size={20} />
         <span>Back to items</span>
