@@ -150,7 +150,7 @@ describe('mock server behaviour', () => {
   // Every state-changing operation of the contract except login, logout and password change.
   const keyed: [string, string, unknown?][] = [
     ['PUT', '/api/v1/working-branch/', { branch_id: 2 }],
-    ['POST', '/api/v1/branches/', { code: 'X', name: 'X' }],
+    ['POST', '/api/v1/branches/', { code: 'X', name: 'X', branch_type: 'branch' }],
     ['PATCH', '/api/v1/branches/2/', {}],
     ['POST', '/api/v1/branches/3/deactivate/'],
     ['POST', '/api/v1/branches/3/activate/'],
@@ -556,9 +556,13 @@ describe('branch type and audit log mocks (contract 0.6.0)', () => {
     expect(wh.results.map((b: { code: string }) => b.code)).toEqual(['WH']);
   });
 
-  it('creates a branch (default type) and refuses a second warehouse with 400 on branch_type', async () => {
+  it('creates a branch of either type; branch_type is required (400 when missing or unknown)', async () => {
     signIn();
-    const made = await api('POST', '/api/v1/branches/', { code: 'TMA', name: 'Tema' });
+    const made = await api('POST', '/api/v1/branches/', {
+      code: 'TMA',
+      name: 'Tema',
+      branch_type: 'branch',
+    });
     expect(made.status).toBe(201);
     expect((await made.json()).branch_type).toBe('branch');
     const second = await api('POST', '/api/v1/branches/', {
@@ -566,20 +570,30 @@ describe('branch type and audit log mocks (contract 0.6.0)', () => {
       name: 'Second',
       branch_type: 'warehouse',
     });
-    expect(second.status).toBe(400);
-    expect((await second.json()).errors[0]).toEqual({
-      field: 'branch_type',
-      message: 'A warehouse already exists.',
-    });
+    expect(second.status).toBe(201);
+    expect((await second.json()).kind).toBe('warehouse');
+    for (const body of [
+      { code: 'X', name: 'X' },
+      { code: 'X', name: 'X', branch_type: 'shop' },
+    ]) {
+      const bad = await api('POST', '/api/v1/branches/', body);
+      expect(bad.status).toBe(400);
+      expect((await bad.json()).errors[0].field).toBe('branch_type');
+    }
   });
 
-  it('refuses a type change on edit and accepts the current type', async () => {
+  it('edit: a branch may become a warehouse; a used warehouse cannot become a branch', async () => {
     signIn();
     expect((await api('PATCH', '/api/v1/branches/2/', { branch_type: 'warehouse' })).status).toBe(
-      400,
+      200,
     );
+    // Branch 2 holds stock now, so it is "in use" like warehouse 1.
+    expect((await api('PATCH', '/api/v1/branches/2/', { branch_type: 'branch' })).status).toBe(400);
     expect((await api('PATCH', '/api/v1/branches/1/', { branch_type: 'branch' })).status).toBe(400);
-    expect((await api('PATCH', '/api/v1/branches/2/', { branch_type: 'branch' })).status).toBe(200);
+    expect((await api('PATCH', '/api/v1/branches/1/', { branch_type: 'warehouse' })).status).toBe(
+      200,
+    );
+    expect((await api('PATCH', '/api/v1/branches/1/', { branch_type: 'x' })).status).toBe(400);
   });
 
   it('activity log: search, target_type, ordering and paging', async () => {
