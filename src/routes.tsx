@@ -31,13 +31,9 @@ import { NotFound } from './pages/NotFound';
 
 const DesignSystem = lazy(() => import('./pages/DesignSystem'));
 
-/**
- * Living design-system showcase: open in dev, and in production only when the server says the user
- * works across all branches (Super Admin). The contract has no dedicated permission for it (see TASKS Open questions).
- */
-/** The one place that decides who opens the showcase. Swap its body for the backend permission once the contract has one (owner: approved, pending backend). */
-export const canOpenDesignSystem = (me: Pick<Me, 'all_branches'>): boolean =>
-  import.meta.env.DEV || me.all_branches;
+/** Living design-system showcase: opens only with the server's `design_system.view` permission (Super Admin, contract 0.7.0). */
+export const canOpenDesignSystem = (me: Pick<Me, 'permissions'>): boolean =>
+  me.permissions.includes('design_system.view');
 
 function DesignSystemGate() {
   const me = useCurrentMe();
