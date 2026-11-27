@@ -28,7 +28,7 @@ describe('login', () => {
     signIn('SA-0001', 'correct horse');
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy();
     expect(where()).toBe('/');
-    expect(within(screen.getByRole('banner')).getByText('SA-0001')).toBeTruthy();
+    expect(within(screen.getAllByRole('banner')[0]).getByText('SA-0001')).toBeTruthy();
   });
 
   it('has labelled fields, one primary button, and no axe violations', async () => {

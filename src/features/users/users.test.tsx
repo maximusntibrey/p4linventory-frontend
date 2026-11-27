@@ -43,9 +43,11 @@ describe('users list', () => {
   it('shows each person with role, login ID and status as text + icon; axe clean', async () => {
     const { container } = renderApp('/users', { as: 'super_admin' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Users' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Kofi Boateng' })).toBeTruthy();
-    expect(screen.getByText(/USR-0001 · Branch Admin/)).toBeTruthy();
-    const pending = screen.getByRole('link', { name: 'Efua Quaye' }).closest('li')!;
+    expect(await screen.findByRole('link', { name: 'Kofi Boateng' })).toBeTruthy();
+    const row = screen.getByRole('link', { name: 'Kofi Boateng' }).closest('tr')!;
+    expect(within(row).getByText('USR-0001')).toBeTruthy();
+    expect(within(row).getByText('Branch Admin')).toBeTruthy();
+    const pending = screen.getByRole('link', { name: 'Efua Quaye' }).closest('tr')!;
     expect(within(pending).getByText('Pending activation')).toBeTruthy();
     expect(pending.querySelector('svg')).not.toBeNull();
     expect(screen.getByRole('link', { name: 'Add a user' })).toBeTruthy();
@@ -66,7 +68,7 @@ describe('users list', () => {
     await screen.findByRole('heading', { level: 1, name: 'Users' });
     type('Search by name or login ID', 'nobody-by-this-name');
     click('Search');
-    expect(await screen.findByText('No users match.')).toBeTruthy();
+    expect(await screen.findByText('No users match')).toBeTruthy();
   });
 
   it('a view-only user gets no Add button', async () => {

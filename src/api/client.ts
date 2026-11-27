@@ -178,3 +178,28 @@ export async function api<P extends keyof paths, M extends Method & keyof paths[
   if (failure) throw failure;
   return (res.status === 204 ? undefined : await res.json()) as Ok<paths[P][M]>;
 }
+
+export type CsvExport = { text: string; truncated: boolean };
+
+/** GET a CSV export (the contract's text/csv operations). `X-Export-Truncated: true` means more rows matched than were sent. */
+export async function apiCsv(
+  path: '/api/v1/activity-log/export/',
+  query: Query<paths['/api/v1/activity-log/export/']['get']> = {},
+): Promise<CsvExport> {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(query as Record<string, unknown>)) {
+    if (v !== undefined && v !== null && v !== '') qs.set(k, String(v));
+  }
+  const target = `${path}${qs.size ? `?${qs}` : ''}`;
+  let res: Response;
+  try {
+    res = await fetch(new URL(target, (!isMockMode && apiUrl) || globalThis.location.origin), {
+      headers: { Accept: 'text/csv' },
+      credentials: 'include',
+    });
+  } catch {
+    throw new ApiError(0, 'network', 'network_error', 'Could not reach the server.');
+  }
+  if (!res.ok) throw await toApiError(res);
+  return { text: await res.text(), truncated: res.headers.get('X-Export-Truncated') === 'true' };
+}

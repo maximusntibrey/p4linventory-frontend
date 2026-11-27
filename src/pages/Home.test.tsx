@@ -12,7 +12,7 @@ describe('dashboard shell (F3.4)', () => {
   it('shows the server figures as big numbers and stock per location; axe clean', async () => {
     const { container } = renderApp('/', { as: 'super_admin' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy();
-    const waiting = (await screen.findByText('Waiting to be received')).parentElement!;
+    const waiting = (await screen.findByText('Waiting to be received')).closest('div')!;
     expect(within(waiting).getByText('1')).toBeTruthy();
     expect(screen.getByText('In transit')).toBeTruthy();
     expect(screen.getByText('Active items')).toBeTruthy();
@@ -46,11 +46,11 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
   const tiles = () => within(screen.getByRole('main'));
   const tilesAsync = async () => within(await screen.findByRole('main'));
 
-  it('Super Admin gets Activity, Sell, Find and Receive tiles that open permission-guarded pages', async () => {
+  it('Super Admin gets Audit Logs, Sell, Find and Receive tiles that open permission-guarded pages', async () => {
     renderApp('/', { as: 'super_admin' });
     await screen.findByText('Active items');
     for (const [name, href] of [
-      ['Activity', '/activity'],
+      ['Audit Logs', '/audit-logs'],
       ['Sell', '/sell'],
       ['Find', '/find'],
       ['Receive', '/receive'],
@@ -59,18 +59,18 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
     ]) {
       expect(tiles().getByRole('link', { name }).getAttribute('href')).toBe(href);
     }
-    fireEvent.click(tiles().getByRole('link', { name: 'Activity' }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Activity' })).toBeTruthy();
+    fireEvent.click(tiles().getByRole('link', { name: 'Audit Logs' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Audit Logs' })).toBeTruthy();
   });
 
-  it('Branch Admin gets Activity, Sales and Shortfalls tiles; Warehouse Admin gets Activity and Shortfalls', async () => {
+  it('Branch Admin gets Audit Logs, Shortfalls and Sales tiles; Warehouse Admin gets Audit Logs and Shortfalls', async () => {
     const ba = renderApp('/', { as: 'branch_admin' });
     await screen.findByText('Active items');
     expect(
       tiles()
         .getAllByRole('link')
         .map((l) => l.textContent),
-    ).toEqual(['Activity', 'Shortfalls', 'Sales']);
+    ).toEqual(['Audit Logs', 'Shortfalls', 'Sales']);
     expect(tiles().getByRole('link', { name: 'Sales' }).getAttribute('href')).toBe('/sell/sales');
     ba.unmount();
     renderApp('/', { as: 'warehouse_admin' });
@@ -79,7 +79,7 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
       tiles()
         .getAllByRole('link')
         .map((l) => l.textContent),
-    ).toEqual(['Activity', 'Shortfalls']);
+    ).toEqual(['Audit Logs', 'Shortfalls']);
   });
 
   it('renders only what me.home_links holds, and none when it is empty', async () => {
@@ -102,7 +102,7 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
         HttpResponse.json({ ...meByRole.super_admin, permissions: ['dashboard.view'] }),
       ),
     );
-    renderApp('/activity', { as: 'super_admin' });
+    renderApp('/audit-logs', { as: 'super_admin' });
     expect(await screen.findByRole('heading', { level: 1, name: '403: Not allowed' })).toBeTruthy();
   });
 
@@ -124,51 +124,39 @@ describe('Home links are data-driven (v0.1.2 me.home_links)', () => {
   });
 });
 
-describe('dashboards (contract 0.5.0): big numbers, low stock, recent activity', () => {
+describe('dashboards (contract 0.5.0): big numbers and low stock, no activity list (it lives under Audit Logs)', () => {
   const lowRow = (location_id: number) => {
     const row = mockStore.stock.find((r) => r.location_id === location_id && r.item_id === 1)!;
     Object.assign(row, { reorder_level: 5, low_stock: true, available: 2 });
   };
 
-  it('Super Admin: numbers, a low-stock list and the latest activity, newest first, no charts or cost', async () => {
+  it('Super Admin: numbers, a low-stock list, no activity list, no charts or cost', async () => {
     lowRow(2);
     const { container } = renderApp('/', { as: 'super_admin' });
     await screen.findByText('Active items');
     expect(await screen.findByRole('heading', { level: 2, name: 'Low stock' })).toBeTruthy();
     expect(screen.getByText('1 to reorder')).toBeTruthy();
     expect(screen.getByText(/Accra Branch: 2 available, reorder at 5/)).toBeTruthy();
-    const recent = within(
-      screen.getByRole('heading', { level: 2, name: 'Recent activity' }).parentElement!,
-    );
-    const items = recent.getAllByRole('listitem');
-    expect(items).toHaveLength(6);
-    expect(items[0].textContent).toContain('User created');
-    expect(container.querySelector('canvas, svg[role="img"], img')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Recent activity' })).toBeNull();
+    expect(container.querySelector('main canvas, main svg[role="img"], main img')).toBeNull();
     expect(screen.queryByText(/cost|GHS/i)).toBeNull();
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('shows at most 10 recent events and says so when nothing is low or recent', async () => {
+  it('says so when nothing is low', async () => {
     for (const r of mockStore.stock) r.low_stock = false;
-    for (let i = 7; i <= 20; i++) mockStore.activity.push({ ...mockStore.activity[0], id: i });
     renderApp('/', { as: 'super_admin' });
-    const heading = await screen.findByRole('heading', { level: 2, name: 'Recent activity' });
-    expect(within(heading.parentElement!).getAllByRole('listitem')).toHaveLength(10);
-    expect(screen.getByText('Nothing is at or below its reorder level.')).toBeTruthy();
+    expect(await screen.findByText('Nothing is at or below its reorder level.')).toBeTruthy();
   });
 
-  it('Branch Admin sees only own-branch activity and own-branch low stock; Warehouse Admin the warehouse', async () => {
+  it('Branch Admin sees only own-branch low stock; Warehouse Admin the warehouse', async () => {
     lowRow(1);
     lowRow(2);
     const ba = renderApp('/', { as: 'branch_admin' });
-    const heading = await screen.findByRole('heading', { level: 2, name: 'Recent activity' });
-    expect(within(heading.parentElement!).getAllByRole('listitem')).toHaveLength(2);
-    expect(screen.getByText(/Accra Branch: 2 available/)).toBeTruthy();
+    expect(await screen.findByText(/Accra Branch: 2 available/)).toBeTruthy();
     expect(screen.queryByText(/Central Warehouse: 2 available/)).toBeNull();
     ba.unmount();
     renderApp('/', { as: 'warehouse_admin' });
-    const h2 = await screen.findByRole('heading', { level: 2, name: 'Recent activity' });
-    expect(within(h2.parentElement!).getAllByRole('listitem')).toHaveLength(3);
     expect(await screen.findByText(/Central Warehouse: 2 available/)).toBeTruthy();
   });
 

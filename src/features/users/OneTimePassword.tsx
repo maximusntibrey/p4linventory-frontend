@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Copy } from 'lucide-react';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { useReturnFocus } from '../../components/focus';
 import { formatAccra } from '../../lib/time';
+import { Button, Card } from '../../components/ui';
 
 type Props = {
   loginId: string;
@@ -32,7 +31,7 @@ export function OneTimePassword({ loginId, password, expiresAt, onDone }: Props)
   }
 
   return (
-    <Card className="flex flex-col gap-3 border-accent-mid bg-accent-tint">
+    <Card className="flex flex-col gap-3 border-primary-line bg-primary-soft">
       <h2 ref={heading} tabIndex={-1} className="text-2xl">
         One-time password
       </h2>

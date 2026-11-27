@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from './Button';
 import { useReturnFocus } from './focus';
+import { Button } from './ui';
 
 type Props = {
   title: string;

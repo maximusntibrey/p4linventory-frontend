@@ -4,6 +4,10 @@ import * as matchers from 'vitest-axe/matchers';
 import { server } from '../mocks/server';
 import { mockSession, resetMockStore } from '../mocks/handlers';
 import { resetCsrfCache } from '../api/client';
+import './domMatchers';
+
+// jsdom has no canvas; axe asks for a 2D context. Returning null keeps axe working and silences the jsdom "Not implemented: getContext" noise without adding a canvas package.
+HTMLCanvasElement.prototype.getContext = () => null;
 
 expect.extend(matchers);
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));

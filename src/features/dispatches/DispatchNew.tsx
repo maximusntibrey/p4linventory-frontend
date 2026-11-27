@@ -6,15 +6,12 @@ import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { ResultCard } from '../../components/focus';
 import { ItemPicker } from '../../components/ItemPicker';
 import type { Candidate } from '../../components/ItemPicker';
 import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
+import { Button, Card, PageHeader, SelectField, TextField } from '../../components/ui';
 
 type S = components['schemas'];
 type Line = Candidate & { quantity: string };
@@ -75,7 +72,7 @@ export function DispatchNew() {
   const back = (
     <Link
       to="/dispatches"
-      className="inline-flex min-h-11 items-center gap-2 font-semibold text-accent underline"
+      className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary-solid underline"
     >
       <ArrowLeft aria-hidden="true" size={20} />
       <span>Back to dispatches</span>
@@ -84,8 +81,8 @@ export function DispatchNew() {
 
   if (done) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Dispatch to a branch</h1>
+      <div className="flex flex-col gap-4">
+        <PageHeader title="Dispatch to a branch" />
         <ResultCard>
           <p className="m-0 text-lg font-semibold">
             Dispatch {done.reference} to {done.destination.name} is on its way.
@@ -107,8 +104,8 @@ export function DispatchNew() {
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Dispatch to a branch</h1>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Dispatch to a branch" />
       <ApiProblem error={create.error} at={create.submittedAt} />
       <QueryGate query={places}>
         {(page) => {
@@ -168,7 +165,7 @@ export function DispatchNew() {
           return (
             <>
               <Card>
-                <Select
+                <SelectField
                   label="Destination branch"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
@@ -180,7 +177,7 @@ export function DispatchNew() {
                       {b.name}
                     </option>
                   ))}
-                </Select>
+                </SelectField>
               </Card>
               <Card className="flex flex-col gap-3">
                 <h2 className="text-3xl">Items</h2>
@@ -205,7 +202,7 @@ export function DispatchNew() {
                       <p className="m-0 break-words font-semibold">
                         {l.name} <span className="text-sm font-normal text-muted">{l.sku}</span>
                       </p>
-                      <Field
+                      <TextField
                         label={`Quantity: ${l.name}`}
                         hint={l.note}
                         inputMode="numeric"

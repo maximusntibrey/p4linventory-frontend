@@ -27,14 +27,14 @@ describe('waiting at a branch (F5.3, F5.4)', () => {
     const { container } = renderApp('/receive', { as: 'branch_admin' });
     await h1('Receive');
     expect(await screen.findByText('Waiting at Accra Branch')).toBeTruthy();
-    expect(screen.getByText('TRF-000001')).toBeTruthy();
+    expect(await screen.findByText('TRF-000001')).toBeTruthy();
     expect(screen.getByText('In transit')).toBeTruthy();
     expect(screen.getByText(/7 units in 2 lines/)).toBeTruthy();
     // To Kumasi, and one already received: neither is waiting at Accra.
     expect(screen.queryByText('TRF-000002')).toBeNull();
     expect(screen.queryByText('TRF-000003')).toBeNull();
-    expect(screen.getByRole('link', { name: 'Check delivery TRF-000001' }).className).toContain(
-      'min-h-11',
+    expect(screen.getByRole('link', { name: 'Check delivery TRF-000001' }).className).toMatch(
+      /min-h-(11|target)/,
     );
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -45,14 +45,14 @@ describe('waiting at a branch (F5.3, F5.4)', () => {
     expect(screen.getByText('Choose a branch to see what is waiting there.')).toBeTruthy();
     fireEvent.change(await screen.findByLabelText('Branch'), { target: { value: '3' } });
     expect(await screen.findByText('Waiting at Kumasi Branch')).toBeTruthy();
-    expect(screen.getByText('TRF-000002')).toBeTruthy();
+    expect(await screen.findByText('TRF-000002')).toBeTruthy();
     expect(screen.queryByText('TRF-000001')).toBeNull();
   });
 
   it('says so when nothing is waiting', async () => {
     mockStore.dispatches = [];
     renderApp('/receive', { as: 'front_staff' });
-    expect(await screen.findByText('Nothing is waiting to be received.')).toBeTruthy();
+    expect(await screen.findByText('Nothing is waiting to be received')).toBeTruthy();
   });
 
   it('the Warehouse Admin has no receiving screen (the API gives no dispatches.waiting)', async () => {
@@ -76,8 +76,8 @@ describe('receiving a delivery (F5.3)', () => {
     expect(value('Received: HP 250 G9')).toBe('2');
     expect(value('Received: Dell 65W charger')).toBe('5');
     expect(screen.getByText('Sent: 5')).toBeTruthy();
-    expect((screen.getByLabelText('Received: HP 250 G9') as HTMLInputElement).className).toContain(
-      'min-h-11',
+    expect((screen.getByLabelText('Received: HP 250 G9') as HTMLInputElement).className).toMatch(
+      /min-h-(11|target)/,
     );
     expect(screen.queryByLabelText('Note about the shortfall')).toBeNull();
     expect(await axe(container)).toHaveNoViolations();

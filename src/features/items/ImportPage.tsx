@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileCheck, Info, Upload } from 'lucide-react';
 import { api, rowsOf } from '../../api';
@@ -7,13 +6,9 @@ import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { ResultCard } from '../../components/focus';
-import { Select } from '../../components/Select';
-import { linkButton } from '../sales/labels';
+import { Button, Card, PageHeader, SelectField, TextField, LinkButton } from '../../components/ui';
 
 type S = components['schemas'];
 
@@ -101,8 +96,8 @@ export function ImportPage() {
 
   if (report?.committed) {
     return (
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <h1 className="text-4xl text-ink">Import from CSV</h1>
+      <div className="flex flex-col gap-4">
+        <PageHeader title="Import from CSV" />
         <ResultCard>
           <p className="m-0 text-lg font-semibold">Import {report.batch_reference} is done.</p>
           <Counts r={report} />
@@ -111,9 +106,9 @@ export function ImportPage() {
           <Button icon={Upload} onClick={again}>
             Import another file
           </Button>
-          <Link to="/items" className={linkButton}>
-            <span>Back to items</span>
-          </Link>
+          <LinkButton to="/items" variant="secondary">
+            Back to items
+          </LinkButton>
         </div>
       </div>
     );
@@ -121,13 +116,13 @@ export function ImportPage() {
 
   const clean = report !== null && report.errors.length === 0;
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Import from CSV</h1>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Import from CSV" />
       <Warning />
       <ApiProblem error={server} at={run.submittedAt} />
       <Card className="flex flex-col gap-4">
         <h2 className="text-3xl">1. Choose the file</h2>
-        <Field
+        <TextField
           key={inputKey}
           label="CSV file"
           type="file"
@@ -142,7 +137,7 @@ export function ImportPage() {
           error={fileError}
         />
         {chooseLocation && (
-          <Select
+          <SelectField
             label="Location"
             value={location}
             onChange={(e) => {
@@ -156,7 +151,7 @@ export function ImportPage() {
                 {l.name}
               </option>
             ))}
-          </Select>
+          </SelectField>
         )}
         <Button
           icon={FileCheck}

@@ -1,17 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Upload } from 'lucide-react';
-import { api, rowsOf } from '../../api';
+import { Plus, Search, Tag, Upload } from 'lucide-react';
+import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { Field } from '../../components/Field';
-import { Pager } from '../../components/Pager';
-import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
+import { describeError } from '../../components/ErrorSummary';
+import { Forbidden } from '../../pages/Forbidden';
 import {
   averageCost,
   conditionCodes,
@@ -21,9 +16,21 @@ import {
   itemStatusBadge,
   itemStatuses,
 } from './labels';
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  SelectField,
+  StatusWord,
+  TextField,
+} from '../../components/ui';
+import type { Column } from '../../components/ui';
 
 type S = components['schemas'];
 type Condition = S['Item']['condition'];
+type Item = S['Item'] | S['ItemWithCost'];
 type Filters = {
   q: string;
   status: S['ItemStatus'] | '';
@@ -68,29 +75,74 @@ export function ItemsPage() {
     },
   });
 
+  const data = list.data;
+  if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
+  const columns: Column<Item>[] = [
+    {
+      id: 'name',
+      header: 'Name',
+      cell: (item) => (
+        <span className="flex flex-col">
+          <Link
+            to={`/items/${item.id}`}
+            className="inline-flex min-h-target items-center font-semibold text-ink underline"
+          >
+            {item.name}
+          </Link>
+          <span className="text-sm text-muted">
+            {item.sku} · {item.brand_name ?? 'No brand'} · {item.model_name}
+          </span>
+        </span>
+      ),
+    },
+    { id: 'condition', header: 'Condition', cell: (item) => conditionLabels[item.condition] },
+    {
+      id: 'price',
+      header: 'Selling price',
+      align: 'right',
+      cell: (item) => (item.selling_price ? ghs(item.selling_price) : 'No selling price yet'),
+    },
+    ...(withCost && (data ? rowsOf(data) : []).some((i) => averageCost(i) !== undefined)
+      ? [
+          {
+            id: 'cost',
+            header: 'Average cost',
+            align: 'right' as const,
+            cell: (item: Item) =>
+              averageCost(item) !== undefined ? costText(averageCost(item) ?? null) : '',
+          },
+        ]
+      : []),
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (item) => (
+        <StatusWord
+          status={itemStatusBadge[item.status].status}
+          label={itemStatusBadge[item.status].label}
+        />
+      ),
+    },
+  ];
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-4xl text-ink">Items</h1>
-        {canImport && (
-          <Link
-            to="/items/import"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-control bg-white px-4 font-semibold text-ink no-underline hover:bg-surface"
-          >
-            <Upload aria-hidden="true" size={20} />
-            <span>Import from CSV</span>
-          </Link>
-        )}
-        {canManage && (
-          <Link
-            to="/items/new"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-4 font-semibold text-white no-underline hover:bg-accent-hover"
-          >
-            <Plus aria-hidden="true" size={20} />
-            <span>Add an item</span>
-          </Link>
-        )}
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Items"
+        actions={
+          <>
+            {canImport && (
+              <LinkButton to="/items/import" icon={Upload} variant="secondary">
+                Import from CSV
+              </LinkButton>
+            )}
+            {canManage && (
+              <LinkButton to="/items/new" icon={Plus}>
+                Add an item
+              </LinkButton>
+            )}
+          </>
+        }
+      />
       <form
         role="search"
         className="grid gap-3 sm:grid-cols-2"
@@ -101,13 +153,13 @@ export function ItemsPage() {
         }}
       >
         <div className="sm:col-span-2">
-          <Field
+          <TextField
             label="Search by name, SKU, brand, model or part number"
             value={draft.q}
             onChange={(e) => setDraft({ ...draft, q: e.target.value })}
           />
         </div>
-        <Select
+        <SelectField
           label="Category"
           value={draft.category}
           onChange={(e) => setDraft({ ...draft, category: e.target.value })}
@@ -118,8 +170,8 @@ export function ItemsPage() {
               {c.name}
             </option>
           ))}
-        </Select>
-        <Select
+        </SelectField>
+        <SelectField
           label="Brand"
           value={draft.brand}
           onChange={(e) => setDraft({ ...draft, brand: e.target.value })}
@@ -131,8 +183,8 @@ export function ItemsPage() {
               {b.is_active ? '' : ' (deactivated)'}
             </option>
           ))}
-        </Select>
-        <Select
+        </SelectField>
+        <SelectField
           label="Condition"
           value={draft.condition}
           onChange={(e) =>
@@ -145,8 +197,8 @@ export function ItemsPage() {
               {conditionLabels[c]}
             </option>
           ))}
-        </Select>
-        <Select
+        </SelectField>
+        <SelectField
           label="Status"
           value={draft.status}
           onChange={(e) => setDraft({ ...draft, status: e.target.value as Filters['status'] })}
@@ -157,58 +209,38 @@ export function ItemsPage() {
               {itemStatusBadge[s].label}
             </option>
           ))}
-        </Select>
+        </SelectField>
         <div className="flex items-end">
           <Button type="submit" variant="secondary" icon={Search} className="w-full">
             Search
           </Button>
         </div>
       </form>
-      <QueryGate query={list}>
-        {(data) => (
-          <>
-            {rowsOf(data).length === 0 ? (
-              <p className="m-0 text-muted">No items match.</p>
-            ) : (
-              <ul className="m-0 grid list-none gap-3 p-0 md:grid-cols-2">
-                {rowsOf(data).map((item) => (
-                  <li key={item.id}>
-                    <Card className="flex h-full flex-col gap-2">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <h2 className="min-w-0 break-words text-2xl">
-                          <Link
-                            to={`/items/${item.id}`}
-                            className="inline-flex min-h-11 items-center text-ink underline"
-                          >
-                            {item.name}
-                          </Link>
-                        </h2>
-                        <StatusBadge
-                          status={itemStatusBadge[item.status].status}
-                          label={itemStatusBadge[item.status].label}
-                        />
-                      </div>
-                      <p className="m-0 text-sm text-muted">
-                        {item.sku} · {item.brand_name ?? 'No brand'} · {item.model_name}
-                      </p>
-                      <p className="m-0 text-sm text-muted">{conditionLabels[item.condition]}</p>
-                      <p className="m-0 font-semibold">
-                        {item.selling_price ? ghs(item.selling_price) : 'No selling price yet'}
-                      </p>
-                      {withCost && averageCost(item) !== undefined && (
-                        <p className="m-0 text-sm text-muted">
-                          Average cost: {costText(averageCost(item) ?? null)}
-                        </p>
-                      )}
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Pager page={data} onPage={setPage} />
-          </>
-        )}
-      </QueryGate>
+      <DataTable
+        caption="Items"
+        columns={columns}
+        rows={data ? rowsOf(data) : []}
+        rowKey={(i) => String(i.id)}
+        state={list.isPending ? 'loading' : list.isError && !data ? 'error' : 'ready'}
+        errorMessage={list.isError ? describeError(list.error).title : undefined}
+        onRetry={() => void list.refetch()}
+        empty={
+          <EmptyState
+            icon={Tag}
+            title="No items match"
+            description="Change the search or the filters."
+          />
+        }
+        pagination={
+          data && data.count > data.page_size
+            ? {
+                page: data.page,
+                pageCount: Math.ceil(data.count / data.page_size),
+                onPageChange: setPage,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

@@ -226,7 +226,7 @@ test('dispatch: status list, a new dispatch to a branch, one request on a double
   await page.goto('/dispatches');
   await expect(page.getByRole('heading', { level: 1, name: 'Dispatch' })).toBeVisible();
   await expect(page.getByText('TRF-000001')).toBeVisible();
-  await expect(page.getByRole('listitem').getByText('In transit').first()).toBeVisible();
+  await expect(page.getByRole('row').getByText('In transit').first()).toBeVisible();
   await tall(page.getByRole('link', { name: 'New dispatch' }));
   await tall(page.getByLabel('Status'));
   await flat(page);

@@ -1,8 +1,9 @@
-import { Route, Routes } from 'react-router-dom';
-import { RequireAuth, RequirePermission } from './auth/guards';
+import { lazy, Suspense } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { RequireAuth, RequirePermission, useCurrentMe } from './auth/guards';
 import type { Me } from './auth/session';
 import { AppShell } from './components/AppShell';
-import { ActivityPage } from './features/activity/ActivityPage';
+import { AuditLogsPage } from './features/audit/AuditLogsPage';
 import { BranchesPage } from './features/branches/BranchesPage';
 import { DispatchesPage } from './features/dispatches/DispatchesPage';
 import { DispatchNew } from './features/dispatches/DispatchNew';
@@ -24,8 +25,29 @@ import { UsersPage } from './features/users/UsersPage';
 import { ChangePassword } from './pages/ChangePassword';
 import { ComingSoon } from './pages/ComingSoon';
 import { Home } from './pages/Home';
+import { Forbidden } from './pages/Forbidden';
 import { Login } from './pages/Login';
 import { NotFound } from './pages/NotFound';
+
+const DesignSystem = lazy(() => import('./pages/DesignSystem'));
+
+/**
+ * Living design-system showcase: open in dev, and in production only when the server says the user
+ * works across all branches (Super Admin). The contract has no dedicated permission for it (see TASKS Open questions).
+ */
+/** The one place that decides who opens the showcase. Swap its body for the backend permission once the contract has one (owner: approved, pending backend). */
+export const canOpenDesignSystem = (me: Pick<Me, 'all_branches'>): boolean =>
+  import.meta.env.DEV || me.all_branches;
+
+function DesignSystemGate() {
+  const me = useCurrentMe();
+  if (!canOpenDesignSystem(me)) return <Forbidden />;
+  return (
+    <Suspense fallback={<p role="status">Loading…</p>}>
+      <DesignSystem />
+    </Suspense>
+  );
+}
 
 /** Screens a later step builds. Each is opened by one permission from the me endpoint; the server still checks every request. */
 const guardedScreens: { path: string; title: string; permission: Me['permissions'][number] }[] = [
@@ -55,13 +77,15 @@ export function AppRoutes() {
             />
           ))}
           <Route
-            path="activity"
+            path="audit-logs"
             element={
               <RequirePermission permission="activity.view">
-                <ActivityPage />
+                <AuditLogsPage />
               </RequirePermission>
             }
           />
+          {/* The old address keeps working. */}
+          <Route path="activity" element={<Navigate to="/audit-logs" replace />} />
           <Route
             path="shortfalls"
             element={
@@ -206,6 +230,7 @@ export function AppRoutes() {
               </RequirePermission>
             }
           />
+          <Route path="design-system" element={<DesignSystemGate />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Route>

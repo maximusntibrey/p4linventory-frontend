@@ -5,8 +5,8 @@ import { useIdempotencyKey } from '../../api/idempotency';
 import { useCurrentMe } from '../../auth/guards';
 import { dropBranchScoped, meKey } from '../../auth/session';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
 import { QueryGate } from '../../components/QueryGate';
+import { Button, PageHeader } from '../../components/ui';
 
 type Props = {
   /** Switching from a branch already chosen: Cancel is offered. When it is the required first pick there is none. */
@@ -43,8 +43,8 @@ export function BranchPicker({ onCancel, onDone }: Props) {
   const current = me.working_branch?.id;
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4">
-      <h1 className="text-4xl text-ink">{current ? 'Switch branch' : 'Choose your branch'}</h1>
+    <div className="flex flex-col gap-4">
+      <PageHeader title={current ? 'Switch branch' : 'Choose your branch'} />
       <p className="m-0 text-muted">Pick the branch you are working at.</p>
       <ApiProblem error={choose.error} at={choose.submittedAt} />
       <QueryGate query={list}>

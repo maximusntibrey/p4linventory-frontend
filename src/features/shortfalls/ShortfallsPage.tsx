@@ -1,21 +1,26 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClipboardCheck } from 'lucide-react';
-import { api, rowsOf } from '../../api';
+import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useIdempotencyKey, useSingleFlight } from '../../api/idempotency';
 import { ApiProblem } from '../../components/ApiProblem';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { ConfirmPanel } from '../../components/ConfirmPanel';
-import { Field } from '../../components/Field';
 import { SuccessNotice } from '../../components/focus';
-import { Pager } from '../../components/Pager';
-import { QueryGate } from '../../components/QueryGate';
-import { Select } from '../../components/Select';
-import { StatusBadge } from '../../components/StatusBadge';
+import { describeError } from '../../components/ErrorSummary';
+import { Forbidden } from '../../pages/Forbidden';
 import { formatAccra } from '../../lib/time';
 import { resolutionEffects, resolutionLabels, resolutionCodes } from './labels';
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  PageHeader,
+  SelectField,
+  StatusWord,
+  TextField,
+} from '../../components/ui';
+import type { Column } from '../../components/ui';
 
 type S = components['schemas'];
 
@@ -94,10 +99,87 @@ export function ShortfallsPage() {
       );
   };
 
+  const data = list.data;
+  if (list.error instanceof ApiError && list.error.kind === 'forbidden') return <Forbidden />;
+  const current =
+    opened === null ? undefined : (data ? rowsOf(data) : []).find((x) => x.id === opened);
+  const columns: Column<S['Shortfall']>[] = [
+    {
+      id: 'item',
+      header: 'Item',
+      cell: (s) => (
+        <span className="flex flex-col">
+          <span className="font-semibold">{s.item_name}</span>
+          <span className="text-sm text-muted">
+            {s.sku} · {s.dispatch_reference} · {s.origin.name} to {s.destination.name}
+            {s.received_at && ` · received ${formatAccra(s.received_at)}`}
+          </span>
+        </span>
+      ),
+    },
+    {
+      id: 'numbers',
+      header: 'Quantities',
+      cell: (s) => (
+        <span>
+          Sent {s.qty_sent} · Accepted {s.qty_accepted} · Missing {s.shortfall} · Resolved{' '}
+          {s.resolved_quantity} · <span className="font-semibold">Remaining {s.remaining}</span>
+        </span>
+      ),
+    },
+    {
+      id: 'resolutions',
+      header: 'Resolutions',
+      cell: (s) =>
+        s.resolutions.length === 0 ? (
+          ''
+        ) : (
+          <ul className="m-0 list-none p-0 text-sm">
+            {s.resolutions.map((r) => (
+              <li key={r.reference}>
+                {r.reference}: {resolutionLabels[r.action]} {r.quantity} by {r.resolved_by} on{' '}
+                {formatAccra(r.resolved_at)}. Note: {r.note}
+                {r.is_self_approval && (
+                  <>
+                    {' '}
+                    <StatusWord status="low" label="Self-approved" />
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (s) =>
+        s.status === 'open' ? (
+          <StatusWord status="low" label="Open" />
+        ) : (
+          <StatusWord status="completed" label="Resolved" />
+        ),
+    },
+    {
+      id: 'action',
+      header: 'Action',
+      cell: (s) =>
+        s.remaining > 0 ? (
+          <Button
+            icon={ClipboardCheck}
+            aria-label={`Resolve shortfall of ${s.item_name} on ${s.dispatch_reference}`}
+            aria-expanded={opened === s.id}
+            onClick={() => open(s)}
+          >
+            Resolve
+          </Button>
+        ) : null,
+    },
+  ];
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <h1 className="text-4xl text-ink">Shortfalls</h1>
-      <Select
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Shortfalls" />
+      <SelectField
         label="Status"
         value={status}
         onChange={(e) => {
@@ -108,122 +190,82 @@ export function ShortfallsPage() {
         <option value="open">Open</option>
         <option value="resolved">Resolved</option>
         <option value="">All</option>
-      </Select>
+      </SelectField>
       {notice && <SuccessNotice key={notice.at}>{notice.text}</SuccessNotice>}
       {opened === null && <ApiProblem error={resolve.error} at={resolve.submittedAt} />}
-      <QueryGate query={list}>
-        {(data) => {
-          const rows = rowsOf(data);
-          return (
-            <>
-              {rows.length === 0 && <p className="m-0 text-muted">No shortfalls match.</p>}
-              <ul className="m-0 grid list-none gap-3 p-0">
-                {rows.map((s) => (
-                  <li key={s.id}>
-                    <Card className="flex flex-col gap-2">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <h2 className="text-2xl">{s.item_name}</h2>
-                        {s.status === 'open' ? (
-                          <StatusBadge status="low" label="Open" />
-                        ) : (
-                          <StatusBadge status="completed" label="Resolved" />
-                        )}
-                      </div>
-                      <p className="m-0 text-sm text-muted">
-                        {s.sku} · {s.dispatch_reference} · {s.origin.name} to {s.destination.name}
-                        {s.received_at && ` · received ${formatAccra(s.received_at)}`}
-                      </p>
-                      <p className="m-0">
-                        Sent {s.qty_sent} · Accepted {s.qty_accepted} · Missing {s.shortfall} ·
-                        Resolved {s.resolved_quantity} ·{' '}
-                        <span className="font-semibold">Remaining {s.remaining}</span>
-                      </p>
-                      {s.resolutions.length > 0 && (
-                        <ul className="m-0 list-none p-0 text-sm">
-                          {s.resolutions.map((r) => (
-                            <li key={r.reference}>
-                              {r.reference}: {resolutionLabels[r.action]} {r.quantity} by{' '}
-                              {r.resolved_by} on {formatAccra(r.resolved_at)}. Note: {r.note}
-                              {r.is_self_approval && (
-                                <>
-                                  {' '}
-                                  <StatusBadge status="low" label="Self-approved" />
-                                </>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {s.remaining > 0 && (
-                        <Button
-                          icon={ClipboardCheck}
-                          aria-label={`Resolve shortfall of ${s.item_name} on ${s.dispatch_reference}`}
-                          aria-expanded={opened === s.id}
-                          className="self-start"
-                          onClick={() => open(s)}
-                        >
-                          Resolve
-                        </Button>
-                      )}
-                      {opened === s.id && (
-                        <>
-                          <ApiProblem error={resolve.error} at={resolve.submittedAt} />
-                          <ConfirmPanel
-                            title={`Resolve the shortfall of ${s.item_name} on ${s.dispatch_reference}? ${
-                              form.resolution
-                                ? resolutionEffects[
-                                    form.resolution as keyof typeof resolutionEffects
-                                  ]
-                                : 'Choose what happened to the missing items.'
-                            }`}
-                            confirmLabel="Confirm resolution"
-                            danger={false}
-                            pending={resolve.isPending}
-                            onConfirm={() => submit(s)}
-                            onCancel={close}
-                          >
-                            <Select
-                              label="Resolution"
-                              value={form.resolution}
-                              error={errors.resolution}
-                              onChange={(e) => setForm({ ...form, resolution: e.target.value })}
-                            >
-                              <option value="">Choose…</option>
-                              {resolutionCodes.map((c) => (
-                                <option key={c} value={c}>
-                                  {resolutionLabels[c]}
-                                </option>
-                              ))}
-                            </Select>
-                            <Field
-                              label="Quantity"
-                              inputMode="numeric"
-                              hint={`Up to ${s.remaining}.`}
-                              value={form.quantity}
-                              error={errors.quantity}
-                              autoComplete="off"
-                              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                            />
-                            <Field
-                              label="Note"
-                              value={form.note}
-                              maxLength={1000}
-                              error={errors.note}
-                              autoComplete="off"
-                              onChange={(e) => setForm({ ...form, note: e.target.value })}
-                            />
-                          </ConfirmPanel>
-                        </>
-                      )}
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-              <Pager page={data} onPage={setPage} />
-            </>
-          );
-        }}
-      </QueryGate>
+      {current && (
+        <>
+          <ApiProblem error={resolve.error} at={resolve.submittedAt} />
+          <ConfirmPanel
+            title={`Resolve the shortfall of ${current.item_name} on ${current.dispatch_reference}? ${
+              form.resolution
+                ? resolutionEffects[form.resolution as keyof typeof resolutionEffects]
+                : 'Choose what happened to the missing items.'
+            }`}
+            confirmLabel="Confirm resolution"
+            danger={false}
+            pending={resolve.isPending}
+            onConfirm={() => submit(current)}
+            onCancel={close}
+          >
+            <SelectField
+              label="Resolution"
+              value={form.resolution}
+              error={errors.resolution}
+              onChange={(e) => setForm({ ...form, resolution: e.target.value })}
+            >
+              <option value="">Choose…</option>
+              {resolutionCodes.map((c) => (
+                <option key={c} value={c}>
+                  {resolutionLabels[c]}
+                </option>
+              ))}
+            </SelectField>
+            <TextField
+              label="Quantity"
+              inputMode="numeric"
+              hint={`Up to ${current.remaining}.`}
+              value={form.quantity}
+              error={errors.quantity}
+              autoComplete="off"
+              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+            />
+            <TextField
+              label="Note"
+              value={form.note}
+              maxLength={1000}
+              error={errors.note}
+              autoComplete="off"
+              onChange={(e) => setForm({ ...form, note: e.target.value })}
+            />
+          </ConfirmPanel>
+        </>
+      )}
+      <DataTable
+        caption="Shortfalls"
+        columns={columns}
+        rows={data ? rowsOf(data) : []}
+        rowKey={(s) => String(s.id)}
+        state={list.isPending ? 'loading' : list.isError && !data ? 'error' : 'ready'}
+        errorMessage={list.isError ? describeError(list.error).title : undefined}
+        onRetry={() => void list.refetch()}
+        empty={
+          <EmptyState
+            icon={ClipboardCheck}
+            title="No shortfalls match"
+            description="Change the status."
+          />
+        }
+        pagination={
+          data && data.count > data.page_size
+            ? {
+                page: data.page,
+                pageCount: Math.ceil(data.count / data.page_size),
+                onPageChange: setPage,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

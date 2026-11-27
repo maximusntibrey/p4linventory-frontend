@@ -8,12 +8,12 @@ import { server } from './mocks/server';
 import { click, type } from './test/helpers';
 import { renderApp } from './test/renderApp';
 
-const sale = (ref: string) => screen.getByRole('heading', { level: 2, name: ref }).closest('li')!;
+const sale = (ref: string) => screen.getByRole('cell', { name: ref }).closest('tr')!;
 
 describe('FIX-41: cancelling a sale keeps focus and announces the result', () => {
   it('after the confirm, focus is not lost and a status says which sale was cancelled', async () => {
     renderApp('/sell/sales', { as: 'branch_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel sale SAL-000001' }));
     type('Reason', 'Wrong item');
     fireEvent.click(screen.getByRole('button', { name: 'Cancel this sale' }));
@@ -25,7 +25,7 @@ describe('FIX-41: cancelling a sale keeps focus and announces the result', () =>
 
   it('Cancel in the panel returns focus to the opener inside the same sale card', async () => {
     renderApp('/sell/sales', { as: 'branch_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'SAL-000001' });
+    await screen.findByRole('cell', { name: 'SAL-000001' });
     const open = screen.getByRole('button', { name: 'Cancel sale SAL-000001' });
     open.focus();
     fireEvent.click(open);

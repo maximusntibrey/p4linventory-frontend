@@ -8,6 +8,7 @@ export const t = '2026-11-23T14:05:00Z';
 export const warehouse: S['Branch'] = {
   id: 1,
   kind: 'warehouse',
+  branch_type: 'warehouse',
   code: 'WH',
   name: 'Central Warehouse',
   is_active: true,
@@ -17,6 +18,7 @@ export const warehouse: S['Branch'] = {
 export const branchA: S['Branch'] = {
   id: 2,
   kind: 'branch',
+  branch_type: 'branch',
   code: 'ACC',
   name: 'Accra Branch',
   is_active: true,
@@ -26,6 +28,7 @@ export const branchA: S['Branch'] = {
 export const branchB: S['Branch'] = {
   id: 3,
   kind: 'branch',
+  branch_type: 'branch',
   code: 'KUM',
   name: 'Kumasi Branch',
   is_active: true,

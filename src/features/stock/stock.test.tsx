@@ -8,22 +8,23 @@ import { apiError, click, type } from '../../test/helpers';
 import { renderApp } from '../../test/renderApp';
 
 const h1 = () => screen.findByRole('heading', { level: 1, name: 'Stock' });
-const section = (name: string) =>
-  screen.getByRole('heading', { level: 2, name }).closest('section')!;
+/** First table row of a location. */
+const section = (name: string) => screen.getAllByText(name, { selector: 'td' })[0].closest('tr')!;
+const at = (name: string) => screen.findAllByText(name, { selector: 'td' });
 
 describe('stock screen', () => {
   it('groups the balances by location with the four quantities and a stock word + icon; axe clean', async () => {
     const { container } = renderApp('/stock', { as: 'super_admin' });
     await h1();
-    await screen.findByRole('heading', { level: 2, name: 'Central Warehouse' });
+    await at('Central Warehouse');
     const wh = within(section('Central Warehouse'));
     expect(wh.getByText('HP 250 G9')).toBeTruthy();
     expect(wh.getByText('SKU-000001')).toBeTruthy();
     expect(wh.getByText('In stock')).toBeTruthy();
-    expect(wh.getByText('On hand').nextElementSibling?.textContent).toBe('12');
-    expect(wh.getByText('Available').nextElementSibling?.textContent).toBe('10');
-    expect(wh.getByText('Reserved').nextElementSibling?.textContent).toBe('2');
-    expect(wh.getByText('Quarantined').nextElementSibling?.textContent).toBe('0');
+    const cells = within(section('Central Warehouse'))
+      .getAllByRole('cell')
+      .map((c) => c.textContent);
+    expect(cells.slice(2, 6)).toEqual(['12', '10', '2', '0']);
     // low_stock is the server's call: Accra is flagged, the warehouse (also with a level) is not
     const accra = within(section('Accra Branch'));
     expect(accra.getByText('Low')).toBeTruthy();
@@ -52,11 +53,11 @@ describe('stock screen', () => {
       ),
     );
     renderApp('/stock', { as: 'super_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'Central Warehouse' });
+    await at('Central Warehouse');
     expect(within(section('Central Warehouse')).getByText('In stock')).toBeTruthy();
     expect(within(section('Accra Branch')).getByText('Out of stock')).toBeTruthy();
     expect(screen.queryByText('Low')).toBeNull();
-    expect(screen.getAllByText('Reorder level: 5')).toHaveLength(2);
+    expect(screen.getAllByRole('cell', { name: '5' })).toHaveLength(2);
   });
 
   it('search and location are sent to the API', async () => {
@@ -67,7 +68,7 @@ describe('stock screen', () => {
       }),
     );
     renderApp('/stock', { as: 'super_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'Accra Branch' });
+    await at('Accra Branch');
     await waitFor(() =>
       expect(
         within(screen.getByLabelText('Location')).getByRole('option', { name: 'Kumasi Branch' }),
@@ -76,22 +77,22 @@ describe('stock screen', () => {
     type('Location', '3');
     click('Search');
     await waitFor(() =>
-      expect(screen.queryByRole('heading', { level: 2, name: 'Accra Branch' })).toBeNull(),
+      expect(screen.queryAllByText('Accra Branch', { selector: 'td' })).toHaveLength(0),
     );
-    expect(screen.getByRole('heading', { level: 2, name: 'Kumasi Branch' })).toBeTruthy();
+    expect(screen.getAllByText('Kumasi Branch', { selector: 'td' }).length).toBeGreaterThan(0);
     expect(seen.some((s) => s.includes('location_id=3'))).toBe(true);
 
     type('Search by item name or SKU', 'no-such-item');
     click('Search');
-    expect(await screen.findByText('No stock matches.')).toBeTruthy();
+    expect(await screen.findByText('No stock matches')).toBeTruthy();
     expect(seen.some((s) => s.includes('q=no-such-item'))).toBe(true);
   });
 
   it('a branch user sees only their branch and no location choice', async () => {
     renderApp('/stock', { as: 'front_staff' });
     await h1();
-    expect(await screen.findByRole('heading', { level: 2, name: 'Accra Branch' })).toBeTruthy();
-    expect(screen.queryByRole('heading', { level: 2, name: 'Central Warehouse' })).toBeNull();
+    expect(await at('Accra Branch')).toBeTruthy();
+    expect(screen.queryAllByText('Central Warehouse', { selector: 'td' })).toHaveLength(0);
     expect(screen.queryByLabelText('Location')).toBeNull();
   });
 
@@ -111,7 +112,7 @@ describe('stock screen', () => {
   it('shows no cost, whatever role', async () => {
     renderApp('/stock', { as: 'super_admin' });
     await h1();
-    await screen.findByRole('heading', { level: 2, name: 'Central Warehouse' });
+    await at('Central Warehouse');
     expect(screen.queryByText(/cost/i)).toBeNull();
     expect(screen.queryByText(/900/)).toBeNull();
   });
@@ -133,9 +134,9 @@ describe('stock screen', () => {
       }),
     );
     renderApp('/stock', { as: 'super_admin' });
-    await screen.findByRole('heading', { level: 2, name: 'Central Warehouse' });
+    await at('Central Warehouse');
     click('Next');
-    expect(await screen.findByRole('heading', { level: 2, name: 'Kumasi Branch' })).toBeTruthy();
+    expect(await at('Kumasi Branch')).toBeTruthy();
     expect(asked).toContain('2');
   });
 
@@ -150,8 +151,6 @@ describe('stock screen', () => {
     expect(await screen.findByText('The server had a problem.')).toBeTruthy();
     fail = false;
     click('Try again');
-    expect(
-      await screen.findByRole('heading', { level: 2, name: 'Central Warehouse' }),
-    ).toBeTruthy();
+    expect(await at('Central Warehouse')).toBeTruthy();
   });
 });

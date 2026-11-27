@@ -37,10 +37,12 @@ describe('FIX-21 branch scope: nothing cached from the old branch survives', () 
     client.setQueryData(['stock', 'list'], [{ id: 1 }]);
     fireEvent.change(screen.getByLabelText('Filter by branch'), { target: { value: '3' } });
     expect(client.getQueryData(['stock', 'list'])).toBeUndefined();
-    expect(await screen.findByText('Loading…')).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByRole('table', { name: 'Users' }).getAttribute('aria-busy')).toBe('true'),
+    );
     expect(screen.queryByRole('link', { name: 'Kofi Boateng' })).toBeNull();
     release();
-    expect(await screen.findByText('No users match.')).toBeTruthy();
+    expect(await screen.findByText('No users match')).toBeTruthy();
   });
 });
 
@@ -185,7 +187,11 @@ describe('FIX-25 the users list returns to page 1 when the branch filter changes
     await screen.findByRole('link', { name: 'Kofi Boateng' });
     await screen.findByRole('option', { name: 'Kumasi Branch' });
     click('Next');
-    await screen.findByText('Page 2');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Page 2' }).getAttribute('aria-current')).toBe(
+        'page',
+      ),
+    );
     fireEvent.change(screen.getByLabelText('Filter by branch'), { target: { value: '3' } });
     await waitFor(() => expect(seen.some((s) => s.branch === '3')).toBe(true));
     expect(seen.filter((s) => s.branch === '3').every((s) => s.page === '1')).toBe(true);

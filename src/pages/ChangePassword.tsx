@@ -6,11 +6,9 @@ import { CheckCircle2, KeyRound, LogOut } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { meKey, useLogout } from '../auth/session';
 import { AuthLayout } from '../components/AuthLayout';
-import { Button } from '../components/Button';
-import { Card } from '../components/Card';
 import { describeError, ErrorSummary } from '../components/ErrorSummary';
 import type { ErrorParts } from '../components/ErrorSummary';
-import { Field } from '../components/Field';
+import { Button, Card, PageHeader, TextField } from '../components/ui';
 
 type Values = { current_password: string; new_password: string; confirm: string };
 
@@ -79,14 +77,14 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
           )(e);
         }}
       >
-        <Field
+        <TextField
           label={forced ? 'One-time password' : 'Current password'}
           type="password"
           autoComplete="current-password"
           error={errors.current_password?.message ?? server?.fieldError('current_password')}
           {...register('current_password', { required: 'Enter your current password.' })}
         />
-        <Field
+        <TextField
           label="New password"
           type="password"
           hint="At least 10 characters."
@@ -94,7 +92,7 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
           error={errors.new_password?.message ?? server?.fieldError('new_password')}
           {...register('new_password', { required: 'Enter a new password.' })}
         />
-        <Field
+        <TextField
           label="Confirm new password"
           type="password"
           autoComplete="new-password"
@@ -127,8 +125,8 @@ export function ChangePassword({ forced = false }: { forced?: boolean }) {
   return forced ? (
     <AuthLayout title="Choose a new password">{body}</AuthLayout>
   ) : (
-    <div className="mx-auto flex max-w-md flex-col gap-4">
-      <h1 className="text-4xl text-ink">Change password</h1>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Change password" />
       <Card className="flex flex-col gap-4">{body}</Card>
     </div>
   );
