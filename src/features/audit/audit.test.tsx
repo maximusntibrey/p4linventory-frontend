@@ -41,6 +41,7 @@ describe('Audit Logs screen', () => {
     renderApp('/audit-logs', { as: 'super_admin' });
     await h1();
     expect(screen.getByRole('searchbox', { name: SEARCH })).toBeTruthy();
+    click('Filter');
     for (const l of ['User', 'Branch', 'Action', 'Module', 'From date', 'To date']) {
       expect(await screen.findByLabelText(l)).toBeTruthy();
     }
@@ -66,6 +67,7 @@ describe('Audit Logs screen', () => {
     );
     renderApp('/audit-logs', { as: 'super_admin' });
     await screen.findByText('User created');
+    click('Filter');
     await screen.findByRole('option', { name: /USR-0003/ });
     type('User', '4');
     type('Branch', '1');
@@ -121,9 +123,11 @@ describe('Audit Logs screen', () => {
   it('says so when nothing matches, and shows the API message for a bad date range', async () => {
     renderApp('/audit-logs', { as: 'super_admin' });
     await screen.findByText('User created');
+    click('Filter');
     type('Action', 'nothing_like_this');
     click('Apply filters');
     expect(await screen.findByText('No activity matches')).toBeTruthy();
+    click('Filter');
     type('Action', '');
     type('From date', '2026-11-24');
     type('To date', '2026-11-23');
@@ -164,6 +168,7 @@ describe('Audit Logs screen', () => {
   it('keyboard only: filters are reachable and Enter in a field applies them', async () => {
     renderApp('/audit-logs', { as: 'super_admin' });
     await screen.findByText('User created');
+    click('Filter');
     const action = screen.getByLabelText('Action');
     action.focus();
     expect(document.activeElement).toBe(action);
@@ -208,6 +213,7 @@ describe('Audit Logs export', () => {
     );
     renderApp('/audit-logs', { as: 'super_admin' });
     await screen.findByText('User created');
+    click('Filter');
     type('Module', 'dispatch');
     click('Apply filters');
     await waitFor(() => expect(dataRows()).toHaveLength(3));
