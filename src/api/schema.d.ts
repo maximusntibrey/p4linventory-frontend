@@ -583,8 +583,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Cross-branch lookup for one item
-         * @description Branch name and available quantity only, for every other active branch. No prices, costs, customers or sales. Explicit exception to branch isolation.
+         * Cross-location lookup for one item
+         * @description Name, kind and available quantity only, for every other active location. v0.8.0: warehouses behave
+         *     like branches here. Everyone sees the other branches; SA, WA and the central warehouse user also see
+         *     the other warehouses (WA: never their own, which is in `/stock/`). BA and FS see branches only. No
+         *     prices, costs, customers, movements or sales. Explicit exception to location isolation.
          */
         get: operations["itemsBranchAvailability"];
         put?: never;
@@ -604,9 +607,10 @@ export interface paths {
         };
         /**
          * Stock balances in scope
-         * @description SA sees all locations (optional `location_id`). WA sees the warehouse in full and
-         *     per-branch quantities (OQ-8). BA and FS see only their own branch; asking for another
-         *     `location_id` is 403. Never carries cost (SA and WA read it from `/costed-stock/`).
+         * @description SA sees all locations (optional `location_id`). WA sees their own warehouse in full and
+         *     per-branch quantities (OQ-8), never another warehouse's rows (v0.8.0: use branch-availability).
+         *     The central warehouse user (v0.8.0) sees every warehouse, no branches. BA and FS see only their
+         *     own branch; asking for another `location_id` is 403. Never carries cost (SA and WA read it from `/costed-stock/`).
          *     Available = on_hand - reserved. In transit is not a bucket here; see `/dispatches/`.
          */
         get: operations["stockList"];
@@ -627,8 +631,8 @@ export interface paths {
         };
         /**
          * Stock movement log (read only), newest first
-         * @description One row per bucket changed. Same scope as `/stock/`: SA and WA see every location, BA and FS only
-         *     their own branch (another `location_id` is 403 `wrong_branch`). Never carries cost.
+         * @description One row per bucket changed. Same scope as `/stock/`: SA every location, WA their own warehouse and
+         *     the branches, the central warehouse user every warehouse, BA and FS only their own branch (another `location_id` is 403 `wrong_branch`). Never carries cost.
          */
         get: operations["stockMovementsList"];
         put?: never;
@@ -648,8 +652,8 @@ export interface paths {
         };
         /**
          * Stock balances with average cost (SA, WA warehouse rows)
-         * @description Same filters as `/stock/`. SA gets every location. WA gets warehouse rows only (branch
-         *     quantities carry no cost for WA, OQ-8; use `/stock/` for those). BA and FS get 403.
+         * @description Same filters as `/stock/`. SA gets every location. WA gets their own warehouse rows only (branch
+         *     quantities carry no cost for WA, OQ-8; use `/stock/` for those). BA, FS and the central warehouse user get 403.
          */
         get: operations["costedStockList"];
         put?: never;
@@ -667,7 +671,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List supplier receipts */
+        /**
+         * List supplier receipts
+         * @description v0.8.0. SA sees all receipts, WA only their own warehouse's, the central warehouse user every warehouse's (read only). BA and FS get 403.
+         */
         get: operations["goodsReceiptsList"];
         put?: never;
         /**
@@ -1065,7 +1072,7 @@ export interface components {
         /** @example USR-0001 */
         LoginId: string;
         /** @enum {string} */
-        RoleCode: "super_admin" | "warehouse_admin" | "branch_admin" | "front_staff";
+        RoleCode: "super_admin" | "warehouse_admin" | "central_warehouse" | "branch_admin" | "front_staff";
         /**
          * @description Code to status word (SKILLS "Account"): `active` = Active, `pending_activation` =
          *     Pending activation, `suspended` = Suspended, `deactivated` = Deactivated.
@@ -1082,9 +1089,13 @@ export interface components {
          *     (CSV import, rows 19 and 20: SA, WA). v0.5.0: `shortfalls.resolve` (rows 33 to 35: SA, WA, BA). The Sales entry (row 49) is in `menu` for FS and in
          *     `home_links` for SA and BA, whose menus already hold 5 items. v0.7.0: `design_system.view` (row 50:
          *     SA only) lets the frontend show the `/design-system` showcase; it has no menu entry or tile.
+         *     v0.8.0: `goods_receipts.view` (row 27: read receipts; SA, WA own warehouse, `central_warehouse` all
+         *     warehouses). `goods_receipts.manage` (write) stays SA and WA. The `central_warehouse` role is read-only:
+         *     it holds `stock.view`, `items.view`, `branches.view`, `dispatches.view`, `find.use`,
+         *     `stock.lookup_other_branches` and `goods_receipts.view`, and no cost or write action.
          * @enum {string}
          */
-        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive" | "sales.record" | "activity.view" | "find.use" | "dashboard.view" | "sales.cancel" | "items.import" | "shortfalls.resolve" | "design_system.view";
+        ActionPermission: "users.manage" | "users.view" | "branches.manage" | "branches.view" | "working_branch.select" | "items.view" | "items.manage" | "items.view_cost" | "prices.manage" | "stock.view" | "stock.lookup_other_branches" | "goods_receipts.manage" | "dispatches.create" | "dispatches.view" | "dispatches.waiting" | "dispatches.receive" | "sales.record" | "activity.view" | "find.use" | "dashboard.view" | "sales.cancel" | "items.import" | "shortfalls.resolve" | "design_system.view" | "goods_receipts.view";
         /**
          * @description Code to status word (SKILLS "Item"): `draft` = Draft, `active` = Active,
          *     `discontinued` = Discontinued. Discontinued is final.
@@ -1155,7 +1166,7 @@ export interface components {
         UserCreate: {
             full_name: string;
             roles: components["schemas"]["RoleCode"][];
-            /** @description Required for branch_admin (a branch) and warehouse_admin (the warehouse). Must be absent for super_admin and front_staff. */
+            /** @description Required for branch_admin (a branch) and warehouse_admin (the warehouse). Must be absent for super_admin, central_warehouse and front_staff. */
             permanent_location_id?: number;
         };
         UserUpdate: {
@@ -1330,7 +1341,8 @@ export interface components {
             sku: string;
             name: string;
             category_id: number;
-            subtype_id: number;
+            /** @description Null for an item created by the CSV import without a subtype (v0.8.0). */
+            subtype_id: number | null;
             brand_id: number;
             readonly brand_name?: string;
             model_name: string;
@@ -1396,8 +1408,14 @@ export interface components {
             }[];
         };
         BranchAvailability: {
+            /** @description The location id (branch or warehouse). */
             branch_id: number;
             branch_name: string;
+            /**
+             * @description v0.8.0.
+             * @enum {string}
+             */
+            kind: "branch" | "warehouse";
             /** @description Available (on hand minus reserved). */
             quantity: number;
         };
@@ -1477,7 +1495,8 @@ export interface components {
                 sku: string;
                 item_name: string;
                 quantity: number;
-                unit_cost: components["schemas"]["Money"];
+                /** @description Absent (v0.8.0) for a reader without `items.view_cost` (the central warehouse role). Always present for SA and WA. */
+                unit_cost?: components["schemas"]["Money"];
             }[];
             /** Format: date-time */
             received_at: string;
@@ -2811,7 +2830,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description One row per other active branch. */
+            /** @description One row per other active location (`kind` tells branch from warehouse). */
             200: {
                 headers: {
                     [name: string]: unknown;

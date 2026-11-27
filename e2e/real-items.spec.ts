@@ -39,8 +39,11 @@ test('Super Admin: items list, search, filters; add, view, edit, picture, activa
   await page.reload();
   await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible();
   await page.getByLabel('Add a picture').setInputFiles(PNG);
+  const uploaded = page.waitForResponse(
+    (r) => r.url().includes('/image/') && r.request().method() === 'PUT',
+  );
   await page.getByRole('button', { name: 'Upload picture' }).click();
-  await expect(page.getByRole('img').first()).toBeVisible();
+  expect((await uploaded).status()).toBe(200);
   // The form is rebuilt from the saved item after an upload: let that settle before typing.
   await page.waitForLoadState('networkidle');
   await page.getByLabel('Description').fill('Edited by the e2e run');

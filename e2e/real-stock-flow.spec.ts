@@ -16,7 +16,10 @@ test.describe.configure({ mode: 'serial' });
 async function addItem(page: Page, pickerLabel: string) {
   await page.getByLabel(pickerLabel).fill('HP 250');
   await page.getByRole('button', { name: 'Search' }).click();
-  await page.getByRole('button', { name: /^Add HP 250 G9 Laptop/ }).click();
+  await page
+    .getByRole('button', { name: /^Add HP 250 G9 Laptop/ })
+    .first()
+    .click();
 }
 
 /** With more than one warehouse the page asks which one: pick the seeded one. */

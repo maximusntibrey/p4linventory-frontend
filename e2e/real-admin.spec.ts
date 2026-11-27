@@ -13,7 +13,6 @@ test('Super Admin: CSV import, dry run then confirm', async ({ page }) => {
   await page.getByLabel('Location').selectOption({ index: 1 });
   await page.getByRole('button', { name: 'Check the file' }).click();
   await page.getByRole('button', { name: 'Import now' }).click();
-  await page.getByRole('button', { name: 'Import now' }).click();
   await expect(page.getByRole('button', { name: 'Import another file' })).toBeVisible();
   await w.assertClean();
 });
