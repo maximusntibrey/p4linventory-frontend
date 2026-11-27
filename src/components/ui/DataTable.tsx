@@ -54,6 +54,13 @@ export type DataTableProps<Row> = {
 };
 
 const SKELETON_ROWS = 5;
+// On phones each cell shows its column name. It is a real element hidden from assistive tech, so cell names stay clean.
+const cardLabel = {
+  display: { xs: 'inline', sm: 'none' },
+  fontWeight: 600,
+  color: 'text.secondary',
+  textAlign: 'left',
+} as const;
 const ariaSort = { asc: 'ascending', desc: 'descending' } as const;
 
 export function DataTable<Row>({
@@ -165,7 +172,7 @@ export function DataTable<Row>({
       return (
         <TableRow key={k} hover selected={on}>
           {selectable && (
-            <TableCell padding="checkbox" data-label="">
+            <TableCell padding="checkbox">
               <Checkbox
                 checked={on}
                 onChange={() => toggle(k)}
@@ -174,12 +181,13 @@ export function DataTable<Row>({
             </TableCell>
           )}
           {cols.map((c) => (
-            <TableCell
-              key={c.id}
-              align={c.align === 'right' ? 'right' : 'left'}
-              data-label={c.header}
-            >
-              {c.cell(row)}
+            <TableCell key={c.id} align={c.align === 'right' ? 'right' : 'left'}>
+              <Box component="span" aria-hidden="true" sx={cardLabel}>
+                {c.header}
+              </Box>
+              <Box component="span" sx={{ minWidth: 0 }}>
+                {c.cell(row)}
+              </Box>
             </TableCell>
           ))}
         </TableRow>
@@ -224,14 +232,8 @@ export function DataTable<Row>({
                 gap: 2,
                 textAlign: 'right',
                 border: 0,
-                '&::before': {
-                  content: 'attr(data-label)',
-                  fontWeight: 600,
-                  textAlign: 'left',
-                  color: 'text.secondary',
-                },
               },
-              '& tbody td[colspan]': { display: 'table-cell', '&::before': { content: 'none' } },
+              '& tbody td[colspan]': { display: 'table-cell' },
             },
           })}
         >

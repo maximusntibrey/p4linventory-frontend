@@ -56,8 +56,11 @@ export async function goTo(page: Page, label: string) {
 export async function openProfile(page: Page) {
   const header = page.getByRole('banner').first();
   const profile = header.getByRole('button', { name: 'Open profile menu' });
-  if (!(await profile.isVisible()))
-    await header.getByRole('button', { name: 'open more menu' }).click();
+  const more = header.getByRole('button', { name: 'open more menu' });
+  await expect(async () => {
+    if (!(await profile.isVisible())) await more.click();
+    await expect(profile).toBeVisible({ timeout: 1500 });
+  }).toPass();
   await profile.click();
   await expect(header.getByRole('button', { name: 'Log out' })).toBeVisible();
   return header;
@@ -68,7 +71,13 @@ export async function expectBranch(page: Page, text: string | RegExp) {
   const header = page.getByRole('banner').first();
   if (!(await header.getByRole('button', { name: 'Log out' }).isVisible())) await openProfile(page);
   await expect(header.getByText(text, { exact: typeof text === 'string' }).first()).toBeVisible();
-  await header.getByRole('button', { name: 'Open profile menu' }).click(); // close it again
+  // Close it again (on phones the "more" menu may already have closed with it).
+  const profile = header.getByRole('button', { name: 'Open profile menu' });
+  if (await isPhone(page)) {
+    // The menus are click-away popovers: tap an empty spot low on the screen to close them.
+    await page.mouse.click(5, (page.viewportSize()?.height ?? 740) - 5);
+    await expect(header.getByRole('button', { name: 'Log out' })).toBeHidden();
+  } else if (await profile.isVisible()) await profile.click();
 }
 
 /** Starts the branch switch from the profile menu. */

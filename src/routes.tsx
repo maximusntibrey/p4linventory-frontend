@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth, RequirePermission } from './auth/guards';
 import type { Me } from './auth/session';
@@ -23,7 +24,6 @@ import { UserNew } from './features/users/UserNew';
 import { UsersPage } from './features/users/UsersPage';
 import { ChangePassword } from './pages/ChangePassword';
 import { ComingSoon } from './pages/ComingSoon';
-import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { NotFound } from './pages/NotFound';
 
@@ -31,6 +31,9 @@ import { NotFound } from './pages/NotFound';
 const guardedScreens: { path: string; title: string; permission: Me['permissions'][number] }[] = [
   { path: 'warehouse', title: 'Warehouse', permission: 'stock.view' },
 ];
+
+// The dashboard carries the charts library: load it only when Home opens.
+const Home = lazy(() => import('./pages/Home').then((m) => ({ default: m.Home })));
 
 export function AppRoutes() {
   return (
@@ -41,7 +44,14 @@ export function AppRoutes() {
       </Route>
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
-          <Route index element={<Home />} />
+          <Route
+            index
+            element={
+              <Suspense fallback={<p role="status">Loading…</p>}>
+                <Home />
+              </Suspense>
+            }
+          />
           <Route path="account/password" element={<ChangePassword />} />
           {guardedScreens.map(({ path, title, permission }) => (
             <Route

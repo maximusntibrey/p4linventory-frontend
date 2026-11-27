@@ -156,7 +156,7 @@ const names = () =>
   within(screen.getByRole('table'))
     .getAllByRole('row')
     .slice(1)
-    .map((r) => within(r).getAllByRole('cell')[0].textContent);
+    .map((r) => within(r).getAllByRole('cell')[0].lastElementChild?.textContent);
 
 describe('DataTable', () => {
   it('sorts client-side: ascending, descending, then none, with aria-sort', () => {
@@ -244,11 +244,13 @@ describe('DataTable', () => {
     expect(screen.getByText('Nothing to show')).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
-  it('on a phone every cell carries its column label so rows read as cards', () => {
+  it('on a phone every cell carries a visual column label so rows read as cards', () => {
     phone();
     show(<DataTable caption="Stock" columns={columns} rows={rows} rowKey={(r) => r.id} />);
     const cell = within(screen.getByRole('table')).getAllByRole('cell')[1];
-    expect(cell).toHaveAttribute('data-label', 'Quantity');
+    // The column name is drawn inside the cell for card layout but hidden from assistive tech.
+    expect(cell.querySelector('[aria-hidden="true"]')).toHaveTextContent('Quantity');
+    expect(within(cell).getByText('5')).toBeInTheDocument();
   });
 });
 

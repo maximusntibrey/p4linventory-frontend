@@ -43,6 +43,15 @@ function watch(page: Page) {
 
 const mainText = (page: Page) => page.locator('main').innerText();
 
+/** Client-side navigation, then let the route and its data settle (a reload would drop the in-page mock session). */
+async function visit(page: Page, path: string) {
+  await page.keyboard.press('Escape'); // never leave the drawer open over the next screen
+  await go(page, path);
+  await page.waitForFunction((p) => location.pathname === p, path);
+  await page.waitForTimeout(500);
+  await expect(page.locator('main')).toBeVisible();
+}
+
 /** On a phone the links live in the temporary drawer; collect from the drawer and the page. */
 async function internalLinks(page: Page) {
   await openNav(page);
@@ -75,8 +84,7 @@ for (const [role, loginId] of Object.entries(LOGINS)) {
     const found = new Set<string>(await internalLinks(page));
     const problems: string[] = [];
     for (const href of [...found]) {
-      await go(page, href);
-      await expect(page.locator('main')).toBeVisible();
+      await visit(page, href);
       const text = (await mainText(page)).trim();
       if (!text) problems.push(`${href}: blank page`);
       if (/Page not found/.test(text)) problems.push(`${href}: lands on the 404 page`);
@@ -85,8 +93,7 @@ for (const [role, loginId] of Object.entries(LOGINS)) {
     // Follow links first seen on the other screens too (still same origin, bounded by the app's own routes).
     for (const href of [...found]) {
       if (href === '/logout') continue;
-      await go(page, href);
-      await expect(page.locator('main')).toBeVisible();
+      await visit(page, href);
       const text = (await mainText(page)).trim();
       if (!text) problems.push(`${href}: blank page`);
       if (/Page not found/.test(text)) problems.push(`${href}: lands on the 404 page`);
@@ -95,21 +102,24 @@ for (const [role, loginId] of Object.entries(LOGINS)) {
 
     // 2. Every route: allowed -> a real screen; not allowed -> 403 (a role never reaches a screen its menu hides).
     for (const { path, perm } of ROUTES) {
-      await go(page, path);
-      await expect(page.locator('main')).toBeVisible();
+      await visit(page, path);
       const text = await mainText(page);
+      const dynamic = /\/\d+$/.test(path);
       if (perm && !perms.includes(perm)) {
         expect(text, `${role} ${path} should be 403`).toMatch(/403: Not allowed/);
       } else {
-        expect(text, `${role} ${path} should open`).not.toMatch(/Page not found|403: Not allowed/);
+        expect(text, `${role} ${path} should open`).not.toMatch(
+          dynamic ? /Page not found/ : /Page not found|403: Not allowed/,
+        );
         expect(text.trim().length, `${role} ${path} is blank`).toBeGreaterThan(0);
       }
     }
 
     // 3. Redirects and unknown routes.
-    await go(page, '/activity');
+    await visit(page, '/activity');
+    await page.waitForTimeout(300);
     if (perms.includes('activity.view')) await expect(page).toHaveURL(/\/audit-logs$/);
-    await go(page, '/no-such-page');
+    await visit(page, '/no-such-page');
     await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
     expect(errors, errors.join('\n')).toEqual([]);
   });

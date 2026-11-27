@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Box from '@mui/material/Box';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Tag, Upload } from 'components/icons';
+import { Plus, Tag, Upload } from 'components/icons';
 import { api, ApiError, rowsOf } from '../../api';
 import type { components } from '../../api';
 import { useCurrentMe } from '../../auth/guards';
@@ -18,9 +18,9 @@ import {
   itemStatuses,
 } from './labels';
 import {
-  Button,
   DataTable,
   EmptyState,
+  FilterForm,
   LinkButton,
   PageHeader,
   SelectField,
@@ -152,23 +152,19 @@ export function ItemsPage() {
           </>
         }
       />
-      <Box
-        component="form"
-        role="search"
-        sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { sm: 'repeat(2, minmax(0, 1fr))' } }}
-        onSubmit={(e) => {
-          e.preventDefault();
+      <FilterForm
+        onSubmit={() => {
           setFilters(draft);
           setPage(1);
         }}
-      >
-        <Box sx={{ gridColumn: { sm: 'span 2' } }}>
+        search={
           <TextField
             label="Search by name, SKU, brand, model or part number"
             value={draft.q}
             onChange={(e) => setDraft({ ...draft, q: e.target.value })}
           />
-        </Box>
+        }
+      >
         <SelectField
           label="Category"
           value={draft.category}
@@ -220,12 +216,7 @@ export function ItemsPage() {
             </option>
           ))}
         </SelectField>
-        <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
-          <Button type="submit" variant="secondary" icon={Search} sx={{ width: '100%' }}>
-            Search
-          </Button>
-        </Box>
-      </Box>
+      </FilterForm>
       <DataTable
         caption="Items"
         columns={columns}

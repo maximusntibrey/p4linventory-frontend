@@ -4,7 +4,7 @@ The UI is **Mantis-based MUI** (Mantis Free React Admin Template, MIT, see `NOTI
 
 Template-first: the reference source is `reference/mantis/vite/` (local, gitignored). Copy from it as it is, then change content. Vendored template files stay JS/JSX; our own code is TypeScript. Dark mode is out of scope.
 
-Legacy (removed in the last UI run, see TASKS Part UI): Tailwind utilities, `src/components/ui/*`, `src/styles/tokens.css`, `lucide-react`. They coexist only so unmigrated screens keep working. Tailwind runs without preflight.
+One UI system only: MUI with the Mantis theme. Tailwind, the old custom component library, `lucide-react` and the old design tokens are gone.
 
 ## Theme (`src/themes/`, the only place colours live)
 
@@ -82,6 +82,12 @@ Header: white with the Mantis border, navy text and icons. Cards: white with the
 | `StatCard`, `PanelCard`, `CardBody` | `features/dashboard/blocks.tsx` | Dashboard stat, chart and list cards with loading, error, empty and "Not available yet" states |
 | `@extended/*` | `components/@extended/` | Avatar, Breadcrumbs, IconButton, Dot, Transitions, AnimateButton |
 | `Logo` | `components/logo/` | Mark + wordmark (drawer), mark only when collapsed |
+| `Button`, `LinkButton` | `components/ui/` | Button variants primary (orange), secondary (navy outline), ghost, danger; icon + visible label; `loading` |
+| `PageHeader`, `Toolbar`, `FilterForm`, `Drawer` | `components/ui/` | Page title and actions, list tools, search form; on phones actions and filters move into bottom-sheet drawers |
+| `DataTable`, `Pagination` | `components/ui/` | Sortable, selectable table with loading, error, empty states; rows become labelled cards on phones |
+| `TextField`, `SelectField`, `SegmentedControl` | `components/ui/`, `components/Field.tsx` | Labelled fields with hint and error wiring (native select for phones and react-hook-form) |
+| `StatusWord`, `StatusBadge`, `EmptyState`, `Card`, `Skeleton` | `components/ui/` | Status chips (icon plus words, never colour alone), empty states, Mantis card, loading placeholders |
+| `icons` | `components/icons.tsx` | The icon names our screens use, backed by `@ant-design/icons`, decorative by default |
 | `Field` | `components/Field.tsx` | Label, input, hint and error for forms (InputLabel, OutlinedInput, FormHelperText) |
 | `AuthLayout` | `components/AuthLayout.tsx`, `sections/auth/AuthWrapper.jsx` | Navy brand panel and white form (desktop), navy strip above the form (mobile) |
 

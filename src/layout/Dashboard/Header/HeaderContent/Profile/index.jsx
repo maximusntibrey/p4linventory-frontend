@@ -66,6 +66,8 @@ export default function Profile() {
         <ButtonBase
           sx={(theme) => ({
             p: 0.25,
+            minWidth: 44,
+            minHeight: 44,
             borderRadius: 1,
             '&:focus-visible': { outline: `2px solid ${theme.vars.palette.primary.main}`, outlineOffset: 2 }
           })}

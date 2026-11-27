@@ -35,6 +35,7 @@ export function StatusBadge({
   const Icon = icon ?? Default;
   return (
     <Chip
+      component="span"
       size="small"
       variant={variant === 'soft' ? 'light' : 'outlined'}
       color={color}

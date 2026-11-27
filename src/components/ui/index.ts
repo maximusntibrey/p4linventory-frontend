@@ -14,3 +14,4 @@ export * from './StatusWord';
 export * from './Toolbar';
 export * from './useCompact';
 export { Field as TextField } from '../Field';
+export * from './FilterForm';
