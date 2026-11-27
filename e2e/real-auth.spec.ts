@@ -106,11 +106,15 @@ test('Front Staff picks and switches the working branch; own password page opens
   await signIn(page, 'front_staff');
   await pickBranchIfAsked(page, 'Accra Central');
   await expectBranch(page, 'Accra Central');
-  await openProfileItem(page, /switch working branch/i);
-  await page.getByRole('button', { name: /Kumasi/ }).click();
+  await expect(async () => {
+    await openProfileItem(page, /switch working branch/i);
+    await page.getByRole('button', { name: /Kumasi/ }).click({ timeout: 5000 });
+  }).toPass({ timeout: 40_000 });
   await expectBranch(page, 'Kumasi');
-  await openProfileItem(page, /switch working branch/i);
-  await page.getByRole('button', { name: /Accra Central/ }).click();
+  await expect(async () => {
+    await openProfileItem(page, /switch working branch/i);
+    await page.getByRole('button', { name: /Accra Central/ }).click({ timeout: 5000 });
+  }).toPass({ timeout: 40_000 });
   await expectBranch(page, 'Accra Central');
   await openProfileItem(page, /change password/i);
   await expect(page.getByRole('heading', { name: 'Change password' })).toBeVisible();

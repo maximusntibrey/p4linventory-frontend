@@ -24,6 +24,7 @@ async function addItem(page: Page, pickerLabel: string) {
 
 /** With more than one warehouse the page asks which one: pick the seeded one. */
 async function pickWarehouse(page: Page) {
+  await page.waitForLoadState('networkidle');
   const select = page.getByLabel('Warehouse', { exact: true });
   if (await select.isVisible()) await select.selectOption({ label: 'Central Warehouse' });
 }

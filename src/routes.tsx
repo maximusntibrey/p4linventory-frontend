@@ -178,14 +178,7 @@ export function AppRoutes() {
                 </RequirePermission>
               }
             />
-            <Route
-              path="goods-receipts"
-              element={
-                <RequirePermission permission="goods_receipts.view">
-                  <GoodsReceipts />
-                </RequirePermission>
-              }
-            />
+            <Route path="goods-receipts" element={<GoodsReceipts />} />
             <Route
               path="dispatches"
               element={

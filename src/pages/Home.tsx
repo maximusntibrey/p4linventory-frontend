@@ -8,7 +8,11 @@ import { Dashboard } from '../features/dashboard/Dashboard';
  */
 export function Home() {
   const me = useCurrentMe();
-  if (!me.permissions.includes('dashboard.view')) {
+  // Home has something of its own for a user with a dashboard or a sell/receive action; a read-only user has not.
+  const hasHome = (['dashboard.view', 'sales.record', 'dispatches.waiting'] as const).some((p) =>
+    me.permissions.includes(p),
+  );
+  if (!hasHome && !me.menu.some((m) => m.path === '/')) {
     const first = me.menu.find((m) => m.path !== '/');
     if (first) return <Navigate to={first.path} replace />;
   }

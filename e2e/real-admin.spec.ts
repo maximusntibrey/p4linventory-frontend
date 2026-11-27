@@ -1,6 +1,27 @@
 import { expect, test } from '@playwright/test';
 import { expectNotBlank, open, signIn, unique, watch } from './real-helpers';
 
+/** The branch list is paged: walk the pages (from the first) until `text` shows. */
+async function findRow(page: import('@playwright/test').Page, text: string | RegExp) {
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('heading', { name: 'Branches', level: 1 })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Edit / }).first()).toBeVisible();
+  for (let i = 0; i < 20; i++) {
+    console.log('FR', i, await page.getByRole('button', { name: /^Edit / }).count(), await page.getByRole('button', { name: 'Next' }).count(), JSON.stringify((await page.locator('main').innerText()).slice(-200)));
+    const hit = page.getByText(text).first();
+    if (await hit.isVisible()) return hit;
+    const next = page
+      .getByRole('button', { name: 'Next', exact: true })
+      .locator('visible=true')
+      .first();
+    if (!(await next.isVisible()) || (await next.isDisabled())) break;
+    await next.click();
+    await page.waitForLoadState('networkidle');
+  }
+  throw new Error(`row not found: ${text}`);
+}
+
 test('Super Admin: CSV import, dry run then confirm', async ({ page }) => {
   const w = watch(page);
   await signIn(page, 'super_admin');
@@ -87,16 +108,26 @@ test('Super Admin: branches list, filter, create both types, edit', async ({ pag
     await page.getByRole('button', { name: 'Add a branch' }).click();
     await page.getByLabel('Code', { exact: true }).fill(`E${type[0]}${tag}`.slice(0, 10));
     await page.getByLabel('Name', { exact: true }).fill(`E2E ${label} ${tag}`);
-    await page.locator('form').getByLabel(type).check({ force: true });
+    await page.locator('form').getByText(type, { exact: true }).click();
+    await expect(page.locator('form').getByRole('radio', { name: type })).toBeChecked();
+    const saved = page.waitForResponse(
+      (r) => r.url().includes('/api/v1/branches/') && r.request().method() === 'POST',
+    );
     await page.getByRole('button', { name: 'Save branch' }).click();
-    await expect(page.getByText(`E2E ${label} ${tag}`).first()).toBeVisible();
+    expect((await saved).status()).toBe(201);
+    await findRow(page, `E2E ${label} ${tag}`);
   }
+  await findRow(page, `E2E Branch ${tag}`);
   await page.getByRole('button', { name: `Edit E2E Branch ${tag}` }).click();
   await page.getByLabel('Name', { exact: true }).fill(`E2E Branch ${tag} renamed`);
+  const patched = page.waitForResponse(
+    (r) => r.url().includes('/api/v1/branches/') && r.request().method() === 'PATCH',
+  );
   await page.getByRole('button', { name: 'Save branch' }).click();
-  await expect(page.getByText(`E2E Branch ${tag} renamed`).first()).toBeVisible();
+  expect((await patched).status()).toBe(200);
   // leave the dev data as found: the two places made here are deactivated again
   for (const n of [`E2E Branch ${tag} renamed`, `E2E Store ${tag}`]) {
+    await findRow(page, n);
     await page.getByRole('button', { name: `Deactivate ${n}` }).click();
     await page.getByRole('button', { name: 'Yes, deactivate' }).click();
     await expect(page.getByRole('button', { name: `Activate ${n}` })).toBeVisible();
