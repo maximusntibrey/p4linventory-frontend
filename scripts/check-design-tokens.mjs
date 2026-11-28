@@ -1,4 +1,5 @@
-// Design-token guard (wired into `npm run check`): fails on raw colours and inline style props.
+// Design-token guard (wired into `npm run check`): fails on raw colours, inline style props,
+// and hard-coded fontSize/fontWeight inside sx (bypasses theme typography variants).
 // Allowed: src/themes/** (the Mantis theme and palette: the ONLY place brand colours live)
 // (src/assets/** and test files are exempt too.)
 // Existing offenders live in scripts/design-token-baseline.json and may only shrink.
@@ -15,6 +16,8 @@ const baselinePath = join(root, 'scripts', 'design-token-baseline.json');
 const COLOUR =
   /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b|\b(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch)\(/g;
 const INLINE_STYLE = /\bstyle\s*=\s*(?!\{\s*widthStyle\()/g;
+const FONTSIZE = /fontSize\s*:\s*['"][^'"]*['"]/g;
+const FONTWEIGHT = /fontWeight\s*:\s*\d+/g;
 const EXEMPT = (p) =>
   p.startsWith('src/themes/') ||
   p === 'src/utils/colorUtils.js' || // vendored: builds rgba(var(--x)) strings, holds no colour
@@ -43,8 +46,13 @@ if (existsSync(src)) {
     const text = stripComments(readFileSync(file, 'utf8'));
     const colors = (text.match(COLOUR) ?? []).length;
     // Vendored Mantis template files (.js/.jsx) keep their own inline styles; our code is TypeScript.
-    const inlineStyles = /\.(css|jsx?)$/.test(rel) ? 0 : (text.match(INLINE_STYLE) ?? []).length;
-    if (colors || inlineStyles) found[rel] = { colors, inlineStyles };
+    const isOurs = !/\.(css|jsx?)$/.test(rel);
+    const inlineStyles = isOurs ? (text.match(INLINE_STYLE) ?? []).length : 0;
+    // Hard-coded typography in our code bypasses the theme's type scale; use a variant instead.
+    const adHocType = isOurs
+      ? (text.match(FONTSIZE) ?? []).length + (text.match(FONTWEIGHT) ?? []).length
+      : 0;
+    if (colors || inlineStyles || adHocType) found[rel] = { colors, inlineStyles, adHocType };
   }
 }
 
@@ -57,7 +65,7 @@ if (writeBaseline) {
 const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')) : {};
 const errors = [];
 for (const [file, n] of Object.entries(found)) {
-  const allowed = baseline[file] ?? { colors: 0, inlineStyles: 0 };
+  const allowed = baseline[file] ?? { colors: 0, inlineStyles: 0, adHocType: 0 };
   if (n.colors > allowed.colors)
     errors.push(
       `${file}: ${n.colors} raw colour(s), allowed ${allowed.colors}. Use a design token.`,
@@ -66,13 +74,21 @@ for (const [file, n] of Object.entries(found)) {
     errors.push(
       `${file}: ${n.inlineStyles} inline style prop(s), allowed ${allowed.inlineStyles}. Use tokens/classes or widthStyle().`,
     );
+  if (n.adHocType > allowed.adHocType)
+    errors.push(
+      `${file}: ${n.adHocType} hard-coded typography token(s), allowed ${allowed.adHocType}. Use a theme typography variant instead of fontSize/fontWeight in sx.`,
+    );
 }
-const total = Object.values(baseline).reduce((a, b) => a + b.colors + b.inlineStyles, 0);
+const total = Object.values(baseline).reduce(
+  (a, b) => a + b.colors + b.inlineStyles + b.adHocType,
+  0,
+);
 const stale = Object.keys(baseline).filter(
   (f) =>
     !found[f] ||
     found[f].colors < baseline[f].colors ||
-    found[f].inlineStyles < baseline[f].inlineStyles,
+    found[f].inlineStyles < baseline[f].inlineStyles ||
+    found[f].adHocType < baseline[f].adHocType,
 );
 if (errors.length) {
   console.error('design-token check FAILED:\n' + errors.join('\n'));
