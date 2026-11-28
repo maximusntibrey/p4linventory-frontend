@@ -6,6 +6,7 @@ type S = components['schemas'];
 export const roleLabels: Record<S['RoleCode'], string> = {
   super_admin: 'Super Admin',
   warehouse_admin: 'Warehouse Admin',
+  central_warehouse: 'Central Warehouse',
   branch_admin: 'Branch Admin',
   front_staff: 'Front Staff',
 };

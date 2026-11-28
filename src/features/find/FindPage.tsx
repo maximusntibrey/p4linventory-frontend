@@ -52,6 +52,7 @@ function OtherBranches({ itemId }: { itemId: number }) {
               >
                 <Box component="span" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
                   {b.branch_name}
+                  {b.kind === 'warehouse' && ' (warehouse)'}
                 </Box>
                 <Box component="span" sx={{ fontWeight: 600 }}>
                   {b.quantity} available

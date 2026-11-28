@@ -33,6 +33,9 @@ describe('FIX-28 cost never appears for a user without items.view_cost', () => {
     await screen.findByRole('heading', { level: 1, name: 'Dell 65W charger' });
     await screen.findByLabelText('Wattage (W)');
     type('Wattage (W)', '65');
+    // The item has no subtype (null, as the real API can send): the form asks for one.
+    await screen.findByRole('option', { name: 'Charger' });
+    type('Type', '3');
     click('Save changes');
     expect(await screen.findByText('Changes saved.')).toBeTruthy();
     click('Activate item');

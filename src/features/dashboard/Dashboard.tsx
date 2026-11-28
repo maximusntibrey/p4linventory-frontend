@@ -151,7 +151,7 @@ export function Dashboard() {
         title="Today's sales"
         value={cedis(todayDone.reduce((n, s) => n + toCents(s.total), 0))}
         caption={`${todayDone.length} completed`}
-        to="/sell/sales"
+        to="/sales"
         linkLabel="View sales"
         state={salesState}
         query={q.sales}
@@ -413,7 +413,7 @@ export function Dashboard() {
       'recentsales',
       <PanelCard
         title="Recent sales"
-        action={{ to: '/sell/sales', label: 'View all' }}
+        action={{ to: '/sales', label: 'View all' }}
         state={salesState === 'planned' ? 'ready' : salesState}
         query={q.sales}
         empty={q.sales.data && sales.length === 0 ? 'No sales in the last 7 days.' : undefined}

@@ -12,7 +12,7 @@ const sale = (ref: string) => screen.getByRole('cell', { name: ref }).closest('t
 
 describe('FIX-41: cancelling a sale keeps focus and announces the result', () => {
   it('after the confirm, focus is not lost and a status says which sale was cancelled', async () => {
-    renderApp('/sell/sales', { as: 'branch_admin' });
+    renderApp('/sales', { as: 'branch_admin' });
     await screen.findByRole('cell', { name: 'SAL-000001' });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel sale SAL-000001' }));
     type('Reason', 'Wrong item');
@@ -24,7 +24,7 @@ describe('FIX-41: cancelling a sale keeps focus and announces the result', () =>
   });
 
   it('Cancel in the panel returns focus to the opener inside the same sale card', async () => {
-    renderApp('/sell/sales', { as: 'branch_admin' });
+    renderApp('/sales', { as: 'branch_admin' });
     await screen.findByRole('cell', { name: 'SAL-000001' });
     const open = screen.getByRole('button', { name: 'Cancel sale SAL-000001' });
     open.focus();

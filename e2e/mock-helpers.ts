@@ -3,9 +3,9 @@ import type { Page } from '@playwright/test';
 
 export const LOGINS = {
   super_admin: 'SA-0001',
-  branch_admin: 'USR-0001',
-  front_staff: 'USR-0002',
-  warehouse_admin: 'USR-0003',
+  branch_admin: 'USR-0002',
+  front_staff: 'USR-0003',
+  warehouse_admin: 'USR-0001',
 } as const;
 
 /** Mock mode keeps its session in the page, so sign in through the screen and move around without reloading. */

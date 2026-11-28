@@ -26,7 +26,7 @@ const event = (id: number): S['ActivityEvent'] => ({
   id,
   occurred_at: '2026-11-24T10:00:00Z',
   user_id: 4,
-  user_login_id: 'USR-0003',
+  user_login_id: 'USR-0001',
   user_role: 'warehouse_admin',
   branch_id: 1,
   branch_name: 'Central Warehouse',

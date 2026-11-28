@@ -38,7 +38,7 @@ async function setup(page: Page, permissions: S['Me']['permissions'] = ['find.us
       json: {
         user: {
           id: 3,
-          login_id: 'USR-0002',
+          login_id: 'USR-0003',
           full_name: 'Esi Owusu',
           status: 'active',
           roles: ['front_staff'],
@@ -66,8 +66,13 @@ async function setup(page: Page, permissions: S['Me']['permissions'] = ['find.us
   await page.route('**/api/v1/items/1/branch-availability/', (r) =>
     r.fulfill({
       json: [
-        { branch_id: 3, branch_name: 'Kumasi Branch', quantity: 5 },
-        { branch_id: 4, branch_name: 'Takoradi Branch With A Rather Long Name', quantity: 0 },
+        { branch_id: 3, branch_name: 'Kumasi Branch', kind: 'branch', quantity: 5 },
+        {
+          branch_id: 4,
+          branch_name: 'Takoradi Branch With A Rather Long Name',
+          kind: 'branch',
+          quantity: 0,
+        },
       ] satisfies S['BranchAvailability'][],
     }),
   );
@@ -95,7 +100,7 @@ const hpSale = {
   id: 7,
   reference: 'SAL-000007',
   location: stockBranch,
-  staff: 'USR-0002',
+  staff: 'USR-0003',
   status: 'completed',
   payment_method: 'cash',
   total: '2500.00',
@@ -172,14 +177,14 @@ test('sales list: cancel needs a reason and a confirm, then shows the Cancelled 
       status: 'cancelled',
       cancellation: {
         reason: (r.request().postDataJSON() as { reason: string }).reason,
-        cancelled_by: 'USR-0002',
+        cancelled_by: 'USR-0003',
         cancelled_role: 'branch_admin',
         cancelled_at: '2026-11-24T11:00:00Z',
       },
     };
     return r.fulfill({ json: sale });
   });
-  await page.goto('/sell/sales');
+  await page.goto('/sales');
   await expect(page.getByRole('cell', { name: 'SAL-000007', exact: true })).toBeVisible();
   await expect(page.locator('span', { hasText: /^Completed$/ }).last()).toBeVisible();
   const open = page.getByRole('button', { name: 'Cancel sale SAL-000007' });

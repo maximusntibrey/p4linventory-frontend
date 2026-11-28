@@ -19,7 +19,21 @@ describe('apiMode', () => {
     expect(resolveApiMode('real', false)).toBe('real');
   });
 
-  it('exposes VITE_API_URL with a trailing slash removed', async () => {
+  it('in dev goes through the proxy (same-origin) even when VITE_API_URL is set', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://backend.up.railway.app/');
+    const mod = await import('./index');
+    expect(mod.apiUrl).toBeUndefined();
+  });
+
+  it('in dev calls VITE_API_URL cross-origin only when VITE_API_DIRECT=true, trailing slash removed', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://backend.up.railway.app/');
+    vi.stubEnv('VITE_API_DIRECT', 'true');
+    const mod = await import('./index');
+    expect(mod.apiUrl).toBe('https://backend.up.railway.app');
+  });
+
+  it('in a production build uses VITE_API_URL', async () => {
+    vi.stubEnv('PROD', true);
     vi.stubEnv('VITE_API_URL', 'https://backend.up.railway.app/');
     const mod = await import('./index');
     expect(mod.apiUrl).toBe('https://backend.up.railway.app');

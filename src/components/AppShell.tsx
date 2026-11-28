@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { RouteBoundary } from './ErrorBoundary';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Typography from '@mui/material/Typography';
 import { api } from '../api';
@@ -89,7 +90,9 @@ export function AppShell() {
                 onDone={() => setSwitching(false)}
               />
             ) : (
-              <Outlet />
+              <RouteBoundary>
+                <Outlet />
+              </RouteBoundary>
             )}
           </DashboardLayout>
         </ShellContext.Provider>

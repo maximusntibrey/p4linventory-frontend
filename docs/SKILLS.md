@@ -411,3 +411,4 @@ All critical gaps were decided by the owner on 2026-11-18 and development is aut
 | 2026-11-24 | OQ-25 (backend) decided: Warehouse Admin and Branch Admin open the Activity log from a Home tile (home_links), showing only their own location's activity (OQ-5). | Owner |
 | 2026-11-24 | FIX-34 kept: Sentry uses sentry-sdk 3.0.0 `data_collection` (user_info false, stack_frame_variables false, cookies off, http_bodies []) because include_local_variables/send_default_pii do not exist in 3.0.0. | Owner |
 | 2026-11-24 | Approved for the next contract version: /me `all_branches` (true when the user works across all branches, e.g. Super Admin), so the frontend stops inferring it. | Owner |
+| - | No new installs for the real-API e2e work (Playwright already registered). A contract-shape test of mock responses against openapi.yaml was not added: it needs a YAML parser that is not an approved dependency. |

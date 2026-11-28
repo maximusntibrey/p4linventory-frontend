@@ -10,7 +10,7 @@ const ROUTES = [
   '/activity',
   '/shortfalls',
   '/sell',
-  '/sell/sales',
+  '/sales',
   '/items/import',
   '/find',
   '/goods-receipts',
