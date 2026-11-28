@@ -14,6 +14,7 @@ import type { Candidate } from '../../components/ItemPicker';
 import { BranchPicker } from '../workingBranch/BranchPicker';
 import { ghs } from '../items/labels';
 import { fromCents, paymentCodes, paymentLabel, toCents } from './labels';
+import Typography from '@mui/material/Typography';
 import { Button, Card, PageHeader, SelectField, TextField, LinkButton } from '../../components/ui';
 
 type S = components['schemas'];
@@ -111,10 +112,10 @@ export function SellPage() {
   const total = lines.reduce((sum, l) => sum + lineCents(l), 0);
   const unpriced = lines.filter((l) => !l.price).length;
   const unpricedNote = unpriced > 0 && (
-    <Box component="p" sx={{ m: 0, fontSize: '0.875rem', fontWeight: 600, color: 'error.main' }}>
+    <Typography variant="subtitle1" component="p" sx={{ m: 0, color: 'error.main' }}>
       {unpriced} {unpriced === 1 ? 'item has' : 'items have'} no price yet, so{' '}
       {unpriced === 1 ? 'it is' : 'they are'} not in this total and cannot be sold.
-    </Box>
+    </Typography>
   );
   const quantityProblems = () =>
     Object.fromEntries(
@@ -151,9 +152,9 @@ export function SellPage() {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <PageHeader title="Sell" />
         <ResultCard>
-          <Box component="p" sx={{ m: 0, fontSize: '1.125rem', fontWeight: 600 }}>
+          <Typography variant="body1" sx={{ m: 0 }}>
             Sale {done.reference} is recorded.
-          </Box>
+          </Typography>
           <Box component="p" sx={{ m: 0 }}>
             Total <strong>{ghs(done.total)}</strong> · {paymentLabel(done.payment_method)}
           </Box>
@@ -213,14 +214,11 @@ export function SellPage() {
           <Box
             component="li"
             key={s}
-            aria-current={s === step ? 'step' : undefined}
             sx={{
               borderRadius: '999px',
               border: '1px solid',
               px: 1.5,
               py: 0.5,
-              fontSize: '0.875rem',
-              fontWeight: 600,
               ...(s === step
                 ? {
                     borderColor: 'primary.main',
@@ -230,7 +228,9 @@ export function SellPage() {
                 : { borderColor: 'divider', color: 'text.secondary' }),
             }}
           >
-            Step {i + 1} of 3: {stepTitle[s]}
+            <Typography variant="body2" aria-current={s === step ? 'step' : undefined}>
+              Step {i + 1} of 3: {stepTitle[s]}
+            </Typography>
           </Box>
         ))}
       </Box>
@@ -239,9 +239,7 @@ export function SellPage() {
       {step === 'items' && (
         <>
           <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box component="h2" sx={{ fontSize: '1.875rem' }}>
-              Add items
-            </Box>
+            <Typography variant="h2">Add items</Typography>
             <ItemPicker
               label="Find an item to sell"
               queryKey={['sell', 'find', where.id]}
@@ -252,18 +250,21 @@ export function SellPage() {
             {addError && <ApiProblem error={addError.error} at={addError.at} />}
           </Card>
           <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box component="h2" sx={{ fontSize: '1.875rem' }}>
-              Sale list
-            </Box>
+            <Typography variant="h2">Sale list</Typography>
             {problem?.list && (
-              <Box component="p" role="alert" sx={{ m: 0, fontWeight: 600, color: 'error.main' }}>
+              <Typography
+                variant="body1"
+                component="p"
+                role="alert"
+                sx={{ m: 0, color: 'error.main' }}
+              >
                 {problem.list}
-              </Box>
+              </Typography>
             )}
             {lines.length === 0 && (
-              <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+              <Typography variant="body2" component="p" sx={{ m: 0, color: 'text.secondary' }}>
                 No items yet.
-              </Box>
+              </Typography>
             )}
             <Box
               component="ul"
@@ -290,19 +291,20 @@ export function SellPage() {
                     p: 1.5,
                   }}
                 >
-                  <Box component="p" sx={{ m: 0, overflowWrap: 'anywhere', fontWeight: 600 }}>
+                  <Typography
+                    variant="subtitle1"
+                    component="p"
+                    sx={{ m: 0, overflowWrap: 'anywhere' }}
+                  >
                     {l.name}{' '}
-                    <Box
-                      component="span"
-                      sx={{ fontSize: '0.875rem', fontWeight: 400, color: 'text.secondary' }}
-                    >
+                    <Typography variant="caption" component="span" sx={{ color: 'text.secondary' }}>
                       {l.sku}
-                    </Box>
-                  </Box>
-                  <Box component="p" sx={{ m: 0, fontSize: '0.875rem', color: 'text.secondary' }}>
+                    </Typography>
+                  </Typography>
+                  <Typography variant="body2" component="p" sx={{ m: 0, color: 'text.secondary' }}>
                     {l.available !== undefined && `${l.available} available · `}
                     {l.price ? `${ghs(l.price)} each` : 'No price yet'}
-                  </Box>
+                  </Typography>
                   <TextField
                     label={`Quantity: ${l.name}`}
                     inputMode="numeric"
@@ -339,9 +341,9 @@ export function SellPage() {
                 </Box>
               ))}
             </Box>
-            <Box component="p" sx={{ m: 0, fontSize: '1.125rem' }}>
+            <Typography variant="body1" component="p" sx={{ m: 0 }}>
               Running total: <strong>{ghs(fromCents(total))}</strong>
-            </Box>
+            </Typography>
             {unpricedNote}
           </Card>
           <Button
@@ -364,9 +366,7 @@ export function SellPage() {
 
       {step === 'pay' && (
         <Card sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box component="h2" sx={{ fontSize: '1.875rem' }}>
-            Payment
-          </Box>
+          <Typography variant="h2">Payment</Typography>
           <SelectField
             label="Payment method"
             value={payment}
@@ -402,9 +402,7 @@ export function SellPage() {
 
       {step === 'review' && (
         <Card sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          <Box component="h2" sx={{ fontSize: '1.875rem' }}>
-            Confirm sale
-          </Box>
+          <Typography variant="h2">Confirm sale</Typography>
           <Box
             component="ul"
             sx={{
@@ -425,13 +423,13 @@ export function SellPage() {
           <Box component="p" sx={{ m: 0 }}>
             Payment: <strong>{paymentLabel(payment)}</strong>
           </Box>
-          <Box component="p" sx={{ m: 0, fontSize: '1.125rem' }}>
+          <Typography variant="body1" component="p" sx={{ m: 0 }}>
             Total: <strong>{ghs(fromCents(total))}</strong>
-          </Box>
+          </Typography>
           {unpricedNote}
-          <Box component="p" sx={{ m: 0, fontSize: '0.875rem', color: 'text.secondary' }}>
+          <Typography variant="body2" component="p" sx={{ m: 0, color: 'text.secondary' }}>
             The final price comes from the price list.
-          </Box>
+          </Typography>
           <ConfirmPanel
             danger={false}
             title="Record this sale? The stock is taken off straight away."
