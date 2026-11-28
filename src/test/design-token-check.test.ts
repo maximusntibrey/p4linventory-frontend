@@ -84,6 +84,6 @@ describe('scripts/check-design-tokens.mjs', () => {
       encoding: 'utf8',
     });
     expect(r.status).toBe(0);
-    expect(r.stdout).toContain('baseline violations: 0');
+    expect(r.stdout).toContain('design-token check ok');
   });
 });
