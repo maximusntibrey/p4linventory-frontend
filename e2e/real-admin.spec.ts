@@ -8,7 +8,6 @@ async function findRow(page: import('@playwright/test').Page, text: string | Reg
   await expect(page.getByRole('heading', { name: 'Branches', level: 1 })).toBeVisible();
   await expect(page.getByRole('button', { name: /^Edit / }).first()).toBeVisible();
   for (let i = 0; i < 20; i++) {
-    console.log('FR', i, await page.getByRole('button', { name: /^Edit / }).count(), await page.getByRole('button', { name: 'Next' }).count(), JSON.stringify((await page.locator('main').innerText()).slice(-200)));
     const hit = page.getByText(text).first();
     if (await hit.isVisible()) return hit;
     const next = page
