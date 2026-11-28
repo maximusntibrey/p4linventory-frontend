@@ -15,8 +15,13 @@ async function findRow(page: import('@playwright/test').Page, text: string | Reg
       .locator('visible=true')
       .first();
     if (!(await next.isVisible()) || (await next.isDisabled())) break;
+    const loaded = page.waitForResponse(
+      (r) => r.url().includes('/api/v1/branches/') && r.request().method() === 'GET',
+    );
     await next.click();
-    await page.waitForLoadState('networkidle');
+    await loaded;
+    // the new page's rows replace the old ones a moment after the answer arrives
+    await hit.waitFor({ timeout: 2000 }).catch(() => undefined);
   }
   throw new Error(`row not found: ${text}`);
 }
