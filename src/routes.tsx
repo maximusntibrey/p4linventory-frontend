@@ -8,6 +8,7 @@ import { ComingSoon } from './pages/ComingSoon';
 import { RequireAuth, RequirePermission } from './auth/guards';
 import type { Me } from './auth/session';
 import { AppShell } from './components/AppShell';
+import { RouteBoundary } from './components/ErrorBoundary';
 
 // Every screen is its own chunk: the first load carries only the shell and the screen being opened.
 const Home = lazy(() => import('./pages/Home').then((m) => ({ default: m.Home })));
@@ -29,10 +30,8 @@ const ImportPage = lazy(() =>
 const FindPage = lazy(() =>
   import('./features/find/FindPage').then((m) => ({ default: m.FindPage })),
 );
-const GoodsReceiptPage = lazy(() =>
-  import('./features/goodsReceipts/GoodsReceiptPage').then((m) => ({
-    default: m.GoodsReceiptPage,
-  })),
+const GoodsReceipts = lazy(() =>
+  import('./features/goodsReceipts/GoodsReceipts').then((m) => ({ default: m.GoodsReceipts })),
 );
 const ItemDetail = lazy(() =>
   import('./features/items/ItemDetail').then((m) => ({ default: m.ItemDetail })),
@@ -86,9 +85,23 @@ export function AppRoutes() {
       }
     >
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={
+            <RouteBoundary>
+              <Login />
+            </RouteBoundary>
+          }
+        />
         <Route element={<RequireAuth pending />}>
-          <Route path="/password-change" element={<ChangePassword forced />} />
+          <Route
+            path="/password-change"
+            element={
+              <RouteBoundary>
+                <ChangePassword forced />
+              </RouteBoundary>
+            }
+          />
         </Route>
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>
@@ -120,7 +133,10 @@ export function AppRoutes() {
                 </RequirePermission>
               }
             />
-            {/* The old address keeps working. */}
+            {/* Addresses the server's menu uses, or older ones: they land on the one real screen. */}
+            <Route path="sell/sales" element={<Navigate to="/sales" replace />} />
+            <Route path="receive-stock" element={<Navigate to="/goods-receipts" replace />} />
+            <Route path="dispatch" element={<Navigate to="/dispatches" replace />} />
             <Route path="activity" element={<Navigate to="/audit-logs" replace />} />
             <Route
               path="shortfalls"
@@ -139,7 +155,7 @@ export function AppRoutes() {
               }
             />
             <Route
-              path="sell/sales"
+              path="sales"
               element={
                 <RequirePermission permission="sales.record">
                   <SalesPage />
@@ -162,14 +178,7 @@ export function AppRoutes() {
                 </RequirePermission>
               }
             />
-            <Route
-              path="goods-receipts"
-              element={
-                <RequirePermission permission="goods_receipts.manage">
-                  <GoodsReceiptPage />
-                </RequirePermission>
-              }
-            />
+            <Route path="goods-receipts" element={<GoodsReceipts />} />
             <Route
               path="dispatches"
               element={

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Payless4Laptops Inventory API
-  version: 0.7.0
+  version: 0.8.0
   description: |
     Contract-first API for Sprint 1 (B1.3). Published before the code; from B2 onward the
     drf-spectacular generated schema must match this file. Changes need owner approval.
@@ -904,14 +904,18 @@ paths:
     get:
       tags: [stock]
       operationId: itemsBranchAvailability
-      summary: Cross-branch lookup for one item
-      description: Branch name and available quantity only, for every other active branch. No prices, costs, customers or sales. Explicit exception to branch isolation.
+      summary: Cross-location lookup for one item
+      description: |
+        Name, kind and available quantity only, for every other active location. v0.8.0: warehouses behave
+        like branches here. Everyone sees the other branches; SA, WA and the central warehouse user also see
+        the other warehouses (WA: never their own, which is in `/stock/`). BA and FS see branches only. No
+        prices, costs, customers, movements or sales. Explicit exception to location isolation.
       x-permission: any logged-in user (table row 22)
       parameters:
         - {$ref: '#/components/parameters/Id'}
       responses:
         '200':
-          description: One row per other active branch.
+          description: One row per other active location (`kind` tells branch from warehouse).
           content:
             application/json:
               schema:
@@ -926,11 +930,12 @@ paths:
       operationId: stockList
       summary: Stock balances in scope
       description: |
-        SA sees all locations (optional `location_id`). WA sees the warehouse in full and
-        per-branch quantities (OQ-8). BA and FS see only their own branch; asking for another
-        `location_id` is 403. Never carries cost (SA and WA read it from `/costed-stock/`).
+        SA sees all locations (optional `location_id`). WA sees their own warehouse in full and
+        per-branch quantities (OQ-8), never another warehouse's rows (v0.8.0: use branch-availability).
+        The central warehouse user (v0.8.0) sees every warehouse, no branches. BA and FS see only their
+        own branch; asking for another `location_id` is 403. Never carries cost (SA and WA read it from `/costed-stock/`).
         Available = on_hand - reserved. In transit is not a bucket here; see `/dispatches/`.
-      x-permission: SA all, WA warehouse and branch quantities, BA and FS own branch (table row 21)
+      x-permission: SA all, WA own warehouse and branch quantities, central warehouses only, BA and FS own branch (table row 21)
       parameters:
         - {$ref: '#/components/parameters/Page'}
         - {$ref: '#/components/parameters/PageSize'}
@@ -959,9 +964,9 @@ paths:
       operationId: stockMovementsList
       summary: Stock movement log (read only), newest first
       description: |
-        One row per bucket changed. Same scope as `/stock/`: SA and WA see every location, BA and FS only
-        their own branch (another `location_id` is 403 `wrong_branch`). Never carries cost.
-      x-permission: SA all, WA all locations, BA and FS own branch (table row 21)
+        One row per bucket changed. Same scope as `/stock/`: SA every location, WA their own warehouse and
+        the branches, the central warehouse user every warehouse, BA and FS only their own branch (another `location_id` is 403 `wrong_branch`). Never carries cost.
+      x-permission: SA all, WA own warehouse and branches, central warehouses only, BA and FS own branch (table row 21)
       parameters:
         - {$ref: '#/components/parameters/Page'}
         - {$ref: '#/components/parameters/PageSize'}
@@ -990,8 +995,8 @@ paths:
       operationId: costedStockList
       summary: Stock balances with average cost (SA, WA warehouse rows)
       description: |
-        Same filters as `/stock/`. SA gets every location. WA gets warehouse rows only (branch
-        quantities carry no cost for WA, OQ-8; use `/stock/` for those). BA and FS get 403.
+        Same filters as `/stock/`. SA gets every location. WA gets their own warehouse rows only (branch
+        quantities carry no cost for WA, OQ-8; use `/stock/` for those). BA, FS and the central warehouse user get 403.
       x-permission: SA all, WA warehouse rows (table rows 14, 21)
       parameters:
         - {$ref: '#/components/parameters/Page'}
@@ -1021,7 +1026,8 @@ paths:
       tags: [goods-receipts]
       operationId: goodsReceiptsList
       summary: List supplier receipts
-      x-permission: SA, WA (table row 27)
+      description: v0.8.0. SA sees all receipts, WA only their own warehouse's, the central warehouse user every warehouse's (read only). BA and FS get 403.
+      x-permission: SA, WA own warehouse, central warehouse read only (table row 27)
       parameters:
         - {$ref: '#/components/parameters/Page'}
         - {$ref: '#/components/parameters/PageSize'}
@@ -1071,7 +1077,7 @@ paths:
       tags: [goods-receipts]
       operationId: goodsReceiptsRead
       summary: Read one receipt
-      x-permission: SA, WA (table row 27)
+      x-permission: SA, WA own warehouse, central warehouse read only (table row 27); another warehouse's receipt is 404
       parameters:
         - {$ref: '#/components/parameters/Id'}
       responses:
@@ -1090,7 +1096,7 @@ paths:
       operationId: dispatchesList
       summary: List dispatches and their status
       description: SA and WA see all. BA and FS see only dispatches to their own branch.
-      x-permission: SA, WA all; BA, FS to own branch (table row 29)
+      x-permission: SA all, WA from their own warehouse, central from every warehouse, BA, FS to own branch (table row 29); v0.8.0
       parameters:
         - {$ref: '#/components/parameters/Page'}
         - {$ref: '#/components/parameters/PageSize'}
@@ -1171,7 +1177,7 @@ paths:
       operationId: dispatchesRead
       summary: Read one dispatch
       description: A dispatch to another branch (BA, FS) is 404 `not_found`, the same as an id that does not exist (OQ-30). 403 is for a role that may not read dispatches.
-      x-permission: SA, WA all; BA, FS to own branch (table row 29)
+      x-permission: SA all, WA from their own warehouse, central from every warehouse, BA, FS to own branch (table row 29); v0.8.0
       parameters:
         - {$ref: '#/components/parameters/Id'}
       responses:
@@ -1674,7 +1680,7 @@ components:
       example: USR-0001
     RoleCode:
       type: string
-      enum: [super_admin, warehouse_admin, branch_admin, front_staff]
+      enum: [super_admin, warehouse_admin, central_warehouse, branch_admin, front_staff]
     UserStatus:
       type: string
       description: |
@@ -1694,6 +1700,10 @@ components:
         (CSV import, rows 19 and 20: SA, WA). v0.5.0: `shortfalls.resolve` (rows 33 to 35: SA, WA, BA). The Sales entry (row 49) is in `menu` for FS and in
         `home_links` for SA and BA, whose menus already hold 5 items. v0.7.0: `design_system.view` (row 50:
         SA only) lets the frontend show the `/design-system` showcase; it has no menu entry or tile.
+        v0.8.0: `goods_receipts.view` (row 27: read receipts; SA, WA own warehouse, `central_warehouse` all
+        warehouses). `goods_receipts.manage` (write) stays SA and WA. The `central_warehouse` role is read-only:
+        it holds `stock.view`, `items.view`, `branches.view`, `dispatches.view`, `find.use`,
+        `stock.lookup_other_branches` and `goods_receipts.view`, and no cost or write action.
       enum:
         - users.manage
         - users.view
@@ -1719,6 +1729,7 @@ components:
         - items.import
         - shortfalls.resolve
         - design_system.view
+        - goods_receipts.view
     ItemStatus:
       type: string
       description: |
@@ -1790,7 +1801,7 @@ components:
           type: array
           minItems: 1
           items: {$ref: '#/components/schemas/RoleCode'}
-        permanent_location_id: {type: integer, description: 'Required for branch_admin (a branch) and warehouse_admin (the warehouse). Must be absent for super_admin and front_staff.'}
+        permanent_location_id: {type: integer, description: 'Required for branch_admin (a branch) and warehouse_admin (the warehouse). Must be absent for super_admin, central_warehouse and front_staff.'}
     UserUpdate:
       type: object
       properties:
@@ -2003,7 +2014,7 @@ components:
         sku: {type: string, example: SKU-000001}
         name: {type: string}
         category_id: {type: integer}
-        subtype_id: {type: integer}
+        subtype_id: {type: integer, nullable: true, description: "Null for an item created by the CSV import without a subtype (v0.8.0)."}
         brand_id: {type: integer}
         brand_name: {type: string, readOnly: true}
         model_name: {type: string}
@@ -2067,10 +2078,11 @@ components:
                   item_id: {type: integer}
     BranchAvailability:
       type: object
-      required: [branch_id, branch_name, quantity]
+      required: [branch_id, branch_name, kind, quantity]
       properties:
-        branch_id: {type: integer}
+        branch_id: {type: integer, description: The location id (branch or warehouse).}
         branch_name: {type: string}
+        kind: {type: string, enum: [branch, warehouse], description: v0.8.0.}
         quantity: {type: integer, minimum: 0, description: Available (on hand minus reserved).}
     MovementType:
       type: string
@@ -2157,14 +2169,14 @@ components:
           type: array
           items:
             type: object
-            required: [id, item_id, sku, item_name, quantity, unit_cost]
+            required: [id, item_id, sku, item_name, quantity]
             properties:
               id: {type: integer}
               item_id: {type: integer}
               sku: {type: string}
               item_name: {type: string}
               quantity: {type: integer}
-              unit_cost: {$ref: '#/components/schemas/Money'}
+              unit_cost: {allOf: [{$ref: '#/components/schemas/Money'}], description: 'Absent (v0.8.0) for a reader without `items.view_cost` (the central warehouse role). Always present for SA and WA.'}
         received_at: {type: string, format: date-time}
         received_by: {$ref: '#/components/schemas/LoginId'}
     DispatchCreate:

@@ -1,8 +1,14 @@
 export type ApiMode = 'mock' | 'real';
 
-export const apiUrl = (import.meta.env.VITE_API_URL as string | undefined)
-  ?.trim()
-  .replace(/\/$/, '');
+const configured = (import.meta.env.VITE_API_URL as string | undefined)?.trim().replace(/\/$/, '');
+
+/**
+ * Where the browser sends API calls. Production builds: VITE_API_URL (the backend's public origin).
+ * `vite serve`: same-origin by default, so calls go through the Vite proxy and need no CORS;
+ * set VITE_API_DIRECT=true to call VITE_API_URL cross-origin instead (the way production does).
+ */
+export const apiUrl: string | undefined =
+  import.meta.env.PROD || import.meta.env.VITE_API_DIRECT === 'true' ? configured : undefined;
 
 export const resolveApiMode = (mode: string | undefined, production: boolean): ApiMode =>
   mode === 'mock' && !production ? 'mock' : 'real';

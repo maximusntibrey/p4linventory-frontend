@@ -16,6 +16,8 @@
     "verify:dist": "node scripts/verify-dist.mjs",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run contract:drift && npm run design:check && npm run test && npm run audit && npm run build && npm run verify:dist",
     "e2e": "playwright test",
+    "e2e:real": "node scripts/e2e-real.mjs",
+    "e2e:real:direct": "node scripts/e2e-real.mjs direct",
     "contract:sync": "node scripts/contract-sync.mjs",
     "contract:gen": "openapi-typescript contract/openapi.yaml -o src/api/schema.d.ts"
   },

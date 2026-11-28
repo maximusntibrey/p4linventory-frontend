@@ -277,7 +277,7 @@ describe('mock server behaviour', () => {
   it('GET users filters on q and status', async () => {
     mockSession.loggedIn = true;
     const q = await (await send('GET', '/api/v1/users/?q=kofi')).json();
-    expect(q.results.map((u: { login_id: string }) => u.login_id)).toEqual(['USR-0001']);
+    expect(q.results.map((u: { login_id: string }) => u.login_id)).toEqual(['USR-0002']);
     const s = await (await send('GET', '/api/v1/users/?status=pending_activation')).json();
     expect(s.results.map((u: { login_id: string }) => u.login_id)).toEqual(['USR-0004']);
   });
@@ -480,7 +480,7 @@ describe('mock server behaviour', () => {
       '/api/v1/auth/login/',
       { 'X-CSRFToken': 't' },
       {
-        login_id: 'USR-0002',
+        login_id: 'USR-0003',
         password: 'x',
       },
     );

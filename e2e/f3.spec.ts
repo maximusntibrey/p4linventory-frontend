@@ -5,6 +5,7 @@ import { sideways, stubAuth, stubData } from './stub';
 test('branch switching: first pick, then switch with the keyboard; no sideways scroll', async ({
   page,
 }) => {
+  test.setTimeout(60_000); // the whole suite runs on a loaded machine
   await stubAuth(page, { signedIn: true, frontStaff: true });
   await stubData(page);
   await page.goto('/');

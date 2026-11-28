@@ -20,7 +20,7 @@ const noBranch = { ...meByRole.front_staff, working_branch: null, must_pick_bran
 async function signIn() {
   renderApp('/login');
   await screen.findByRole('heading', { name: 'Sign in' });
-  type('Login ID', 'USR-0003');
+  type('Login ID', 'USR-0001');
   type('Password', 'a-good-password');
   click('Sign in');
 }

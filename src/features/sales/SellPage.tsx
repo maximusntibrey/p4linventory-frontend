@@ -170,7 +170,7 @@ export function SellPage() {
             Sell again
           </Button>
           <LinkButton
-            to="/sell/sales"
+            to="/sales"
             icon={ListChecks}
             variant="secondary"
             sx={{ width: { xs: '100%', sm: 'auto' } }}
@@ -194,7 +194,7 @@ export function SellPage() {
         }}
       >
         <PageHeader title="Sell" />
-        <LinkButton to="/sell/sales" icon={ListChecks} variant="secondary">
+        <LinkButton to="/sales" icon={ListChecks} variant="secondary">
           Sales list
         </LinkButton>
       </Box>

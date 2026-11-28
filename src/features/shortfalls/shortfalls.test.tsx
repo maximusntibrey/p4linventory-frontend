@@ -81,7 +81,7 @@ describe('shortfalls screen', () => {
     await waitFor(() => expect(document.activeElement?.contains(done)).toBe(true));
     expect(warehouseRow()).toMatchObject({ on_hand: 11, reserved: 1, available: 10 });
     expect(await screen.findByText('Remaining 1')).toBeTruthy();
-    expect(screen.getByText(/RES-000001: Confirm loss 1 by USR-0003/)).toBeTruthy();
+    expect(screen.getByText(/RES-000001: Confirm loss 1 by USR-0001/)).toBeTruthy();
   });
 
   it('sends resolution, quantity and note with an Idempotency-Key', async () => {
@@ -174,7 +174,7 @@ describe('shortfalls screen', () => {
   });
 
   it('flags a self-approved resolution in words', async () => {
-    mockStore.dispatches[2].received_by = 'USR-0001';
+    mockStore.dispatches[2].received_by = 'USR-0002';
     renderApp('/shortfalls', { as: 'branch_admin' });
     fireEvent.click(await resolveBtn());
     choose('return_to_sender', '1');

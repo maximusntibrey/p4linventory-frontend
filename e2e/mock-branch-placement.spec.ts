@@ -3,7 +3,7 @@ import { go, LOGINS, openProfile, signIn } from './mock-helpers';
 
 // Placement map: the working branch lives in the profile menu only (with the one switcher); the Super Admin's
 // "Filter by branch" lives inside pages, never in the header. Checked per role, at desktop and phone width.
-const routes = ['/', '/stock', '/sell/sales', '/users', '/audit-logs', '/dispatches'];
+const routes = ['/', '/stock', '/sales', '/users', '/audit-logs', '/dispatches'];
 
 for (const [role, loginId] of Object.entries(LOGINS)) {
   test(`${role}: no branch chip or filter in the header, at most one switcher on any route`, async ({

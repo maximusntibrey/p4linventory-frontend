@@ -24,7 +24,7 @@ export default defineConfig({
   projects: [
     {
       name: 'phone-360',
-      testIgnore: /mock-.*\.spec\.ts/,
+      testIgnore: /(mock|real)-.*.spec.ts/,
       use: { browserName: 'chromium', viewport: { width: 360, height: 740 } },
     },
     {
@@ -35,7 +35,7 @@ export default defineConfig({
     },
     {
       name: 'desktop',
-      testIgnore: /mock-.*\.spec\.ts/,
+      testIgnore: /(mock|real)-.*.spec.ts/,
       use: { browserName: 'chromium', viewport: { width: 1280, height: 800 } },
     },
     {

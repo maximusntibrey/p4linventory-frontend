@@ -53,7 +53,7 @@ export const users: S['User'][] = [
   },
   {
     id: 2,
-    login_id: 'USR-0001',
+    login_id: 'USR-0002',
     full_name: 'Kofi Boateng',
     status: 'active',
     roles: ['branch_admin'],
@@ -65,7 +65,7 @@ export const users: S['User'][] = [
   },
   {
     id: 3,
-    login_id: 'USR-0002',
+    login_id: 'USR-0003',
     full_name: 'Esi Owusu',
     status: 'active',
     roles: ['front_staff'],
@@ -77,7 +77,7 @@ export const users: S['User'][] = [
   },
   {
     id: 4,
-    login_id: 'USR-0003',
+    login_id: 'USR-0001',
     full_name: 'Yaw Asante',
     status: 'active',
     roles: ['warehouse_admin'],
@@ -100,6 +100,19 @@ export const users: S['User'][] = [
     last_login_at: null,
     created_at: t,
   },
+  // The read-only central warehouse user: no permanent location, no cost, no writes.
+  {
+    id: 6,
+    login_id: 'USR-0013',
+    full_name: 'Naa Adjei',
+    status: 'active',
+    roles: ['central_warehouse'],
+    permanent_location_id: null,
+    must_change_password: false,
+    permissions: [],
+    last_login_at: null,
+    created_at: t,
+  },
 ];
 
 const entry = (key: string, label: string, path: string) => ({ key, label, path });
@@ -114,8 +127,15 @@ const menus = {
   warehouse_admin: [
     entry('home', 'Home', '/'),
     entry('items', 'Items', '/items'),
-    entry('receive_stock', 'Receive stock', '/goods-receipts'),
-    entry('dispatch', 'Dispatch', '/dispatches'),
+    entry('receive_stock', 'Receive stock', '/receive-stock'),
+    entry('dispatch', 'Dispatch', '/dispatch'),
+    entry('find', 'Find', '/find'),
+  ],
+  // The central warehouse user has no dashboard: its landing is the first menu screen.
+  central_warehouse: [
+    entry('stock', 'Stock', '/stock'),
+    entry('receive_stock', 'Receipts', '/receive-stock'),
+    entry('dispatch', 'Dispatch', '/dispatch'),
     entry('find', 'Find', '/find'),
   ],
   branch_admin: [
@@ -130,7 +150,7 @@ const menus = {
     entry('find', 'Find', '/find'),
     entry('stock', 'Stock', '/stock'),
     entry('receive', 'Receive', '/receive'),
-    entry('sales', 'Sales', '/sell/sales'),
+    entry('sales', 'Sales', '/sales'),
   ],
 } satisfies Record<string, S['Me']['menu']>;
 
@@ -142,7 +162,7 @@ const homeLinks = {
     entry('sell', 'Sell', '/sell'),
     entry('find', 'Find', '/find'),
     entry('receive', 'Receive', '/receive'),
-    entry('sales', 'Sales', '/sell/sales'),
+    entry('sales', 'Sales', '/sales'),
   ],
   warehouse_admin: [
     entry('activity', 'Activity', '/activity'),
@@ -151,8 +171,9 @@ const homeLinks = {
   branch_admin: [
     entry('activity', 'Activity', '/activity'),
     entry('shortfalls', 'Shortfalls', '/shortfalls'),
-    entry('sales', 'Sales', '/sell/sales'),
+    entry('sales', 'Sales', '/sales'),
   ],
+  central_warehouse: [],
   front_staff: [],
 } satisfies Record<string, S['Me']['home_links']>;
 
@@ -195,7 +216,8 @@ export const me: S['Me'] = {
 };
 
 /** Mock sessions by role. Menus follow the FE requirements table; Branch Admin and Front Staff get no cost permission. */
-export type MockRole = 'super_admin' | 'warehouse_admin' | 'branch_admin' | 'front_staff';
+export type MockRole =
+  'super_admin' | 'warehouse_admin' | 'central_warehouse' | 'branch_admin' | 'front_staff';
 export const meByRole: Record<MockRole, S['Me']> = {
   super_admin: me,
   warehouse_admin: {
@@ -217,6 +239,7 @@ export const meByRole: Record<MockRole, S['Me']> = {
       'stock.view',
       'stock.lookup_other_branches',
       'goods_receipts.manage',
+      'goods_receipts.view',
       'items.import',
       'dispatches.create',
       'dispatches.view',
@@ -224,6 +247,26 @@ export const meByRole: Record<MockRole, S['Me']> = {
       'shortfalls.resolve',
       'find.use',
       'dashboard.view',
+    ],
+  },
+  central_warehouse: {
+    must_change_password: false,
+    menu: menus.central_warehouse,
+    home_links: homeLinks.central_warehouse,
+    must_pick_branch: false,
+    all_branches: false,
+    can_assign_multiple_roles: false,
+    user: users[5],
+    active_role: 'central_warehouse',
+    working_branch: null,
+    permissions: [
+      'branches.view',
+      'items.view',
+      'stock.view',
+      'stock.lookup_other_branches',
+      'dispatches.view',
+      'find.use',
+      'goods_receipts.view',
     ],
   },
   branch_admin: {
@@ -433,7 +476,8 @@ export const items: S['Item'][] = [
     sku: 'SKU-000002',
     name: 'Dell 65W charger',
     category_id: 3,
-    subtype_id: 3,
+    // An item with no subtype (CSV import): null, as the real API sends it.
+    subtype_id: null,
     brand_id: 2,
     brand_name: 'Dell',
     model_name: 'LA65NM',
@@ -508,7 +552,7 @@ export const stockMovements: S['StockMovement'][] = [
     movement_type: 'supplier_receipt',
     source_type: 'goods_receipt',
     source_ref: 'GRN-000001',
-    actor_login_id: 'USR-0001',
+    actor_login_id: 'USR-0002',
     note: '',
   },
 ];
@@ -524,8 +568,8 @@ export const costedStock: S['StockBalanceWithCost'][] = stock.map((row) => ({
 }));
 
 export const availability: S['BranchAvailability'][] = [
-  { branch_id: branchA.id, branch_name: branchA.name, quantity: 3 },
-  { branch_id: branchB.id, branch_name: branchB.name, quantity: 0 },
+  { branch_id: branchA.id, branch_name: branchA.name, kind: 'branch', quantity: 3 },
+  { branch_id: branchB.id, branch_name: branchB.name, kind: 'branch', quantity: 0 },
 ];
 
 export const goodsReceipt: S['GoodsReceipt'] = {
@@ -545,7 +589,7 @@ export const goodsReceipt: S['GoodsReceipt'] = {
     },
   ],
   received_at: t,
-  received_by: 'USR-0001',
+  received_by: 'USR-0002',
 };
 
 export const dispatch: S['Dispatch'] = {
@@ -581,7 +625,7 @@ export const dispatch: S['Dispatch'] = {
     },
   ],
   dispatched_at: t,
-  dispatched_by: 'USR-0001',
+  dispatched_by: 'USR-0002',
   received_at: null,
   received_by: null,
   receive_note: null,
@@ -615,7 +659,7 @@ const dispatchShort: S['Dispatch'] = {
     },
   ],
   received_at: t,
-  received_by: 'USR-0002',
+  received_by: 'USR-0003',
   receive_note: 'Two boxes did not arrive.',
   has_open_discrepancy: true,
 };
@@ -628,7 +672,7 @@ export const sales: S['Sale'][] = [
     id: 1,
     reference: 'SAL-000001',
     location: branchA,
-    staff: 'USR-0003',
+    staff: 'USR-0001',
     status: 'completed',
     payment_method: 'cash',
     total: '1250.00',
@@ -650,7 +694,7 @@ export const sales: S['Sale'][] = [
     id: 2,
     reference: 'SAL-000002',
     location: branchA,
-    staff: 'USR-0003',
+    staff: 'USR-0001',
     status: 'cancelled',
     payment_method: 'card',
     total: '2500.00',
@@ -668,7 +712,7 @@ export const sales: S['Sale'][] = [
     ],
     cancellation: {
       reason: 'Customer changed their mind',
-      cancelled_by: 'USR-0002',
+      cancelled_by: 'USR-0003',
       cancelled_role: 'branch_admin',
       cancelled_at: t,
     },

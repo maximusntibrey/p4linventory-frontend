@@ -40,7 +40,7 @@ const transfer = (
   status: 'in_transit',
   lines,
   dispatched_at: t,
-  dispatched_by: 'USR-0001',
+  dispatched_by: 'USR-0002',
   received_at: null,
   received_by: null,
   receive_note: null,

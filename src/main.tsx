@@ -13,6 +13,7 @@ import { apiMode } from './config';
 import { ConfigProvider } from './contexts/ConfigContext';
 import ThemeCustomization from './themes';
 import { AppRoutes } from './routes';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const queryClient = createQueryClient();
 
@@ -23,15 +24,17 @@ async function start() {
   }
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <ConfigProvider>
-          <ThemeCustomization>
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </ThemeCustomization>
-        </ConfigProvider>
-      </QueryClientProvider>
+      <ErrorBoundary bare>
+        <QueryClientProvider client={queryClient}>
+          <ConfigProvider>
+            <ThemeCustomization>
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </ThemeCustomization>
+          </ConfigProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
     </StrictMode>,
   );
 }
